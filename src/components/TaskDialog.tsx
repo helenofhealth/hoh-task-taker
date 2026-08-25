@@ -350,9 +350,13 @@ export function TaskDialog({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep running</AlertDialogCancel>
-              <AlertDialogAction onClick={() => timer.mutate()} disabled={timer.isPending}>
+              <AlertDialogAction
+                onClick={() => timer.mutate({ override: true, overageMinutes: overBy })}
+                disabled={timer.isPending}
+              >
                 Override and log
               </AlertDialogAction>
+
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

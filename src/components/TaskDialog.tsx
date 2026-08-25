@@ -212,6 +212,7 @@ export function TaskDialog({
     return () => clearTimeout(t1);
   }, [initialCommentId, open, comments.data, onInitialCommentUsed]);
 
+  const audit = useQuery({
     queryKey: ["time_audit", task?.id],
     queryFn: () => fetchTimeAudit(task!.id),
     enabled: !!task && open,

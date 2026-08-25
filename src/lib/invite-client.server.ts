@@ -67,7 +67,32 @@ export async function sendActivationEmail(
   await sendEmail(email, "You're invited — activate your client portal account", html);
 }
 
+export async function sendTaskStatusEmail(
+  email: string,
+  taskTitle: string,
+  clientName: string | null,
+  oldStatusLabel: string,
+  newStatusLabel: string,
+  changedByName: string,
+  link: string,
+) {
+  const html = shell(
+    `Task update: ${taskTitle}`,
+    `<p>Hi there,</p>
+     <p><strong>${changedByName}</strong> moved a task${clientName ? ` for <strong>${clientName}</strong>` : ""} from <strong>${oldStatusLabel}</strong> to <strong>${newStatusLabel}</strong>:</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
+       <p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">${oldStatusLabel} &rarr; <strong>${newStatusLabel}</strong></p>
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+     </p>`,
+  );
+  await sendEmail(email, `Task "${taskTitle}" is now ${newStatusLabel}`, html);
+}
+
 export async function sendPasswordResetEmail(email: string, link: string) {
+
   const html = shell(
     "Reset your password",
     `<p>Hi there,</p>

@@ -1,4 +1,4 @@
-import { auth, defineMcp, type AnyToolDefinition } from "@lovable.dev/mcp-js";
+import { auth, defineMcp } from "@lovable.dev/mcp-js";
 import listTasksTool from "./tools/list-tasks";
 import getTaskTool from "./tools/get-task";
 import createTaskTool from "./tools/create-task";
@@ -32,5 +32,5 @@ export default defineMcp({
     addCommentTool,
     listClientsTool,
     getTimeReportTool,
-  ] as AnyToolDefinition[],
+  ] as unknown as Parameters<typeof defineMcp>[0]["tools"],
 });

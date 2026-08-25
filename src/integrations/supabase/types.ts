@@ -401,7 +401,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      visible_profiles: {
+        Row: {
+          avatar_url: string | null
+          client_id: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          client_id?: never
+          created_at?: string | null
+          email?: never
+          full_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          client_id?: never
+          created_at?: string | null
+          email?: never
+          full_name?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_see_task: { Args: { _task_id: string }; Returns: boolean }

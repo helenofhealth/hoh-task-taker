@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+
+import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
 import {
   AlertTriangle,
   Download,
@@ -137,10 +140,22 @@ export function TaskDialog({
     qc.invalidateQueries({ queryKey: ["time_audit", task?.id] });
   };
 
+  const notifyStatus = useServerFn(notifyTaskStatusChange);
+
   const save = useMutation({
     mutationFn: async (patch: Partial<Task>) => {
       const { error } = await db.from("tasks").update(patch).eq("id", task!.id);
       if (error) throw error;
+      if (patch.status && task && patch.status !== task.status) {
+        notifyStatus({
+          data: {
+            taskId: task.id,
+            oldStatus: task.status,
+            newStatus: patch.status,
+            origin: window.location.origin,
+          },
+        }).catch(() => {});
+      }
     },
     onSuccess: () => {
       invalidate();

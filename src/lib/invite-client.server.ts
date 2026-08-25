@@ -113,7 +113,27 @@ export async function sendTaskCommentEmail(
   await sendEmail(email, `New comment on "${taskTitle}"`, html);
 }
 
+export async function sendTaskUpdateEmail(
+  email: string,
+  heading: string,
+  detail: string,
+  link: string,
+) {
+  const html = shell(
+    heading,
+    `<p>Hi there,</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; color: #4a1d33; font-size: 14px;">${detail}</p>
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+     </p>`,
+  );
+  await sendEmail(email, heading, html);
+}
+
 export async function sendPasswordResetEmail(email: string, link: string) {
+
 
   const html = shell(
     "Reset your password",

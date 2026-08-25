@@ -118,7 +118,49 @@ function TimeReportPage() {
     if (clientFilter && taskClientId(e.task_id, e.tasks?.client_id) !== clientFilter) return false;
     return true;
   });
-  const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "report-csv" | "report-pdf" | null>(
+    null,
+  );
+
+  const rawMinutes = (e: { started_at: string; ended_at: string | null }) =>
+    e.ended_at
+      ? Math.max(0, (new Date(e.ended_at).getTime() - new Date(e.started_at).getTime()) / 60000)
+      : 0;
+
+  /** Detailed timeline: client → task → entries, newest first. */
+  const timeline = useMemo(() => {
+    const taskList = tasks.data ?? [];
+    const byClient = new Map<
+      string,
+      { clientId: string | null; name: string; minutes: number; overrides: number; tasks: Map<string, { title: string; minutes: number; entries: typeof filteredLogged }> }
+    >();
+    const sorted = [...filteredLogged].sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
+    for (const e of sorted) {
+      const task = taskList.find((t) => t.id === e.task_id);
+      const cid = task?.client_id ?? e.tasks?.client_id ?? null;
+      const key = cid ?? "none";
+      if (!byClient.has(key))
+        byClient.set(key, {
+          clientId: cid,
+          name: clientList.find((c) => c.id === cid)?.name ?? "No client",
+          minutes: 0,
+          overrides: 0,
+          tasks: new Map(),
+        });
+      const group = byClient.get(key)!;
+      group.minutes += e.minutes ?? 0;
+      if (e.limit_override) group.overrides += 1;
+      const tKey = e.task_id;
+      if (!group.tasks.has(tKey))
+        group.tasks.set(tKey, { title: task?.title ?? "Task", minutes: 0, entries: [] });
+      const tGroup = group.tasks.get(tKey)!;
+      tGroup.minutes += e.minutes ?? 0;
+      tGroup.entries.push(e);
+    }
+    return [...byClient.values()]
+      .sort((a, b) => b.minutes - a.minutes)
+      .map((g) => ({ ...g, taskGroups: [...g.tasks.values()].sort((a, b) => b.minutes - a.minutes) }));
+  }, [filteredLogged, tasks.data, clientList]);
 
   const weekly = useMemo(() => {
     const start = new Date(`${from}T00:00:00`);
@@ -147,6 +189,75 @@ function TimeReportPage() {
   }, [filteredLogged, from, to]);
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
+
+  /** Time report export (CSV or PDF) for one client, or every client in view. */
+  const exportReport = async (format: "csv" | "pdf", onlyClientId?: string | null) => {
+    const groups = onlyClientId
+      ? timeline.filter((g) => g.clientId === onlyClientId)
+      : timeline;
+    const rows = groups.flatMap((g) =>
+      g.taskGroups.flatMap((t) =>
+        t.entries.map((e) => [
+          g.name,
+          t.title,
+          displayName(profiles.data ?? [], e.user_id),
+          new Date(e.started_at).toLocaleString(),
+          e.ended_at ? new Date(e.ended_at).toLocaleTimeString() : "",
+          Math.round(rawMinutes(e)),
+          e.minutes ?? 0,
+          formatDuration(e.minutes ?? 0),
+          e.limit_override ? "Yes" : "",
+          e.override_minutes ? Math.round(Number(e.override_minutes)) : "",
+        ]),
+      ),
+    );
+    if (rows.length === 0) {
+      toast.error("No logged time matches the current filters");
+      return;
+    }
+    const headers = [
+      "Client",
+      "Task",
+      "Member",
+      "Started",
+      "Stopped",
+      "Measured min",
+      "Logged min",
+      "Logged",
+      "Limit override",
+      "Overage min",
+    ];
+    const label = onlyClientId
+      ? (clientList.find((c) => c.id === onlyClientId)?.name ?? "client").replace(/[^\w-]+/g, "_")
+      : "all-clients";
+    setExporting(format === "pdf" ? "report-pdf" : "report-csv");
+    try {
+      const baseName = `time-report-${label}-${from}-${to}`;
+      if (format === "pdf") {
+        const totalMinutes = rows.reduce((s, r) => s + Number(r[6] ?? 0), 0);
+        await downloadPdfReport(
+          `${baseName}.pdf`,
+          `Time report — ${onlyClientId ? clientList.find((c) => c.id === onlyClientId)?.name ?? "Client" : "All clients"}`,
+          [
+            `Period: ${from} to ${to}`,
+            `Entries: ${rows.length} · Total logged: ${formatHours(totalMinutes / 60)} (15-minute increments)`,
+            `Overrides: ${rows.filter((r) => r[8] === "Yes").length}`,
+          ],
+          headers,
+          rows,
+          [1.2, 2, 1.2, 1.4, 0.9, 0.8, 0.8, 0.8, 0.8, 0.8],
+        );
+      } else {
+        downloadTextFile(`${baseName}.csv`, toCsv(headers, rows));
+      }
+      toast.success(`Exported ${rows.length} ${rows.length === 1 ? "entry" : "entries"} as ${format.toUpperCase()}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExporting(null);
+    }
+  };
+
 
   const exportAudit = async (format: "csv" | "xlsx") => {
     if (from > to) {

@@ -152,17 +152,29 @@ export function TaskDialog({
   const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
 
   const timer = useMutation({
-    mutationFn: async () => {
-      if (running) await stopTimer(running.id);
-      else await startTimer(task!.id, userId);
+    mutationFn: async (opts?: { override?: boolean; overageMinutes?: number }) => {
+      if (running) {
+        await stopTimer(
+          running.id,
+          opts?.override && (opts.overageMinutes ?? 0) > 0
+            ? { overageMinutes: opts.overageMinutes! }
+            : null,
+        );
+      } else await startTimer(task!.id, userId);
     },
-    onSuccess: () => {
+    onSuccess: (_data, opts) => {
       setOverrunOpen(false);
       refreshTime();
-      if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
+      if (running)
+        toast.success(
+          `Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)${
+            opts?.override ? " · limit override recorded in the audit log" : ""
+          }`,
+        );
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const addComment = useMutation({
     mutationFn: async () => {

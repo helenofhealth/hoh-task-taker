@@ -149,6 +149,43 @@ export async function fetchTimeAudit(taskId?: string): Promise<TimeEntryAudit[]>
   return (data ?? []) as TimeEntryAudit[];
 }
 
+/** Audit rows recorded between two dates (inclusive), oldest first. */
+export async function fetchTimeAuditRange(from: string, to: string): Promise<TimeEntryAudit[]> {
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+  end.setDate(end.getDate() + 1);
+  const { data, error } = await db
+    .from("time_entry_audit")
+    .select("*")
+    .gte("created_at", start.toISOString())
+    .lt("created_at", end.toISOString())
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as TimeEntryAudit[];
+}
+
+function csvCell(value: unknown) {
+  const s = value == null ? "" : String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Build a CSV document from a header row and data rows. */
+export function toCsv(headers: string[], rows: unknown[][]) {
+  return [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+/** Trigger a browser download for text content. */
+export function downloadTextFile(fileName: string, content: string, mime = "text/csv;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([`\uFEFF${content}`], { type: mime }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchCredits(): Promise<HourCredit[]> {
   const { data, error } = await db
     .from("hour_credits")

@@ -13,6 +13,7 @@ interface NotifyCommentInput {
   taskId: string;
   commentBody: string;
   origin: string;
+  mentionIds?: string[];
 }
 
 // Loads the task and computes recipients: owner + followers (+ commenters for
@@ -121,6 +122,8 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
   });
 
 // Notifies the task owner, followers, and other commenters about a new comment.
+// Users @-mentioned in the comment get a distinct "mentioned you" notification
+// and email, even when they are not otherwise following the task.
 export const notifyTaskComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: NotifyCommentInput) => {
@@ -128,7 +131,10 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const body = input.commentBody?.trim();
     if (!body) throw new Error("Comment is required");
     if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
-    return { ...input, commentBody: body };
+    const mentionIds = Array.isArray(input.mentionIds)
+      ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
+      : [];
+    return { ...input, commentBody: body, mentionIds };
   })
   .handler(async ({ data, context }) => {
     const { createNotifications } = await import("./notifications.server");
@@ -140,22 +146,62 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
     const link = `${data.origin.replace(/\/+$/, "")}/board`;
 
-    await createNotifications(recipientIds, {
+    // Only users who may see the task can be mentioned: staff or members of
+    // the task's client. Mentioned users already in the regular audience get
+    // the mention variant instead of the plain comment notification.
+    const candidateIds = (data.mentionIds ?? []).filter((id) => id !== context.userId);
+    let mentionIds: string[] = [];
+    if (candidateIds.length > 0) {
+      const { data: mentionProfiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, client_id")
+        .in("id", candidateIds);
+      const { data: staffRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .in("user_id", candidateIds)
+        .in("role", ["admin", "member"]);
+      const staffSet = new Set((staffRoles ?? []).map((r: any) => r.user_id));
+      const taskClientId = (task as any).client_id ?? null;
+      mentionIds = (mentionProfiles ?? [])
+        .filter((p: any) => staffSet.has(p.id) || (taskClientId && p.client_id === taskClientId))
+        .map((p: any) => p.id);
+    }
+
+    const mentionSet = new Set(mentionIds);
+    const regularIds = recipientIds.filter((id) => !mentionSet.has(id));
+
+    await createNotifications(regularIds, {
       taskId: task.id,
       kind: "comment",
       title: `New comment on "${task.title}"`,
       body: `${actorName}: ${snippet}`,
     });
+    await createNotifications(mentionIds, {
+      taskId: task.id,
+      kind: "mention",
+      title: `${actorName} mentioned you on "${task.title}"`,
+      body: snippet,
+    });
 
-    const emails = await recipientEmails(supabaseAdmin, recipientIds);
-    const { sendTaskCommentEmail } = await import("./invite-client.server");
+    const { sendTaskCommentEmail, sendTaskMentionEmail } = await import("./invite-client.server");
     let sent = 0;
+    const emails = await recipientEmails(supabaseAdmin, regularIds);
     for (const email of emails) {
       try {
         await sendTaskCommentEmail(email, task.title, actorName, snippet, link);
         sent++;
       } catch (err) {
         console.error("Comment email to recipient failed:", err);
+      }
+    }
+    const mentionEmails = await recipientEmails(supabaseAdmin, mentionIds);
+    for (const email of mentionEmails) {
+      try {
+        await sendTaskMentionEmail(email, task.title, actorName, snippet, link);
+        sent++;
+      } catch (err) {
+        console.error("Mention email to recipient failed:", err);
       }
     }
     return { ok: true as const, sent };

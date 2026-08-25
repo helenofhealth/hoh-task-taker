@@ -186,6 +186,65 @@ function SettingsPage() {
             />
           </div>
         </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Moon className="size-4 text-muted-foreground" /> Quiet hours
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Hold back instant notification emails during these hours. In-app notifications
+                still appear in the bell, and the daily digest is unaffected.
+              </p>
+            </div>
+            <Switch
+              checked={prefs.quiet_enabled}
+              onCheckedChange={(v) => toggle("quiet_enabled", v)}
+              disabled={prefsQuery.isLoading}
+              aria-label="Quiet hours"
+            />
+          </div>
+          {prefs.quiet_enabled && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="q-start">From</Label>
+                <Input
+                  id="q-start"
+                  type="time"
+                  value={prefs.quiet_start ?? "20:00"}
+                  onChange={(e) => save.mutate({ ...prefs, quiet_start: e.target.value || "20:00" })}
+                  disabled={prefsQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="q-end">Until</Label>
+                <Input
+                  id="q-end"
+                  type="time"
+                  value={prefs.quiet_end ?? "08:00"}
+                  onChange={(e) => save.mutate({ ...prefs, quiet_end: e.target.value || "08:00" })}
+                  disabled={prefsQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Timezone</Label>
+                <Select
+                  value={prefs.quiet_timezone}
+                  onValueChange={(v) => save.mutate({ ...prefs, quiet_timezone: v })}
+                  disabled={prefsQuery.isLoading}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONES.map((tz) => (
+                      <SelectItem key={tz} value={tz}>{tz.replace("_", " ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </AppShell>
   );

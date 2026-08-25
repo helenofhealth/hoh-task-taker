@@ -250,13 +250,25 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={exportAudit} disabled={exporting}>
-              {exporting ? (
+            <Button onClick={() => exportAudit("csv")} disabled={exporting !== null}>
+              {exporting === "csv" ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
                 <Download className="mr-2 size-4" />
               )}
-              Export audit
+              Export CSV
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => exportAudit("xlsx")}
+              disabled={exporting !== null}
+            >
+              {exporting === "xlsx" ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="mr-2 size-4" />
+              )}
+              Export XLSX
             </Button>
           </div>
         </div>

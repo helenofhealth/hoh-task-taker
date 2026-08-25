@@ -192,16 +192,26 @@ function TimeReportPage() {
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
 
-  /** Time report export (CSV or PDF) for one client, or every client in view. */
+  /** Time report export (CSV or PDF) for one client, or every client in view.
+   *  Per-client exports ignore the client dropdown so any card can be exported. */
   const exportReport = async (format: "csv" | "pdf", onlyClientId?: string | null) => {
-    const groups = onlyClientId
-      ? timeline.filter((g) => g.clientId === onlyClientId)
-      : timeline;
-    const rows = groups.flatMap((g) =>
-      g.taskGroups.flatMap((t) =>
-        t.entries.map((e) => [
-          g.name,
-          t.title,
+    const taskList = tasks.data ?? [];
+    const source = onlyClientId
+      ? logged.filter(
+          (e) =>
+            inRange(e.started_at) &&
+            (!taskFilter || e.task_id === taskFilter) &&
+            taskClientId(e.task_id, e.tasks?.client_id) === onlyClientId,
+        )
+      : filteredLogged;
+    const rows = [...source]
+      .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))
+      .map((e) => {
+        const task = taskList.find((t) => t.id === e.task_id);
+        const cid = task?.client_id ?? e.tasks?.client_id ?? null;
+        return [
+          clientList.find((c) => c.id === cid)?.name ?? "No client",
+          task?.title ?? "Task",
           displayName(profiles.data ?? [], e.user_id),
           new Date(e.started_at).toLocaleString(),
           e.ended_at ? new Date(e.ended_at).toLocaleTimeString() : "",
@@ -210,9 +220,9 @@ function TimeReportPage() {
           formatDuration(e.minutes ?? 0),
           e.limit_override ? "Yes" : "",
           e.override_minutes ? Math.round(Number(e.override_minutes)) : "",
-        ]),
-      ),
-    );
+        ];
+      });
+
     if (rows.length === 0) {
       toast.error("No logged time matches the current filters");
       return;

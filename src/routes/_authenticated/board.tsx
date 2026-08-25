@@ -78,10 +78,24 @@ function BoardPage() {
     },
   });
 
+  const notifyStatus = useServerFn(notifyTaskStatusChange);
+
   const move = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
+    mutationFn: async ({
+      id,
+      status,
+      oldStatus,
+    }: {
+      id: string;
+      status: TaskStatus;
+      oldStatus: TaskStatus;
+    }) => {
       const { error } = await db.from("tasks").update({ status }).eq("id", id);
       if (error) throw error;
+      // Fire-and-forget: email owner/followers about the status change.
+      notifyStatus({
+        data: { taskId: id, oldStatus, newStatus: status, origin: window.location.origin },
+      }).catch(() => {});
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
     onError: (e: Error) => toast.error(e.message),

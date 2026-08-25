@@ -32,7 +32,7 @@ async function loadTaskAndRecipients(
 
   const { data: task } = await supabaseAdmin
     .from("tasks")
-    .select("id, title, status, owner_id, clients(name)")
+    .select("id, title, status, owner_id, client_id, clients(name)")
     .eq("id", taskId)
     .single();
   if (!task) return null;

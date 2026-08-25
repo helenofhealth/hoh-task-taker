@@ -43,9 +43,16 @@ export const inviteClient = createServerFn({ method: "POST" })
       await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "client" });
     };
 
-    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-      data: { full_name: data.name },
-      redirectTo: `${data.origin}/auth`,
+    // generateLink creates the user without sending Supabase's built-in invite
+    // email — the invite goes through Resend so it comes from no-reply@tasks.helenofhealth.com.
+    const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "invite",
+      email: data.email,
+      password: undefined,
+      options: {
+        data: { full_name: data.name },
+        redirectTo: `${data.origin}/auth`,
+      },
     });
 
     if (error) {
@@ -63,11 +70,11 @@ export const inviteClient = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
-    const userId = invited.user?.id;
+    const userId = inviteLink.user?.id;
     if (userId) await linkUserToClient(userId);
-    if (userId) {
+    if (userId && inviteLink.properties?.action_link) {
       const { sendActivationEmail } = await import("./invite-client.server");
-      await sendActivationEmail(data.email, data.name, data.origin);
+      await sendActivationEmail(data.email, data.name, inviteLink.properties.action_link);
     }
     return { ok: true as const, invited: true as const, userId };
   });

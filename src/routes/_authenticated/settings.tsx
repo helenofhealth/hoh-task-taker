@@ -27,6 +27,7 @@ type Prefs = {
   inapp_mentions: boolean;
   inapp_status: boolean;
   inapp_assignments: boolean;
+  email_digest: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -38,6 +39,7 @@ const DEFAULTS: Prefs = {
   inapp_mentions: true,
   inapp_status: true,
   inapp_assignments: true,
+  email_digest: false,
 };
 
 const CATEGORIES: { key: string; emailKey: keyof Prefs; inappKey: keyof Prefs; label: string; description: string }[] = [
@@ -128,6 +130,25 @@ function SettingsPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Daily digest email</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Instead of a separate email for every comment or status change, get one summary
+                email at 9:00 AM, Monday to Friday. On Mondays it covers everything since Friday.
+                Mentions and assignments still arrive instantly. No email is sent on quiet days.
+              </p>
+            </div>
+            <Switch
+              checked={prefs.email_digest}
+              onCheckedChange={(v) => toggle("email_digest", v)}
+              disabled={prefsQuery.isLoading}
+              aria-label="Daily digest email"
+            />
+          </div>
         </div>
       </div>
     </AppShell>

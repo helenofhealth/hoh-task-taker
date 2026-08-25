@@ -79,9 +79,10 @@ export function TaskDialog({
 
   useEffect(() => setDraft(task), [task]);
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 15000);
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
 
   const taskEntries = useMemo(
     () => entries.filter((e) => e.task_id === task?.id),

@@ -40,11 +40,11 @@ export default defineTool({
         .filter((cr: { client_id: string }) => cr.client_id === c.id)
         .reduce((s: number, cr: { hours: number }) => s + Number(cr.hours), 0);
       const mine = (entries ?? []).filter(
-        (e: { tasks: { client_id: string | null } | null }) => e.tasks?.client_id === c.id,
+        (e: any) => (Array.isArray(e.tasks) ? e.tasks[0]?.client_id : e.tasks?.client_id) === c.id,
       );
       const used =
-        mine.reduce((s: number, e: { minutes: number | null }) => s + (e.minutes ?? 0), 0) / 60;
-      const overrides = mine.filter((e: { limit_override: boolean | null }) => e.limit_override);
+        mine.reduce((s: number, e: any) => s + (e.minutes ?? 0), 0) / 60;
+      const overrides = mine.filter((e: any) => e.limit_override);
       return {
         client_id: c.id,
         client: c.name,
@@ -54,7 +54,7 @@ export default defineTool({
         hours_remaining: Math.round((bought - used) * 100) / 100,
         override_entries: overrides.length,
         override_minutes: overrides.reduce(
-          (s: number, e: { override_minutes: number | null }) => s + (e.override_minutes ?? 0),
+          (s: number, e: any) => s + (e.override_minutes ?? 0),
           0,
         ),
       };

@@ -200,17 +200,18 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
       body: snippet,
     });
 
-    const { sendTaskCommentEmail, sendTaskMentionEmail } = await import("./invite-client.server");
-    let sent = 0;
-    const emails = await recipientEmails(supabaseAdmin, commentPrefs.email);
-    for (const email of emails) {
-      try {
-        await sendTaskCommentEmail(email, task.title, actorName, snippet, link);
-        sent++;
-      } catch (err) {
-        console.error("Comment email to recipient failed:", err);
-      }
-    }
+    const { sendTaskMentionEmail } = await import("./invite-client.server");
+    // Regular comment emails go through the batched outbox; mentions stay instant.
+    const { queueEmailBatch } = await import("./notifications.server");
+    await queueEmailBatch(supabaseAdmin, commentPrefs.email, {
+      taskId: task.id,
+      taskTitle: task.title,
+      category: "comments",
+      heading: `New comment on "${task.title}"`,
+      line: `${actorName}: ${snippet}`,
+      link,
+    });
+    let sent = commentPrefs.email.length;
     const mentionEmails = await recipientEmails(supabaseAdmin, mentionPrefs.email);
     for (const email of mentionEmails) {
       try {

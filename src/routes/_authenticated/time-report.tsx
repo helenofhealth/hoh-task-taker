@@ -167,6 +167,7 @@ function TimeReportPage() {
             Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
           </p>
         </div>
+        {me.isStaff && (
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft md:w-auto">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">

@@ -601,32 +601,73 @@ export function TaskDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="files" className="space-y-3 pt-4">
-            {(attachments.data ?? []).map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm"
-              >
-                <Paperclip className="size-4 text-muted-foreground" />
-                <span className="truncate">{a.file_name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {a.size_bytes ? `${Math.round(a.size_bytes / 1024)} KB` : ""}
-                </span>
-                <Button size="icon" variant="ghost" onClick={() => download(a.file_path)}>
-                  <Download className="size-4" />
+          <TabsContent value="files" className="pt-4">
+            <div
+              className={`space-y-3 rounded-2xl border-2 border-dashed p-4 transition-colors ${
+                dragging
+                  ? "border-primary bg-primary-soft/50"
+                  : "border-border/70 bg-transparent"
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+                if (!dragging) setDragging(true);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                const files = Array.from(e.dataTransfer.files);
+                for (const f of files) void upload(f);
+              }}
+            >
+              {(attachments.data ?? []).map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 text-sm"
+                >
+                  <Paperclip className="size-4 text-muted-foreground" />
+                  <span className="truncate">{a.file_name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {a.size_bytes ? `${Math.round(a.size_bytes / 1024)} KB` : ""}
+                  </span>
+                  <Button size="icon" variant="ghost" onClick={() => download(a.file_path)}>
+                    <Download className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex flex-col items-center gap-2 py-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {dragging
+                    ? "Drop your files here"
+                    : "Drag & drop files here, or pick them from your device"}
+                </p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    for (const f of Array.from(e.target.files ?? [])) void upload(f);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="mr-2 size-4" />
+                  )}
+                  Upload document
                 </Button>
+                <p className="text-xs text-muted-foreground">Up to 20 MB per file</p>
               </div>
-            ))}
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
-            />
-            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Paperclip className="mr-2 size-4" />}
-              Upload document
-            </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="time" className="space-y-2 pt-4">

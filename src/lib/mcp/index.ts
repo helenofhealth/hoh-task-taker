@@ -32,5 +32,5 @@ export default defineMcp({
     addCommentTool,
     listClientsTool,
     getTimeReportTool,
-  ],
+  ] as AnyToolDefinition[],
 });

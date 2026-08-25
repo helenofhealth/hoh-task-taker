@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -33,7 +33,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
   const { next } = Route.useSearch();
   const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");

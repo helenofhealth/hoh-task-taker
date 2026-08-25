@@ -195,6 +195,38 @@ export function downloadTextFile(fileName: string, content: string, mime = "text
   URL.revokeObjectURL(url);
 }
 
+/** Trigger a browser download for an .xlsx workbook built from a header row and data rows. */
+export async function downloadXlsxFile(
+  fileName: string,
+  headers: string[],
+  rows: unknown[][],
+  sheetName = "Audit trail",
+) {
+  const XLSX = await import("xlsx");
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  sheet["!cols"] = headers.map((h, i) => ({
+    wch: Math.min(
+      42,
+      Math.max(h.length + 2, ...rows.map((r) => String(r[i] ?? "").length + 2), 10),
+    ),
+  }));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, sheetName.slice(0, 31));
+  const out = XLSX.write(book, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+  const url = URL.createObjectURL(
+    new Blob([out], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchCredits(): Promise<HourCredit[]> {
   const { data, error } = await db
     .from("hour_credits")

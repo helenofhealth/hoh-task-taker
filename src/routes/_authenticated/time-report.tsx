@@ -94,22 +94,39 @@ function TimeReportPage() {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const [from, setFrom] = useState(isoDay(monthStart));
   const [to, setTo] = useState(isoDay(today));
-  const [action, setAction] = useState<AuditAction | "">("");
-  const [taskId, setTaskId] = useState<string>("");
-  const [clientId, setClientId] = useState<string>("");
+  const [action, setAction] = useState<AuditAction | "all">("all");
+  const [taskId, setTaskId] = useState<string>("all");
+  const [clientId, setClientId] = useState<string>("all");
+
+  // Every filter is independent and optional — "all" means "don't filter on this field".
+  const actionFilter = action === "all" ? null : action;
+  const taskFilter = taskId === "all" ? null : taskId;
+  const clientFilter = clientId === "all" ? null : clientId;
+  const hasFilters = Boolean(actionFilter || taskFilter || clientFilter);
+
+  const inRange = (iso: string) => {
+    const day = isoDay(new Date(new Date(iso).getTime() - new Date(iso).getTimezoneOffset() * 60000));
+    return day >= from && day <= to;
+  };
+
+  const taskClientId = (taskIdValue: string, fallback?: string | null) =>
+    (tasks.data ?? []).find((t) => t.id === taskIdValue)?.client_id ?? fallback ?? null;
+
+  const filteredLogged = logged.filter((e) => {
+    if (!inRange(e.started_at)) return false;
+    if (taskFilter && e.task_id !== taskFilter) return false;
+    if (clientFilter && taskClientId(e.task_id, e.tasks?.client_id) !== clientFilter) return false;
+    return true;
+  });
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
 
   const weekly = useMemo(() => {
     const start = new Date(`${from}T00:00:00`);
     const end = new Date(`${to}T23:59:59`);
     const buckets = new Map<string, number>();
-    for (const e of logged) {
+    for (const e of filteredLogged) {
       const d = new Date(e.started_at);
       if (d < start || d > end) continue;
-      if (clientId) {
-        const task = (tasks.data ?? []).find((t) => t.id === e.task_id);
-        if ((task?.client_id ?? e.tasks?.client_id ?? null) !== clientId) continue;
-      }
       const w = new Date(d);
       const day = (w.getDay() + 6) % 7; // Monday start
       w.setDate(w.getDate() - day);
@@ -127,7 +144,7 @@ function TimeReportPage() {
         }),
         hours: Math.round((minutes / 60) * 100) / 100,
       }));
-  }, [logged, from, to, clientId, tasks.data]);
+  }, [filteredLogged, from, to]);
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
 
@@ -139,14 +156,14 @@ function TimeReportPage() {
     setExporting(format);
     try {
       const rows = await fetchTimeAuditRange(from, to, {
-        action: action || null,
-        taskId: taskId || null,
+        action: actionFilter,
+        taskId: taskFilter,
       });
       const taskList = tasks.data ?? [];
       const filtered = rows.filter((r) => {
-        if (!clientId) return true;
+        if (!clientFilter) return true;
         const task = taskList.find((t) => t.id === r.task_id);
-        return task?.client_id === clientId;
+        return task?.client_id === clientFilter;
       });
       if (filtered.length === 0) {
         toast.error("No audit activity matches the selected filters");
@@ -187,9 +204,9 @@ function TimeReportPage() {
         ];
       });
       const parts = [from, to];
-      if (action) parts.push(action);
-      if (clientId) parts.push(clientList.find((c) => c.id === clientId)?.name ?? "client");
-      if (taskId) parts.push(taskList.find((t) => t.id === taskId)?.title ?? "task");
+      if (actionFilter) parts.push(actionFilter);
+      if (clientFilter) parts.push(clientList.find((c) => c.id === clientFilter)?.name ?? "client");
+      if (taskFilter) parts.push(taskList.find((t) => t.id === taskFilter)?.title ?? "task");
       const baseName = `audit-trail-${parts.join("-")}`;
       if (format === "xlsx") {
         await downloadXlsxFile(`${baseName}.xlsx`, headers, dataRows);
@@ -247,12 +264,12 @@ function TimeReportPage() {
               <>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Action</Label>
-              <Select value={action} onValueChange={(v) => setAction(v as AuditAction | "")}>
+              <Select value={action} onValueChange={(v) => setAction(v as AuditAction | "all")}>
                 <SelectTrigger className="w-[9.5rem]">
                   <SelectValue placeholder="Any action" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any action</SelectItem>
+                  <SelectItem value="all">Any action</SelectItem>
                   {AUDIT_ACTIONS.map((a) => (
                     <SelectItem key={a.value} value={a.value}>
                       {a.label}
@@ -261,20 +278,23 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+              </>
+            )}
+            {(me.isStaff || clientList.length > 1) && (
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Client</Label>
               <Select
                 value={clientId}
                 onValueChange={(v) => {
                   setClientId(v);
-                  setTaskId("");
+                  setTaskId("all");
                 }}
               >
                 <SelectTrigger className="w-[10rem]">
                   <SelectValue placeholder="All clients" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All clients</SelectItem>
+                  <SelectItem value="all">All clients</SelectItem>
                   {clientList.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
@@ -283,6 +303,7 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Task</Label>
               <Select value={taskId} onValueChange={(v) => setTaskId(v)}>
@@ -290,9 +311,9 @@ function TimeReportPage() {
                   <SelectValue placeholder="All tasks" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All tasks</SelectItem>
+                  <SelectItem value="all">All tasks</SelectItem>
                   {(tasks.data ?? [])
-                    .filter((t) => !clientId || t.client_id === clientId)
+                    .filter((t) => !clientFilter || t.client_id === clientFilter)
                     .map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.title}
@@ -301,6 +322,20 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+            {hasFilters && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setAction("all");
+                  setClientId("all");
+                  setTaskId("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+            {me.isStaff && (
+              <>
             <Button onClick={() => exportAudit("csv")} disabled={exporting !== null}>
               {exporting === "csv" ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -333,7 +368,13 @@ function TimeReportPage() {
             <h2 className="text-lg font-semibold">Weekly trend</h2>
             <p className="text-xs text-muted-foreground">
               Hours logged per week between {from} and {to}
-              {clientId ? ` for ${clientList.find((c) => c.id === clientId)?.name ?? "client"}` : ""}.
+                {clientFilter
+                ? ` for ${clientList.find((c) => c.id === clientFilter)?.name ?? "client"}`
+                : ""}
+              {taskFilter
+                ? ` on ${(tasks.data ?? []).find((t) => t.id === taskFilter)?.title ?? "task"}`
+                : ""}
+              .
             </p>
           </div>
           <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
@@ -425,7 +466,7 @@ function TimeReportPage() {
             </tr>
           </thead>
           <tbody>
-            {logged.map((e) => {
+            {filteredLogged.map((e) => {
               const task = (tasks.data ?? []).find((t) => t.id === e.task_id);
               return (
                 <tr key={e.id} className="border-t border-border">
@@ -447,10 +488,10 @@ function TimeReportPage() {
                 </tr>
               );
             })}
-            {logged.length === 0 && (
+            {filteredLogged.length === 0 && (
               <tr>
                 <td colSpan={me.isStaff ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
-                  No time logged yet.
+                  No time logged for the selected filters.
                 </td>
               </tr>
             )}

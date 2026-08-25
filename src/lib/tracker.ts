@@ -1,12 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type TaskStatus = "requested" | "in_progress" | "review" | "completed";
+export type TaskStatus = "requested" | "in_progress" | "on_hold" | "review" | "completed";
 export type TaskPriority = "low" | "normal" | "high" | "urgent";
 export type AppRole = "admin" | "member" | "client";
 
 export const STATUSES: { key: TaskStatus; label: string; token: string }[] = [
   { key: "requested", label: "Requested", token: "bg-status-requested" },
   { key: "in_progress", label: "In Progress", token: "bg-status-progress" },
+  { key: "on_hold", label: "On Hold", token: "bg-status-hold" },
   { key: "review", label: "Review", token: "bg-status-review" },
   { key: "completed", label: "Completed", token: "bg-status-completed" },
 ];

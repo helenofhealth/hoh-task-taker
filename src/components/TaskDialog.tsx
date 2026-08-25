@@ -197,7 +197,21 @@ export function TaskDialog({
     enabled: !!task && open,
   });
 
-  const audit = useQuery({
+  useEffect(() => {
+    if (!initialCommentId || !open || !comments.data) return;
+    const el = commentRefs.current.get(initialCommentId);
+    setTab("comments");
+    const t1 = setTimeout(() => {
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.classList.add("ring-2", "ring-primary", "ring-offset-2");
+      const t2 = setTimeout(() => el?.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 2200);
+      commentRef.current?.focus();
+      return () => clearTimeout(t2);
+    }, 200);
+    onInitialCommentUsed?.();
+    return () => clearTimeout(t1);
+  }, [initialCommentId, open, comments.data, onInitialCommentUsed]);
+
     queryKey: ["time_audit", task?.id],
     queryFn: () => fetchTimeAudit(task!.id),
     enabled: !!task && open,

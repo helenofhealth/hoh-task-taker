@@ -278,6 +278,9 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+              </>
+            )}
+            {(me.isStaff || clientList.length > 1) && (
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Client</Label>
               <Select
@@ -300,6 +303,7 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Task</Label>
               <Select value={taskId} onValueChange={(v) => setTaskId(v)}>
@@ -318,6 +322,20 @@ function TimeReportPage() {
                 </SelectContent>
               </Select>
             </div>
+            {hasFilters && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setAction("all");
+                  setClientId("all");
+                  setTaskId("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+            {me.isStaff && (
+              <>
             <Button onClick={() => exportAudit("csv")} disabled={exporting !== null}>
               {exporting === "csv" ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />

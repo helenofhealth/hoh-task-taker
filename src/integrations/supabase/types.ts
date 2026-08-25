@@ -94,6 +94,10 @@ export type Database = {
           inapp_comments: boolean
           inapp_mentions: boolean
           inapp_status: boolean
+          quiet_enabled: boolean
+          quiet_end: string | null
+          quiet_start: string | null
+          quiet_timezone: string
           updated_at: string
           user_id: string
         }
@@ -108,6 +112,10 @@ export type Database = {
           inapp_comments?: boolean
           inapp_mentions?: boolean
           inapp_status?: boolean
+          quiet_enabled?: boolean
+          quiet_end?: string | null
+          quiet_start?: string | null
+          quiet_timezone?: string
           updated_at?: string
           user_id: string
         }
@@ -122,6 +130,10 @@ export type Database = {
           inapp_comments?: boolean
           inapp_mentions?: boolean
           inapp_status?: boolean
+          quiet_enabled?: boolean
+          quiet_end?: string | null
+          quiet_start?: string | null
+          quiet_timezone?: string
           updated_at?: string
           user_id?: string
         }

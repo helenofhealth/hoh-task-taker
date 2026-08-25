@@ -1,11 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Mail } from "lucide-react";
+import { Bell, Mail, Moon } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMe } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -28,6 +37,10 @@ type Prefs = {
   inapp_status: boolean;
   inapp_assignments: boolean;
   email_digest: boolean;
+  quiet_enabled: boolean;
+  quiet_start: string | null;
+  quiet_end: string | null;
+  quiet_timezone: string;
 };
 
 const DEFAULTS: Prefs = {
@@ -40,9 +53,30 @@ const DEFAULTS: Prefs = {
   inapp_status: true,
   inapp_assignments: true,
   email_digest: false,
+  quiet_enabled: false,
+  quiet_start: "20:00",
+  quiet_end: "08:00",
+  quiet_timezone: "Europe/Athens",
 };
 
-const CATEGORIES: { key: string; emailKey: keyof Prefs; inappKey: keyof Prefs; label: string; description: string }[] = [
+const TIMEZONES = [
+  "Europe/Athens",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Madrid",
+  "Europe/Paris",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Asia/Dubai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
+
+type BoolKeys = { [K in keyof Prefs]: Prefs[K] extends boolean ? K : never }[keyof Prefs];
+
+const CATEGORIES: { key: string; emailKey: BoolKeys; inappKey: BoolKeys; label: string; description: string }[] = [
   { key: "comments", emailKey: "email_comments", inappKey: "inapp_comments", label: "Comments", description: "New comments and replies on tasks you follow" },
   { key: "mentions", emailKey: "email_mentions", inappKey: "inapp_mentions", label: "Mentions", description: "When someone @mentions you in a comment" },
   { key: "status", emailKey: "email_status", inappKey: "inapp_status", label: "Status & updates", description: "Status changes and edits to title, dates, or priority" },
@@ -63,7 +97,11 @@ function SettingsPage() {
         .eq("user_id", me.userId!)
         .maybeSingle();
       if (error) throw error;
-      return data ? { ...DEFAULTS, ...data } : DEFAULTS;
+      const merged = data ? { ...DEFAULTS, ...data } : DEFAULTS;
+      // Postgres time columns come back as HH:MM:SS; time inputs need HH:MM.
+      if (typeof merged.quiet_start === "string") merged.quiet_start = merged.quiet_start.slice(0, 5);
+      if (typeof merged.quiet_end === "string") merged.quiet_end = merged.quiet_end.slice(0, 5);
+      return merged;
     },
   });
 
@@ -149,6 +187,65 @@ function SettingsPage() {
               aria-label="Daily digest email"
             />
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Moon className="size-4 text-muted-foreground" /> Quiet hours
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Hold back instant notification emails during these hours. In-app notifications
+                still appear in the bell, and the daily digest is unaffected.
+              </p>
+            </div>
+            <Switch
+              checked={prefs.quiet_enabled}
+              onCheckedChange={(v) => toggle("quiet_enabled", v)}
+              disabled={prefsQuery.isLoading}
+              aria-label="Quiet hours"
+            />
+          </div>
+          {prefs.quiet_enabled && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="q-start">From</Label>
+                <Input
+                  id="q-start"
+                  type="time"
+                  value={prefs.quiet_start ?? "20:00"}
+                  onChange={(e) => save.mutate({ ...prefs, quiet_start: e.target.value || "20:00" })}
+                  disabled={prefsQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="q-end">Until</Label>
+                <Input
+                  id="q-end"
+                  type="time"
+                  value={prefs.quiet_end ?? "08:00"}
+                  onChange={(e) => save.mutate({ ...prefs, quiet_end: e.target.value || "08:00" })}
+                  disabled={prefsQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Timezone</Label>
+                <Select
+                  value={prefs.quiet_timezone}
+                  onValueChange={(v) => save.mutate({ ...prefs, quiet_timezone: v })}
+                  disabled={prefsQuery.isLoading}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONES.map((tz) => (
+                      <SelectItem key={tz} value={tz}>{tz.replace("_", " ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

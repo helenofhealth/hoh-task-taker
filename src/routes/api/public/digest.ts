@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-start";
 
 // Daily digest endpoint, invoked by the pg_cron job "daily-digest" at
 // 06:00 UTC (09:00 Athens) Monday-Friday. Authenticated with a token stored

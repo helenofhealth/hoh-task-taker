@@ -1,0 +1,217 @@
+import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Plus } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMe } from "@/hooks/useAuth";
+import {
+  computeBalance,
+  currentMonthStart,
+  fetchClients,
+  fetchCredits,
+  fetchTimeEntries,
+  formatHours,
+} from "@/lib/tracker";
+
+const db = supabase as unknown as { from: (t: string) => any };
+
+export const Route = createFileRoute("/_authenticated/clients")({
+  head: () => ({
+    meta: [
+      { title: "Clients & hours — Bloom task tracker" },
+      {
+        name: "description",
+        content: "Manage clients, monthly retainers and purchased hour packages in one place.",
+      },
+      { property: "og:title", content: "Clients & hours — Bloom task tracker" },
+      {
+        property: "og:description",
+        content: "Add clients, set retainers and top up hour packages.",
+      },
+    ],
+  }),
+  component: ClientsPage,
+});
+
+function ClientsPage() {
+  const qc = useQueryClient();
+  const me = useMe();
+  const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
+  const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
+  const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
+
+  const [name, setName] = useState("");
+  const [retainer, setRetainer] = useState("0");
+  const [creditClient, setCreditClient] = useState("");
+  const [creditHours, setCreditHours] = useState("10");
+  const [creditKind, setCreditKind] = useState("package");
+
+  const addClient = useMutation({
+    mutationFn: async () => {
+      const clean = name.trim();
+      if (!clean) throw new Error("Client name is required");
+      const hours = Number(retainer);
+      if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
+      const { error } = await db.from("clients").insert({ name: clean, retainer_hours: hours });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setName("");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Client added");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const addCredit = useMutation({
+    mutationFn: async () => {
+      if (!creditClient) throw new Error("Pick a client");
+      const hours = Number(creditHours);
+      if (!Number.isFinite(hours) || hours <= 0) throw new Error("Hours must be greater than 0");
+      const { error } = await db.from("hour_credits").insert({
+        client_id: creditClient,
+        hours,
+        kind: creditKind,
+        effective_month: creditKind === "retainer" ? currentMonthStart() : null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      toast.success("Hours added");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const clientList = clients.data ?? [];
+
+  return (
+    <AppShell>
+      <h1 className="text-2xl font-semibold tracking-tight">Clients & hours</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Set a monthly retainer, then top up with hour packages whenever a client buys more.
+      </p>
+
+      {me.isAdmin && (
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <h2 className="font-semibold">Add a client</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_150px_auto] sm:items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="c-name">Name</Label>
+                <Input id="c-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-retainer">Retainer (h/month)</Label>
+                <Input
+                  id="c-retainer"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={retainer}
+                  onChange={(e) => setRetainer(e.target.value)}
+                />
+              </div>
+              <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
+                <Plus className="mr-1.5 size-4" /> Add
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <h2 className="font-semibold">Add hours</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_110px_140px_auto] sm:items-end">
+              <div className="space-y-1.5">
+                <Label>Client</Label>
+                <Select value={creditClient} onValueChange={setCreditClient}>
+                  <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
+                  <SelectContent>
+                    {clientList.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="h-hours">Hours</Label>
+                <Input
+                  id="h-hours"
+                  type="number"
+                  min="0.25"
+                  step="0.25"
+                  value={creditHours}
+                  onChange={(e) => setCreditHours(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={creditKind} onValueChange={setCreditKind}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="package">Hour package</SelectItem>
+                    <SelectItem value="retainer">Monthly retainer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => addCredit.mutate()} disabled={addCredit.isPending}>
+                <Plus className="mr-1.5 size-4" /> Add
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+        <table className="w-full text-sm">
+          <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-4 py-2.5 text-left">Client</th>
+              <th className="px-4 py-2.5 text-right">Retainer</th>
+              <th className="px-4 py-2.5 text-right">Bought</th>
+              <th className="px-4 py-2.5 text-right">Used</th>
+              <th className="px-4 py-2.5 text-right">Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientList.map((c) => {
+              const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
+              return (
+                <tr key={c.id} className="border-t border-border">
+                  <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">
+                    {formatHours(Number(c.retainer_hours))}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">{formatHours(b.bought)}</td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">{formatHours(b.used)}</td>
+                  <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
+                    {formatHours(b.remaining)}
+                  </td>
+                </tr>
+              );
+            })}
+            {clientList.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  No clients yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </AppShell>
+  );
+}

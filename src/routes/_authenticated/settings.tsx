@@ -28,6 +28,10 @@ type Prefs = {
   inapp_status: boolean;
   inapp_assignments: boolean;
   email_digest: boolean;
+  quiet_enabled: boolean;
+  quiet_start: string | null;
+  quiet_end: string | null;
+  quiet_timezone: string;
 };
 
 const DEFAULTS: Prefs = {
@@ -40,7 +44,26 @@ const DEFAULTS: Prefs = {
   inapp_status: true,
   inapp_assignments: true,
   email_digest: false,
+  quiet_enabled: false,
+  quiet_start: "20:00",
+  quiet_end: "08:00",
+  quiet_timezone: "Europe/Athens",
 };
+
+const TIMEZONES = [
+  "Europe/Athens",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Madrid",
+  "Europe/Paris",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Asia/Dubai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
 
 const CATEGORIES: { key: string; emailKey: keyof Prefs; inappKey: keyof Prefs; label: string; description: string }[] = [
   { key: "comments", emailKey: "email_comments", inappKey: "inapp_comments", label: "Comments", description: "New comments and replies on tasks you follow" },

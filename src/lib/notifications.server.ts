@@ -36,6 +36,35 @@ const PREF_COLUMNS: Record<NotifCategory, { email: string; inapp: string }> = {
 
 // Splits recipients into those who want in-app vs email notifications for a
 // category. Users with no preferences row get everything (defaults are on).
+// True when the user's local time falls inside their quiet-hours window.
+// Windows may wrap midnight (e.g. 22:00–07:00).
+function inQuietHours(pref: any): boolean {
+  if (!pref?.quiet_enabled || !pref.quiet_start || !pref.quiet_end) return false;
+  const tz = typeof pref.quiet_timezone === "string" && pref.quiet_timezone ? pref.quiet_timezone : "Europe/Athens";
+  let nowMin: number;
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? 0) % 24;
+    const m = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+    nowMin = h * 60 + m;
+  } catch {
+    return false; // unknown timezone — don't suppress
+  }
+  const toMin = (t: string) => {
+    const [hh, mm] = t.split(":");
+    return (Number(hh) || 0) * 60 + (Number(mm) || 0);
+  };
+  const start = toMin(pref.quiet_start);
+  const end = toMin(pref.quiet_end);
+  if (start === end) return false;
+  return start < end ? nowMin >= start && nowMin < end : nowMin >= start || nowMin < end;
+}
+
 export async function filterByPrefs(
   supabaseAdmin: any,
   userIds: string[],
@@ -57,7 +86,8 @@ export async function filterByPrefs(
     const pref = prefMap.get(id);
     if (!pref || pref[cols.inapp] !== false) inapp.push(id);
     const digestOn = digestable && pref?.email_digest === true;
-    if (!digestOn && (!pref || pref[cols.email] !== false)) email.push(id);
+    // Quiet hours hold back instant emails only; in-app notifications still land.
+    if (!digestOn && !inQuietHours(pref) && (!pref || pref[cols.email] !== false)) email.push(id);
   }
   return { inapp, email };
 }

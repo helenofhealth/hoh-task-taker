@@ -620,10 +620,24 @@ export function TaskDialog({
                         on behalf of {displayName(profiles, a.entry_user_id)}
                       </span>
                     )}
+                    {a.limit_override && (
+                      <Badge className="bg-warning-soft text-warning-foreground">
+                        Limit override
+                      </Badge>
+                    )}
                     <span className="ml-auto text-xs text-muted-foreground">
                       {new Date(a.created_at).toLocaleString()}
                     </span>
                   </div>
+                  {a.limit_override && (
+                    <p className="mt-1.5 text-xs font-medium text-warning-foreground">
+                      Remaining-hours limit overridden
+                      {a.override_minutes
+                        ? ` — ${formatDuration(Math.round(Number(a.override_minutes)))} beyond the balance`
+                        : ""}
+                    </p>
+                  )}
+
                   {a.rounded_minutes != null && (
                     <p className="mt-1.5 text-xs text-muted-foreground">
                       Measured {formatDuration(Math.round(a.raw_minutes ?? 0))} → logged{" "}

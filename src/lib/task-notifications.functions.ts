@@ -122,7 +122,42 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
 
 // Notifies the task owner, followers, and other commenters about a new comment.
 export const notifyTaskComment = createServerFn({ method: "POST" })
-...
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: NotifyCommentInput) => {
+    if (!input.taskId) throw new Error("Task is required");
+    const body = input.commentBody?.trim();
+    if (!body) throw new Error("Comment is required");
+    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
+    return { ...input, commentBody: body };
+  })
+  .handler(async ({ data, context }) => {
+    const { createNotifications } = await import("./notifications.server");
+    const loaded = await loadTaskAndRecipients(context.supabase, context.userId, data.taskId, true);
+    if (!loaded) throw new Error("Forbidden");
+    const { supabaseAdmin, task, recipientIds, actorName } = loaded;
+
+    const snippet =
+      data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
+    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+
+    await createNotifications(recipientIds, {
+      taskId: task.id,
+      kind: "comment",
+      title: `New comment on "${task.title}"`,
+      body: `${actorName}: ${snippet}`,
+    });
+
+    const emails = await recipientEmails(supabaseAdmin, recipientIds);
+    const { sendTaskCommentEmail } = await import("./invite-client.server");
+    let sent = 0;
+    for (const email of emails) {
+      try {
+        await sendTaskCommentEmail(email, task.title, actorName, snippet, link);
+        sent++;
+      } catch (err) {
+        console.error("Comment email to recipient failed:", err);
+      }
+    }
     return { ok: true as const, sent };
   });
 

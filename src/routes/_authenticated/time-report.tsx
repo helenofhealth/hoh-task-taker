@@ -460,7 +460,7 @@ function TimeReportPage() {
               ) : (
                 <Download className="mr-2 size-4" />
               )}
-              Export CSV
+              Audit CSV
             </Button>
             <Button
               variant="secondary"
@@ -472,11 +472,49 @@ function TimeReportPage() {
               ) : (
                 <FileSpreadsheet className="mr-2 size-4" />
               )}
-              Export XLSX
+              Audit XLSX
             </Button>
               </>
             )}
           </div>
+          {me.isStaff && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <span className="text-xs text-muted-foreground">
+                Time report{clientFilter
+                  ? ` for ${clientList.find((c) => c.id === clientFilter)?.name ?? "client"}`
+                  : " for all clients"}:
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportReport("csv", clientFilter)}
+                disabled={exporting !== null}
+              >
+                {exporting === "report-csv" ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 size-4" />
+                )}
+                Report CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportReport("pdf", clientFilter)}
+                disabled={exporting !== null}
+              >
+                {exporting === "report-pdf" ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <FileText className="mr-2 size-4" />
+                )}
+                Report PDF
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { createFileRoute } from "@tanstack/react-start";
+import { createFileRoute } from "@tanstack/react-router";
 
 // Batched-email flush, invoked by the pg_cron job "email-flush" every 2
 // minutes. Quick successive task changes (status, comments, edits) queued in

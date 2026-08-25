@@ -313,7 +313,7 @@ function BoardPage() {
         open={!!openTask}
         onClose={() => {
           setOpenTask(null);
-          navigate({ search: (prev) => ({ ...prev, task: undefined, comment: undefined }) });
+          void navigate({ search: (prev) => ({ ...prev, task: undefined, comment: undefined }) });
         }}
         profiles={profiles.data ?? []}
         clients={clientList}
@@ -322,7 +322,7 @@ function BoardPage() {
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
         initialCommentId={initialCommentId}
-        onInitialCommentUsed={() => navigate({ search: (prev) => ({ ...prev, comment: undefined }) })}
+        onInitialCommentUsed={() => void navigate({ search: (prev) => ({ ...prev, comment: undefined }) })}
       />
     </AppShell>
   );

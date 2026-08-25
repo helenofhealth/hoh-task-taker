@@ -1,11 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Mail } from "lucide-react";
+import { Bell, Mail, Moon } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMe } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -86,7 +95,11 @@ function SettingsPage() {
         .eq("user_id", me.userId!)
         .maybeSingle();
       if (error) throw error;
-      return data ? { ...DEFAULTS, ...data } : DEFAULTS;
+      const merged = data ? { ...DEFAULTS, ...data } : DEFAULTS;
+      // Postgres time columns come back as HH:MM:SS; time inputs need HH:MM.
+      if (typeof merged.quiet_start === "string") merged.quiet_start = merged.quiet_start.slice(0, 5);
+      if (typeof merged.quiet_end === "string") merged.quiet_end = merged.quiet_end.slice(0, 5);
+      return merged;
     },
   });
 

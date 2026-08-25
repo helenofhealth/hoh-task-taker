@@ -50,10 +50,14 @@ export async function filterByPrefs(
   const cols = PREF_COLUMNS[category];
   const inapp: string[] = [];
   const email: string[] = [];
+  // Comment/status emails are batched into the daily digest for users who
+  // opted in; mentions and assignments always send instantly.
+  const digestable = category === "comments" || category === "status";
   for (const id of userIds) {
     const pref = prefMap.get(id);
     if (!pref || pref[cols.inapp] !== false) inapp.push(id);
-    if (!pref || pref[cols.email] !== false) email.push(id);
+    const digestOn = digestable && pref?.email_digest === true;
+    if (!digestOn && (!pref || pref[cols.email] !== false)) email.push(id);
   }
   return { inapp, email };
 }

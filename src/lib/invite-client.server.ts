@@ -154,6 +154,47 @@ export async function sendTaskUpdateEmail(
   await sendEmail(email, heading, html);
 }
 
+export interface DigestItem {
+  kind: string;
+  title: string;
+  body: string | null;
+  created_at: string;
+}
+
+export async function sendDailyDigestEmail(
+  email: string,
+  items: DigestItem[],
+  windowLabel: string,
+  link: string,
+) {
+  const rows = items
+    .map((n) => {
+      const badge =
+        n.kind === "status" || n.kind === "details"
+          ? '<span style="display:inline-block;background:#f5d3e0;color:#8a4a68;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">STATUS</span>'
+          : '<span style="display:inline-block;background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
+      return `<div style="border-bottom:1px solid #f0e0e8;padding:12px 0;">
+        <p style="margin:0;font-size:14px;">${badge}<strong>${n.title}</strong></p>
+        ${n.body ? `<p style="margin:6px 0 0;color:#555;font-size:13px;">${n.body}</p>` : ""}
+      </div>`;
+    })
+    .join("");
+
+  const html = shell(
+    "Your daily task digest",
+    `<p>Hi there,</p>
+     <p>Here's what happened on your tasks <strong>${windowLabel}</strong> — ${items.length} update${items.length === 1 ? "" : "s"}:</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
+       ${rows}
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open your board</a>
+     </p>
+     <p style="color: #666; font-size: 13px;">You're receiving one daily summary because you enabled the daily digest in Settings. Turn it off anytime to get instant emails again.</p>`,
+  );
+  await sendEmail(email, `Daily digest: ${items.length} task update${items.length === 1 ? "" : "s"}`, html);
+}
+
 export async function sendPasswordResetEmail(email: string, link: string) {
 
 

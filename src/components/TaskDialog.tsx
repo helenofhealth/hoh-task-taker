@@ -100,6 +100,7 @@ export function TaskDialog({
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [overrunOpen, setOverrunOpen] = useState(false);
 
   useEffect(() => setDraft(task), [task]);
@@ -272,6 +273,10 @@ export function TaskDialog({
 
   async function upload(file: File) {
     if (!task) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error(`"${file.name}" is over the 20 MB limit`);
+      return;
+    }
     setUploading(true);
     try {
       const path = `${task.id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]/g, "_")}`;

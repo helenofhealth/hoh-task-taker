@@ -123,6 +123,7 @@ export async function filterByPrefs(
   supabaseAdmin: any,
   userIds: string[],
   category: NotifCategory,
+  opts?: { deferQuietHours?: boolean },
 ): Promise<{ inapp: string[]; email: string[] }> {
   if (userIds.length === 0) return { inapp: [], email: [] };
   const { data: prefs } = await supabaseAdmin
@@ -141,7 +142,16 @@ export async function filterByPrefs(
     if (!pref || pref[cols.inapp] !== false) inapp.push(id);
     const digestOn = digestable && pref?.email_digest === true;
     // Quiet hours hold back instant emails only; in-app notifications still land.
-    if (!digestOn && !inQuietHours(pref) && (!pref || pref[cols.email] !== false)) email.push(id);
+    // Batched callers (deferQuietHours) enqueue anyway — the flush holds rows
+    // while the user is inside their quiet window instead of dropping them.
+    const quietHold = !opts?.deferQuietHours && inQuietHours(pref);
+    if (!digestOn && !quietHold && (!pref || pref[cols.email] !== false)) email.push(id);
   }
   return { inapp, email };
+}
+
+// Re-exported for the email-flush route, which holds queued emails while a
+// user is inside their quiet-hours window.
+export function isInQuietHours(pref: any): boolean {
+  return inQuietHours(pref);
 }

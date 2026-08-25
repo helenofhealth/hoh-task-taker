@@ -278,7 +278,8 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
           : `${actorName} updated this task.`;
     }
 
-    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
     await createNotifications(notifyIds, { taskId: task.id, kind: data.kind, title, body });
 
     const emails = await recipientEmails(supabaseAdmin, notifyIds);

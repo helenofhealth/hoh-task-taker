@@ -12,8 +12,8 @@ import { initials, useMe } from "@/hooks/useAuth";
 const nav = [
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
-  { to: "/clients", label: "Clients" },
-  { to: "/team", label: "Team", staffOnly: true },
+  { to: "/clients", label: "Clients", staffOnly: true },
+  { to: "/team", label: "Team members", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
 

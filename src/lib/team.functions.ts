@@ -11,25 +11,19 @@ export interface TeamMember {
   hourlyRate: number | null; // only populated for admins
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-async function requireAdmin(supabase: any, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _role: "admin",
-  });
-  if (!isAdmin) throw new Error("Only admins can manage team members");
-}
-
 export const listTeamMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TeamMember[]> => {
     const { supabase, userId } = context;
-    const { data: roles } = await supabase.rpc("has_role", {
+    const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
-    const isAdmin = !!roles;
+    const { data: isMember } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "member",
+    });
+    if (!isAdmin && !isMember) throw new Error("Only team members can view this page");
 
     const { data: staffRows, error } = await supabase
       .from("user_roles")
@@ -44,7 +38,7 @@ export const listTeamMembers = createServerFn({ method: "GET" })
       .from("profiles")
       .select("id, full_name, email, phone")
       .in("id", ids);
-    if (pErr) throw error;
+    if (pErr) throw pErr;
 
     let rates: { user_id: string; hourly_rate: number }[] = [];
     if (isAdmin) {
@@ -84,7 +78,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: InviteTeamMemberInput) => {
     const email = input.email?.trim().toLowerCase();
-    if (!email || !EMAIL_RE.test(email)) throw new Error("A valid email is required");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("A valid email is required");
     if (!input.name?.trim()) throw new Error("Name is required");
     if (input.role !== "admin" && input.role !== "member") throw new Error("Invalid role");
     if (input.hourlyRate != null && (isNaN(input.hourlyRate) || input.hourlyRate < 0))
@@ -100,7 +94,11 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Only admins can manage team members");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const linkUser = async (userId: string) => {
@@ -169,7 +167,11 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Only admins can manage team members");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error: pErr } = await supabaseAdmin

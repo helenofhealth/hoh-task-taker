@@ -42,12 +42,28 @@ export const Route = createFileRoute("/_authenticated/clients")({
         property: "og:description",
         content: "Add clients, set retainers and top up hour packages.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ClientsPage,
 });
 
 function ClientsPage() {
+  const me = useMe();
+
+  if (!me.isStaff) {
+    return (
+      <AppShell>
+        <p className="text-muted-foreground">Only team members can view this page.</p>
+      </AppShell>
+    );
+  }
+
+  return <StaffClientsPage />;
+}
+
+function StaffClientsPage() {
   const qc = useQueryClient();
   const me = useMe();
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });

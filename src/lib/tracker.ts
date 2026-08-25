@@ -115,7 +115,7 @@ export async function fetchClients(): Promise<Client[]> {
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
-  const { data, error } = await db.from("profiles").select("*").order("full_name");
+  const { data, error } = await db.from("visible_profiles").select("*").order("full_name");
   if (error) throw error;
   return (data ?? []) as Profile[];
 }

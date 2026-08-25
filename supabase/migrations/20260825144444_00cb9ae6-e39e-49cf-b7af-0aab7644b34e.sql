@@ -1,0 +1,1 @@
+ALTER VIEW public.visible_profiles SET (security_invoker = true);

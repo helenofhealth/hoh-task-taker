@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Search } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -35,16 +36,22 @@ import {
   type TaskStatus,
 } from "@/lib/tracker";
 
+const searchSchema = z.object({
+  task: z.string().optional(),
+  comment: z.string().optional(),
+});
+
 const db = supabase as unknown as { from: (t: string) => any };
 
 export const Route = createFileRoute("/_authenticated/board")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "Task board — Helen of Health Task Taker" },
       {
         name: "description",
         content:
-          "Drag tasks through Requested, In Progress, Review and Completed while tracking billable time in 15-minute increments.",
+          "Drag tasks through Requested, In Progress, Review, Completed and On Hold while tracking billable time in 15-minute increments.",
       },
       { property: "og:title", content: "Task board — Helen of Health Task Taker" },
       {
@@ -59,11 +66,14 @@ export const Route = createFileRoute("/_authenticated/board")({
 function BoardPage() {
   const qc = useQueryClient();
   const me = useMe();
-  const [search, setSearch] = useState("");
+  const navigate = useNavigate({ from: Route.path });
+  const search = Route.useSearch();
+  const [query, setQuery] = useState("");
   const [clientFilter, setClientFilter] = useState("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStatus, setOverStatus] = useState<TaskStatus | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const initialCommentId = search.comment;
 
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
@@ -79,6 +89,13 @@ function BoardPage() {
       return (data ?? []) as { task_id: string }[];
     },
   });
+
+  useEffect(() => {
+    if (search.task && tasks.data) {
+      const t = tasks.data.find((t) => t.id === search.task);
+      if (t) setOpenTask(t);
+    }
+  }, [search.task, tasks.data]);
 
   const notifyStatus = useServerFn(notifyTaskStatusChange);
 
@@ -118,7 +135,7 @@ function BoardPage() {
 
   const filtered = (tasks.data ?? []).filter((t) => {
     const matchesClient = clientFilter === "all" || t.client_id === clientFilter;
-    const q = search.trim().toLowerCase();
+    const q = query.trim().toLowerCase();
     const matchesSearch =
       !q ||
       t.title.toLowerCase().includes(q) ||
@@ -174,8 +191,8 @@ function BoardPage() {
           <div className="relative ml-auto w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search tasks"
               className="pl-9"
             />
@@ -263,7 +280,7 @@ function BoardPage() {
               </div>
               <div className="space-y-2.5">
                 {items.map((t) => (
-                  <TaskCard
+                    <TaskCard
                     key={t.id}
                     task={t}
                     profiles={profiles.data ?? []}
@@ -271,7 +288,10 @@ function BoardPage() {
                     trackedMinutes={minutesByTask.get(t.id) ?? 0}
                     commentCount={commentsByTask.get(t.id) ?? 0}
                     runningMinutes={runningByTask.get(t.id) ?? null}
-                    onOpen={() => setOpenTask(t)}
+                    onOpen={() => {
+                      setOpenTask(t);
+                      navigate({ search: (prev) => ({ ...prev, task: t.id }) });
+                    }}
                     onDragStart={() => setDragId(t.id)}
                     onDragEnd={() => setDragId(null)}
                     dragging={dragId === t.id}
@@ -291,13 +311,18 @@ function BoardPage() {
       <TaskDialog
         task={openTask ? (tasks.data ?? []).find((t) => t.id === openTask.id) ?? openTask : null}
         open={!!openTask}
-        onClose={() => setOpenTask(null)}
+        onClose={() => {
+          setOpenTask(null);
+          void navigate({ search: (prev) => ({ ...prev, task: undefined, comment: undefined }) });
+        }}
         profiles={profiles.data ?? []}
         clients={clientList}
         followers={followers.data ?? []}
         entries={entries.data ?? []}
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
+        initialCommentId={initialCommentId}
+        onInitialCommentUsed={() => void navigate({ search: (prev) => ({ ...prev, comment: undefined }) })}
       />
     </AppShell>
   );

@@ -11,6 +11,7 @@ interface NotifyInput {
 
 interface NotifyCommentInput {
   taskId: string;
+  commentId: string;
   commentBody: string;
   origin: string;
   mentionIds?: string[];
@@ -98,7 +99,8 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
 
     const oldLabel = STATUS_LABELS[data.oldStatus] ?? data.oldStatus;
     const newLabel = STATUS_LABELS[data.newStatus] ?? data.newStatus;
-    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
     await createNotifications(recipientIds, {
       taskId: task.id,
@@ -144,7 +146,8 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
 
     const snippet =
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
-    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
 
     // Only users who may see the task can be mentioned: staff or members of
     // the task's client. Mentioned users already in the regular audience get
@@ -277,7 +280,8 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
           : `${actorName} updated this task.`;
     }
 
-    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
     await createNotifications(notifyIds, { taskId: task.id, kind: data.kind, title, body });
 
     const emails = await recipientEmails(supabaseAdmin, notifyIds);

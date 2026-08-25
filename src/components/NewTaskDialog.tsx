@@ -64,6 +64,9 @@ export function NewTaskDialog({
     mutationFn: async () => {
       const clean = ncName.trim();
       if (!clean) throw new Error("Client name is required");
+      const contactEmail = ncEmail.trim().toLowerCase();
+      if (!contactEmail) throw new Error("Email is required");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
       const rawHours = ncHours.trim();
       const hours = rawHours === "" ? 0 : Number(rawHours);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Hours must be 0 or more");
@@ -73,7 +76,7 @@ export function NewTaskDialog({
           name: clean,
           retainer_hours: ncKind === "retainer" ? hours : 0,
           business_name: ncBusiness.trim() || null,
-          email: ncEmail.trim() || null,
+          email: contactEmail,
           phone: ncPhone.trim() || null,
         })
         .select("id")
@@ -87,21 +90,17 @@ export function NewTaskDialog({
           kind: ncKind,
           effective_month: ncKind === "retainer" ? currentMonthStart() : null,
         });
-      if (creditError) throw creditError;
+        if (creditError) throw creditError;
       }
-      const contactEmail = ncEmail.trim();
-      if (contactEmail) {
-        const result = await inviteClient({
-          data: {
-            clientId: created.id,
-            email: contactEmail,
-            name: clean,
-            origin: window.location.origin,
-          },
-        });
-        return { ...created, invited: result.invited };
-      }
-      return { ...created, invited: null as boolean | null };
+      const result = await inviteClient({
+        data: {
+          clientId: created.id,
+          email: contactEmail,
+          name: clean,
+          origin: window.location.origin,
+        },
+      });
+      return { ...created, invited: result.invited };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -286,13 +285,13 @@ export function NewTaskDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="nc-email">Email — optional</Label>
+                  <Label htmlFor="nc-email">Email</Label>
                   <Input
                     id="nc-email"
                     type="email"
                     value={ncEmail}
                     maxLength={200}
-                    placeholder="Optional"
+                    placeholder="client@example.com"
                     onChange={(e) => setNcEmail(e.target.value)}
                   />
                 </div>

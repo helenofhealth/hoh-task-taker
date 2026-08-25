@@ -70,31 +70,30 @@ function ClientsPage() {
       const raw = retainer.trim();
       const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
-      const contactEmail = email.trim();
+      const contactEmail = email.trim().toLowerCase();
+      if (!contactEmail) throw new Error("Email is required");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
       const { data, error } = await db
         .from("clients")
         .insert({
           name: clean,
           retainer_hours: hours,
           business_name: business.trim() || null,
-          email: contactEmail || null,
+          email: contactEmail,
           phone: phone.trim() || null,
         })
         .select("id")
         .single();
       if (error) throw error;
-      if (contactEmail) {
-        const result = await inviteClient({
-          data: {
-            clientId: (data as { id: string }).id,
-            email: contactEmail,
-            name: clean,
-            origin: window.location.origin,
-          },
-        });
-        return { invited: result.invited };
-      }
-      return { invited: null };
+      const result = await inviteClient({
+        data: {
+          clientId: (data as { id: string }).id,
+          email: contactEmail,
+          name: clean,
+          origin: window.location.origin,
+        },
+      });
+      return { invited: result.invited };
     },
     onSuccess: (result) => {
       setName("");
@@ -174,17 +173,17 @@ function ClientsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="c-email">Email — optional</Label>
+                <Label htmlFor="c-email">Email</Label>
                 <Input
                   id="c-email"
                   type="email"
                   value={email}
                   maxLength={200}
-                  placeholder="Optional"
+                  placeholder="client@example.com"
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  When an email is set, an activation email is sent automatically on save.
+                  An activation email is sent automatically on save.
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -299,20 +298,14 @@ function ClientsPage() {
                     {formatHours(b.remaining)}
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    {c.email ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={resendInvite.isPending}
-                        onClick={() =>
-                          resendInvite.mutate({ id: c.id, email: c.email!, name: c.name })
-                        }
-                      >
-                        <Mail className="mr-1.5 size-3.5" /> Resend activation email
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No email</span>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={resendInvite.isPending}
+                      onClick={() => resendInvite.mutate({ id: c.id, email: c.email, name: c.name })}
+                    >
+                      <Mail className="mr-1.5 size-3.5" /> Resend activation email
+                    </Button>
                   </td>
                 </tr>
               );

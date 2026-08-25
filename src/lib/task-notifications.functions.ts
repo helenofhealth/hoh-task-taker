@@ -161,24 +161,11 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     // Only users who may see the task can be mentioned: staff or members of
     // the task's client. Mentioned users already in the regular audience get
     // the mention variant instead of the plain comment notification.
-    const candidateIds = (data.mentionIds ?? []).filter((id) => id !== context.userId);
-    let mentionIds: string[] = [];
-    if (candidateIds.length > 0) {
-      const { data: mentionProfiles } = await supabaseAdmin
-        .from("profiles")
-        .select("id, client_id")
-        .in("id", candidateIds);
-      const { data: staffRoles } = await supabaseAdmin
-        .from("user_roles")
-        .select("user_id")
-        .in("user_id", candidateIds)
-        .in("role", ["admin", "member"]);
-      const staffSet = new Set((staffRoles ?? []).map((r: any) => r.user_id));
-      const taskClientId = (task as any).client_id ?? null;
-      mentionIds = (mentionProfiles ?? [])
-        .filter((p: any) => staffSet.has(p.id) || (taskClientId && p.client_id === taskClientId))
-        .map((p: any) => p.id);
-    }
+    const mentionIds = await resolveMentionIds(
+      supabaseAdmin,
+      (data.mentionIds ?? []).filter((id) => id !== context.userId),
+      (task as any).client_id ?? null,
+    );
 
     const mentionSet = new Set(mentionIds);
     const regularIds = recipientIds.filter((id) => !mentionSet.has(id));
@@ -192,12 +179,14 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
       kind: "comment",
       title: `New comment on "${task.title}"`,
       body: `${actorName}: ${snippet}`,
+      commentId: data.commentId,
     });
     await createNotifications(mentionPrefs.inapp, {
       taskId: task.id,
       kind: "mention",
       title: `${actorName} mentioned you on "${task.title}"`,
       body: snippet,
+      commentId: data.commentId,
     });
 
     const { sendTaskMentionEmail } = await import("./invite-client.server");

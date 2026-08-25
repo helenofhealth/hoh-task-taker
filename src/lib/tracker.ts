@@ -51,6 +51,8 @@ export interface TimeEntry {
   ended_at: string | null;
   minutes: number | null;
   note: string | null;
+  limit_override?: boolean | null;
+  override_minutes?: number | null;
 }
 
 export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";
@@ -69,7 +71,10 @@ export interface TimeEntryAudit {
   rounding_delta_minutes: number | null;
   note: string | null;
   created_at: string;
+  limit_override?: boolean | null;
+  override_minutes?: number | null;
 }
+
 
 export interface HourCredit {
   id: string;

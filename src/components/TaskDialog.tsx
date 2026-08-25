@@ -1043,6 +1043,17 @@ export function TaskDialog({
                               Edit
                             </Button>
                           )}
+                          {(isOwn || canEdit) && replies.length === 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTarget(c.id)}
+                            >
+                              <Trash2 className="size-3.5" />
+                              Delete
+                            </Button>
+                          )}
                           {history.length > 0 && (
                             <Button
                               size="sm"
@@ -1200,6 +1211,17 @@ export function TaskDialog({
                                       >
                                         <Pencil className="size-3" />
                                         Edit
+                                      </Button>
+                                    )}
+                                    {(rIsOwn || canEdit) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                                        onClick={() => setDeleteTarget(r.id)}
+                                      >
+                                        <Trash2 className="size-3" />
+                                        Delete
                                       </Button>
                                     )}
                                     {rHistory.length > 0 && (

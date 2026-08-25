@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -8,7 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/** Accept only same-origin relative paths (used by the OAuth consent flow). */
+function safeNext(next: string | undefined): string | null {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return null;
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s["next"] === "string" ? s["next"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — Bloom task tracker" },
@@ -24,7 +33,8 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,9 +43,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/board" });
+      if (data.session) window.location.href = redirectTarget;
     });
-  }, [navigate]);
+  }, [redirectTarget]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +56,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/board`,
+            emailRedirectTo: `${window.location.origin}${redirectTarget}`,
             data: { full_name: name },
           },
         });
@@ -56,7 +66,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/board" });
+      window.location.href = redirectTarget;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {

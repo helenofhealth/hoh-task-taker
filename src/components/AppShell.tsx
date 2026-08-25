@@ -60,7 +60,7 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
               aria-label="Sign out"
               onClick={async () => {
                 await supabase.auth.signOut();
-                navigate({ to: "/auth" });
+                navigate({ to: "/auth", search: { next: undefined } });
               }}
             >
               <LogOut className="size-4" />

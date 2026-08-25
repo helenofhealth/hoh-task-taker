@@ -172,6 +172,7 @@ export function NewTaskDialog({
       setOpen(false);
       setTitle("");
       setDescription("");
+      setFollowerIds([]);
       toast.success("Task created");
     },
     onError: (e: Error) => toast.error(e.message),

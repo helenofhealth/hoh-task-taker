@@ -105,10 +105,21 @@ export function TaskDialog({
     enabled: !!task && open,
   });
 
+  const audit = useQuery({
+    queryKey: ["time_audit", task?.id],
+    queryFn: () => fetchTimeAudit(task!.id),
+    enabled: !!task && open,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["time_entries"] });
     qc.invalidateQueries({ queryKey: ["followers"] });
+  };
+
+  const refreshTime = () => {
+    qc.invalidateQueries({ queryKey: ["time_entries"] });
+    qc.invalidateQueries({ queryKey: ["time_audit", task?.id] });
   };
 
   const save = useMutation({

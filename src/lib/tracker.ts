@@ -260,6 +260,12 @@ export async function fetchFollowers(): Promise<{ task_id: string; user_id: stri
   return data ?? [];
 }
 
+export async function fetchOwners(): Promise<{ task_id: string; user_id: string }[]> {
+  const { data, error } = await db.from("task_owners").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchComments(taskId: string): Promise<Comment[]> {
   const { data, error } = await db
     .from("task_comments")

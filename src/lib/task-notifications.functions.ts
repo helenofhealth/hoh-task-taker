@@ -43,7 +43,13 @@ async function loadTaskAndRecipients(
     .select("user_id")
     .eq("task_id", taskId);
 
+  const { data: owners } = await supabaseAdmin
+    .from("task_owners")
+    .select("user_id")
+    .eq("task_id", taskId);
+
   const recipientIds = new Set<string>(followers?.map((f: any) => f.user_id) ?? []);
+  for (const o of owners ?? []) recipientIds.add(o.user_id);
   if (task.owner_id) recipientIds.add(task.owner_id);
 
   if (includeCommenters) {

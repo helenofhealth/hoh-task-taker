@@ -80,14 +80,14 @@ function TimeReportPage() {
   const [action, setAction] = useState<AuditAction | "">("");
   const [taskId, setTaskId] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
 
-  const exportAudit = async () => {
+  const exportAudit = async (format: "csv" | "xlsx") => {
     if (from > to) {
       toast.error("Start date must be before the end date");
       return;
     }
-    setExporting(true);
+    setExporting(format);
     try {
       const rows = await fetchTimeAuditRange(from, to, {
         action: action || null,
@@ -104,53 +104,56 @@ function TimeReportPage() {
         return;
       }
       const people = profiles.data ?? [];
-      const csv = toCsv(
-        [
-          "Recorded at",
-          "Action",
-          "Task",
-          "Client",
-          "Performed by",
-          "Timer owner",
-          "Timer started",
-          "Timer stopped",
-          "Measured minutes",
-          "Logged minutes",
-          "Rounding added (min)",
-          "Note",
-          "Time entry ID",
-        ],
-        filtered.map((r) => {
-          const task = taskList.find((t) => t.id === r.task_id);
-          return [
-            new Date(r.created_at).toISOString(),
-            r.action,
-            task?.title ?? r.task_id,
-            clientList.find((c) => c.id === task?.client_id)?.name ?? "",
-            r.actor_id ? displayName(people, r.actor_id) : "",
-            r.entry_user_id ? displayName(people, r.entry_user_id) : "",
-            r.started_at ? new Date(r.started_at).toISOString() : "",
-            r.ended_at ? new Date(r.ended_at).toISOString() : "",
-            r.raw_minutes ?? "",
-            r.rounded_minutes ?? "",
-            r.rounding_delta_minutes ?? "",
-            r.note ?? "",
-            r.time_entry_id,
-          ];
-        }),
-      );
+      const headers = [
+        "Recorded at",
+        "Action",
+        "Task",
+        "Client",
+        "Performed by",
+        "Timer owner",
+        "Timer started",
+        "Timer stopped",
+        "Measured minutes",
+        "Logged minutes",
+        "Rounding added (min)",
+        "Note",
+        "Time entry ID",
+      ];
+      const dataRows = filtered.map((r) => {
+        const task = taskList.find((t) => t.id === r.task_id);
+        return [
+          new Date(r.created_at).toISOString(),
+          r.action,
+          task?.title ?? r.task_id,
+          clientList.find((c) => c.id === task?.client_id)?.name ?? "",
+          r.actor_id ? displayName(people, r.actor_id) : "",
+          r.entry_user_id ? displayName(people, r.entry_user_id) : "",
+          r.started_at ? new Date(r.started_at).toISOString() : "",
+          r.ended_at ? new Date(r.ended_at).toISOString() : "",
+          r.raw_minutes ?? "",
+          r.rounded_minutes ?? "",
+          r.rounding_delta_minutes ?? "",
+          r.note ?? "",
+          r.time_entry_id,
+        ];
+      });
       const parts = [from, to];
       if (action) parts.push(action);
       if (clientId) parts.push(clientList.find((c) => c.id === clientId)?.name ?? "client");
       if (taskId) parts.push(taskList.find((t) => t.id === taskId)?.title ?? "task");
-      downloadTextFile(`audit-trail-${parts.join("-")}.csv`, csv);
+      const baseName = `audit-trail-${parts.join("-")}`;
+      if (format === "xlsx") {
+        await downloadXlsxFile(`${baseName}.xlsx`, headers, dataRows);
+      } else {
+        downloadTextFile(`${baseName}.csv`, toCsv(headers, dataRows));
+      }
       toast.success(
-        `Exported ${filtered.length} audit ${filtered.length === 1 ? "event" : "events"}`,
+        `Exported ${filtered.length} audit ${filtered.length === 1 ? "event" : "events"} as ${format.toUpperCase()}`,
       );
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 

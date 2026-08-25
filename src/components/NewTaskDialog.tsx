@@ -49,6 +49,42 @@ export function NewTaskDialog({
   const [dueDate, setDueDate] = useState("");
   const [recurring, setRecurring] = useState(false);
   const [recurrence, setRecurrence] = useState("Weekly");
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [ncName, setNcName] = useState("");
+  const [ncBusiness, setNcBusiness] = useState("");
+  const [ncEmail, setNcEmail] = useState("");
+  const [ncPhone, setNcPhone] = useState("");
+
+  const createClient = useMutation({
+    mutationFn: async () => {
+      const clean = ncName.trim();
+      if (!clean) throw new Error("Client name is required");
+      const { data, error } = await db
+        .from("clients")
+        .insert({
+          name: clean,
+          retainer_hours: 0,
+          business_name: ncBusiness.trim() || null,
+          email: ncEmail.trim() || null,
+          phone: ncPhone.trim() || null,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data as { id: string };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      setClientId(data.id);
+      setShowNewClient(false);
+      setNcName("");
+      setNcBusiness("");
+      setNcEmail("");
+      setNcPhone("");
+      toast.success("Client added");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const create = useMutation({
     mutationFn: async () => {
@@ -109,12 +145,22 @@ export function NewTaskDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Client</Label>
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select
+                value={clientId}
+                onValueChange={(v) => {
+                  if (v === "__new") {
+                    setShowNewClient(true);
+                    return;
+                  }
+                  setClientId(v);
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
                 <SelectContent>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
+                  <SelectItem value="__new">+ Add a new client</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -165,6 +211,62 @@ export function NewTaskDialog({
               </div>
             </div>
           </div>
+          {showNewClient && (
+            <div className="rounded-xl border border-border bg-surface-muted/60 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">New client</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowNewClient(false)}>
+                  Cancel
+                </Button>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="nc-name">Name</Label>
+                  <Input id="nc-name" value={ncName} maxLength={120} onChange={(e) => setNcName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nc-business">Business name — optional</Label>
+                  <Input
+                    id="nc-business"
+                    value={ncBusiness}
+                    maxLength={160}
+                    placeholder="Optional"
+                    onChange={(e) => setNcBusiness(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nc-email">Email — optional</Label>
+                  <Input
+                    id="nc-email"
+                    type="email"
+                    value={ncEmail}
+                    maxLength={200}
+                    placeholder="Optional"
+                    onChange={(e) => setNcEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nc-phone">Phone — optional</Label>
+                  <Input
+                    id="nc-phone"
+                    type="tel"
+                    value={ncPhone}
+                    maxLength={40}
+                    placeholder="Optional"
+                    onChange={(e) => setNcPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                className="mt-3"
+                variant="secondary"
+                onClick={() => createClient.mutate()}
+                disabled={createClient.isPending}
+              >
+                <Plus className="mr-1.5 size-4" /> Save client
+              </Button>
+            </div>
+          )}
           <Button className="w-full" onClick={() => create.mutate()} disabled={create.isPending}>
             Create task
           </Button>

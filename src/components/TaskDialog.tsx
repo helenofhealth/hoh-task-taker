@@ -3,7 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
-import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
+import {
+  notifyTaskComment,
+  notifyTaskStatusChange,
+} from "@/lib/task-notifications.functions";
 import {
   AlertTriangle,
   Download,
@@ -191,6 +194,8 @@ export function TaskDialog({
   });
 
 
+  const notifyComment = useServerFn(notifyTaskComment);
+
   const addComment = useMutation({
     mutationFn: async () => {
       const body = comment.trim();
@@ -200,6 +205,10 @@ export function TaskDialog({
         .from("task_comments")
         .insert({ task_id: task!.id, user_id: userId, body });
       if (error) throw error;
+      // Fire-and-forget: email + in-app notification for owner/followers/commenters.
+      notifyComment({
+        data: { taskId: task!.id, commentBody: body, origin: window.location.origin },
+      }).catch(() => {});
     },
     onSuccess: () => {
       setComment("");

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/NotificationBell";
 import { initials, useMe } from "@/hooks/useAuth";
 
 const nav = [
@@ -52,6 +53,7 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
 
           <div className="ml-auto flex items-center gap-2">
             {actions}
+            <NotificationBell />
             <Avatar className="size-9">
               <AvatarFallback className="bg-primary-soft text-xs font-semibold text-accent-foreground">
                 {initials(name)}

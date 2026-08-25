@@ -91,6 +91,28 @@ export async function sendTaskStatusEmail(
   await sendEmail(email, `Task "${taskTitle}" is now ${newStatusLabel}`, html);
 }
 
+export async function sendTaskCommentEmail(
+  email: string,
+  taskTitle: string,
+  commenterName: string,
+  commentBody: string,
+  link: string,
+) {
+  const html = shell(
+    `New comment on: ${taskTitle}`,
+    `<p>Hi there,</p>
+     <p><strong>${commenterName}</strong> left a comment on a task you follow:</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
+       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${commentBody}</p>
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
+     </p>`,
+  );
+  await sendEmail(email, `New comment on "${taskTitle}"`, html);
+}
+
 export async function sendPasswordResetEmail(email: string, link: string) {
 
   const html = shell(

@@ -844,10 +844,11 @@ export function TaskDialog({
 
           <TabsContent value="comments" className="space-y-4 pt-4">
             <div className="space-y-3">
-              {(comments.data ?? []).map((c) => {
+              {commentThreads.roots.map((c) => {
                 const history = editsByComment.get(c.id) ?? [];
                 const isOwn = c.user_id === userId;
                 const isEditing = editingId === c.id;
+                const replies = commentThreads.children.get(c.id) ?? [];
                 return (
                   <div
                     key={c.id}

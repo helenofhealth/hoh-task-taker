@@ -1,19 +1,32 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { displayName, useMe } from "@/hooks/useAuth";
 import {
   computeBalance,
+  downloadTextFile,
   fetchClients,
   fetchCredits,
   fetchProfiles,
   fetchTasks,
+  fetchTimeAuditRange,
   fetchTimeEntries,
   formatDuration,
   formatHours,
+  toCsv,
 } from "@/lib/tracker";
+
+function isoDay(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
 
 export const Route = createFileRoute("/_authenticated/time-report")({
   head: () => ({

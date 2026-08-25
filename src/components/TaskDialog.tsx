@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Download,
+  History,
   Loader2,
   Paperclip,
   Play,
@@ -33,6 +34,7 @@ import {
   elapsedMinutes,
   fetchAttachments,
   fetchComments,
+  fetchTimeAudit,
   formatClock,
   formatDuration,
   roundedPreview,
@@ -103,10 +105,21 @@ export function TaskDialog({
     enabled: !!task && open,
   });
 
+  const audit = useQuery({
+    queryKey: ["time_audit", task?.id],
+    queryFn: () => fetchTimeAudit(task!.id),
+    enabled: !!task && open,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["time_entries"] });
     qc.invalidateQueries({ queryKey: ["followers"] });
+  };
+
+  const refreshTime = () => {
+    qc.invalidateQueries({ queryKey: ["time_entries"] });
+    qc.invalidateQueries({ queryKey: ["time_audit", task?.id] });
   };
 
   const save = useMutation({
@@ -127,7 +140,7 @@ export function TaskDialog({
       else await startTimer(task!.id, userId);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["time_entries"] });
+      refreshTime();
       if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -492,7 +505,7 @@ export function TaskDialog({
                     variant="ghost"
                     onClick={async () => {
                       await db.from("time_entries").delete().eq("id", e.id);
-                      qc.invalidateQueries({ queryKey: ["time_entries"] });
+                      refreshTime();
                     }}
                   >
                     <Trash2 className="size-4" />
@@ -503,6 +516,49 @@ export function TaskDialog({
             {taskEntries.filter((e) => e.minutes).length === 0 && (
               <p className="text-sm text-muted-foreground">No time logged yet.</p>
             )}
+
+            <div className="space-y-2 pt-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <History className="size-3.5" />
+                Audit trail
+              </div>
+              {(audit.data ?? []).map((a) => (
+                <div key={a.id} className="rounded-xl border border-border/70 bg-surface-muted p-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={a.action === "deleted" ? "destructive" : "outline"} className="capitalize">
+                      {a.action}
+                    </Badge>
+                    <span>{displayName(profiles, a.actor_id ?? "")}</span>
+                    {a.entry_user_id && a.entry_user_id !== a.actor_id && (
+                      <span className="text-xs text-muted-foreground">
+                        on behalf of {displayName(profiles, a.entry_user_id)}
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {new Date(a.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {a.rounded_minutes != null && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Measured {formatDuration(Math.round(a.raw_minutes ?? 0))} → logged{" "}
+                      <span className="font-medium text-foreground">{formatDuration(a.rounded_minutes)}</span>
+                      {a.rounding_delta_minutes != null && a.rounding_delta_minutes !== 0 && (
+                        <> ({a.rounding_delta_minutes > 0 ? "+" : ""}
+                        {Math.round(a.rounding_delta_minutes)} min from 15-minute rounding)</>
+                      )}
+                    </p>
+                  )}
+                  {a.rounded_minutes == null && a.action === "started" && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Timer running from {new Date(a.started_at ?? a.created_at).toLocaleTimeString()}
+                    </p>
+                  )}
+                </div>
+              ))}
+              {(audit.data ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No timer activity recorded yet.</p>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

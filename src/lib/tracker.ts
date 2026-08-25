@@ -50,6 +50,24 @@ export interface TimeEntry {
   note: string | null;
 }
 
+export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";
+
+export interface TimeEntryAudit {
+  id: string;
+  time_entry_id: string;
+  task_id: string;
+  actor_id: string | null;
+  entry_user_id: string | null;
+  action: AuditAction;
+  started_at: string | null;
+  ended_at: string | null;
+  raw_minutes: number | null;
+  rounded_minutes: number | null;
+  rounding_delta_minutes: number | null;
+  note: string | null;
+  created_at: string;
+}
+
 export interface HourCredit {
   id: string;
   client_id: string;
@@ -116,6 +134,19 @@ export async function fetchTimeEntries(): Promise<(TimeEntry & { tasks: { client
     .order("started_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+/** Timer audit trail. Pass a task id to scope it to one task. */
+export async function fetchTimeAudit(taskId?: string): Promise<TimeEntryAudit[]> {
+  let q = db
+    .from("time_entry_audit")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (taskId) q = q.eq("task_id", taskId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as TimeEntryAudit[];
 }
 
 export async function fetchCredits(): Promise<HourCredit[]> {

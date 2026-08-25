@@ -485,9 +485,34 @@ export function TaskDialog({
     return { roots, children, byId };
   }, [comments.data]);
 
+  // Exact @mention detection shared by post + edit paths — "@Maria Elena"
+  // must not also match "Maria".
+  function extractMentionIds(body: string): string[] {
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => {
+        const name = profileName(p).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`@${name}(?=$|[^\\p{L}\\p{N}_])`, "u").test(body);
+      })
+      .map((p) => p.id);
+  }
+
+  const notifyCommentEditedFn = useServerFn(notifyCommentEdited);
+  const notifyCommentDeletedFn = useServerFn(notifyCommentDeleted);
+
   const saveEdit = useMutation({
     mutationFn: async (commentId: string) => {
       await updateComment(commentId, editBody);
+      // Fire-and-forget: sync mention notifications with the edited text.
+      notifyCommentEditedFn({
+        data: {
+          taskId: task!.id,
+          commentId,
+          commentBody: editBody.trim(),
+          origin: window.location.origin,
+          mentionIds: extractMentionIds(editBody.trim()),
+        },
+      }).catch(() => {});
     },
     onSuccess: () => {
       setEditingId(null);
@@ -495,6 +520,24 @@ export function TaskDialog({
       setEditMentionQuery(null);
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
       qc.invalidateQueries({ queryKey: ["comment_edits", task?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const removeComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      await deleteComment(commentId);
+      // Fire-and-forget: remove notifications that point at the deleted comment.
+      notifyCommentDeletedFn({
+        data: { taskId: task!.id, commentId },
+      }).catch(() => {});
+    },
+    onSuccess: () => {
+      setDeleteTarget(null);
+      toast.success("Comment deleted");
+      qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });

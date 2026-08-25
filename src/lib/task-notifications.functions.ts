@@ -108,14 +108,17 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
-    await createNotifications(recipientIds, {
+    const { filterByPrefs } = await import("./notifications.server");
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, recipientIds, "status");
+
+    await createNotifications(inapp, {
       taskId: task.id,
       kind: "status",
       title: `"${task.title}" moved to ${newLabel}`,
       body: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
     });
 
-    const emails = await recipientEmails(supabaseAdmin, recipientIds);
+    const emails = await recipientEmails(supabaseAdmin, emailIds);
     const { sendTaskStatusEmail } = await import("./invite-client.server");
     let sent = 0;
     for (const email of emails) {
@@ -180,13 +183,17 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const mentionSet = new Set(mentionIds);
     const regularIds = recipientIds.filter((id) => !mentionSet.has(id));
 
-    await createNotifications(regularIds, {
+    const { filterByPrefs } = await import("./notifications.server");
+    const commentPrefs = await filterByPrefs(supabaseAdmin, regularIds, "comments");
+    const mentionPrefs = await filterByPrefs(supabaseAdmin, mentionIds, "mentions");
+
+    await createNotifications(commentPrefs.inapp, {
       taskId: task.id,
       kind: "comment",
       title: `New comment on "${task.title}"`,
       body: `${actorName}: ${snippet}`,
     });
-    await createNotifications(mentionIds, {
+    await createNotifications(mentionPrefs.inapp, {
       taskId: task.id,
       kind: "mention",
       title: `${actorName} mentioned you on "${task.title}"`,
@@ -195,7 +202,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
 
     const { sendTaskCommentEmail, sendTaskMentionEmail } = await import("./invite-client.server");
     let sent = 0;
-    const emails = await recipientEmails(supabaseAdmin, regularIds);
+    const emails = await recipientEmails(supabaseAdmin, commentPrefs.email);
     for (const email of emails) {
       try {
         await sendTaskCommentEmail(email, task.title, actorName, snippet, link);
@@ -204,7 +211,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
         console.error("Comment email to recipient failed:", err);
       }
     }
-    const mentionEmails = await recipientEmails(supabaseAdmin, mentionIds);
+    const mentionEmails = await recipientEmails(supabaseAdmin, mentionPrefs.email);
     for (const email of mentionEmails) {
       try {
         await sendTaskMentionEmail(email, task.title, actorName, snippet, link);
@@ -288,9 +295,14 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
 
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
-    await createNotifications(notifyIds, { taskId: task.id, kind: data.kind, title, body });
 
-    const emails = await recipientEmails(supabaseAdmin, notifyIds);
+    const { filterByPrefs } = await import("./notifications.server");
+    const category = data.kind === "details" ? "status" : "assignments";
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category);
+
+    await createNotifications(inapp, { taskId: task.id, kind: data.kind, title, body });
+
+    const emails = await recipientEmails(supabaseAdmin, emailIds);
     const { sendTaskUpdateEmail } = await import("./invite-client.server");
     let sent = 0;
     for (const email of emails) {

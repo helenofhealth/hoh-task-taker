@@ -9,8 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { displayName, useMe } from "@/hooks/useAuth";
 import {
+  type AuditAction,
   computeBalance,
   downloadTextFile,
   fetchClients,
@@ -27,6 +35,13 @@ import {
 function isoDay(d: Date) {
   return d.toISOString().slice(0, 10);
 }
+
+const AUDIT_ACTIONS: { value: AuditAction; label: string }[] = [
+  { value: "started", label: "Started" },
+  { value: "stopped", label: "Stopped" },
+  { value: "adjusted", label: "Adjusted" },
+  { value: "deleted", label: "Deleted" },
+];
 
 export const Route = createFileRoute("/_authenticated/time-report")({
   head: () => ({

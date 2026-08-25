@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
 import {
+  notifyCommentDeleted,
+  notifyCommentEdited,
   notifyTaskComment,
   notifyTaskEvent,
   notifyTaskStatusChange,
@@ -67,6 +69,7 @@ import {
   startTimer,
   stopTimer,
   updateComment,
+  deleteComment,
   type Client,
   type Comment,
   type CommentEdit,

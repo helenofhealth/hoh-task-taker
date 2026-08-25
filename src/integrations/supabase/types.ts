@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           email_assignments: boolean
           email_comments: boolean
+          email_digest: boolean
           email_mentions: boolean
           email_status: boolean
           inapp_assignments: boolean
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string
           email_assignments?: boolean
           email_comments?: boolean
+          email_digest?: boolean
           email_mentions?: boolean
           email_status?: boolean
           inapp_assignments?: boolean
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           email_assignments?: boolean
           email_comments?: boolean
+          email_digest?: boolean
           email_mentions?: boolean
           email_status?: boolean
           inapp_assignments?: boolean

@@ -110,6 +110,7 @@ interface Props {
   profiles: Profile[];
   clients: Client[];
   followers: { task_id: string; user_id: string }[];
+  owners: { task_id: string; user_id: string }[];
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
@@ -124,6 +125,7 @@ export function TaskDialog({
   profiles,
   clients,
   followers,
+  owners,
   entries,
   userId,
   canEdit,
@@ -222,6 +224,7 @@ export function TaskDialog({
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["time_entries"] });
     qc.invalidateQueries({ queryKey: ["followers"] });
+    qc.invalidateQueries({ queryKey: ["owners"] });
   };
 
   const refreshTime = () => {
@@ -430,6 +433,55 @@ export function TaskDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleOwner = useMutation({
+    mutationFn: async (id: string) => {
+      const isOwner = owners.some((o) => o.task_id === task!.id && o.user_id === id);
+      if (isOwner) {
+        const { error } = await db
+          .from("task_owners")
+          .delete()
+          .eq("task_id", task!.id)
+          .eq("user_id", id);
+        if (error) throw error;
+        // Keep the legacy primary owner in sync: if the removed person was the
+        // primary owner, promote another remaining owner (or clear it).
+        if (task!.owner_id === id) {
+          const next = owners.find((o) => o.task_id === task!.id && o.user_id !== id);
+          const { error: syncError } = await db
+            .from("tasks")
+            .update({ owner_id: next?.user_id ?? null })
+            .eq("id", task!.id);
+          if (syncError) throw syncError;
+        }
+      } else {
+        const { error } = await db
+          .from("task_owners")
+          .insert({ task_id: task!.id, user_id: id });
+        if (error) throw error;
+        if (!task!.owner_id) {
+          const { error: syncError } = await db
+            .from("tasks")
+            .update({ owner_id: id })
+            .eq("id", task!.id);
+          if (syncError) throw syncError;
+        }
+        notifyEvent({
+          data: {
+            taskId: task!.id,
+            kind: "assigned",
+            targetUserId: id,
+            origin: window.location.origin,
+          },
+        }).catch(() => {});
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["owners"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   async function upload(file: File) {
     if (!task) return;
     if (file.size > 20 * 1024 * 1024) {
@@ -634,22 +686,6 @@ export function TaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Owner">
-                <Select
-                  value={draft.owner_id ?? ""}
-                  disabled={!canEdit}
-                  onValueChange={(v) => save.mutate({ owner_id: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Assign someone" /></SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.full_name || p.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
               <Field label="Start date">
                 <Input
                   type="date"
@@ -706,6 +742,26 @@ export function TaskDialog({
                   save.mutate({ description: draft.description })
                 }
               />
+            </Field>
+
+            <Field label="Owners">
+              <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">
+                {profiles.map((p) => {
+                  const checked =
+                    owners.some((o) => o.task_id === task.id && o.user_id === p.id) ||
+                    task.owner_id === p.id;
+                  return (
+                    <label key={p.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={checked}
+                        disabled={!canEdit}
+                        onCheckedChange={() => toggleOwner.mutate(p.id)}
+                      />
+                      {p.full_name || p.email}
+                    </label>
+                  );
+                })}
+              </div>
             </Field>
 
             <Field label="Followers">

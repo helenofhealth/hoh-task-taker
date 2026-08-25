@@ -764,6 +764,28 @@ export function TaskDialog({
           </AlertDialogContent>
         </AlertDialog>
 
+        <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes the comment. Any unread notifications pointing to it will
+                be removed too — mention emails already delivered can&apos;t be unsent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteTarget && removeComment.mutate(deleteTarget)}
+                disabled={removeComment.isPending}
+              >
+                {removeComment.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Delete comment
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>

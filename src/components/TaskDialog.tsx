@@ -576,9 +576,15 @@ export function TaskDialog({
               >
                 <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
                 <span>{displayName(profiles, e.user_id)}</span>
+                {e.limit_override && (
+                  <Badge className="bg-warning-soft text-warning-foreground">
+                    Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}
+                  </Badge>
+                )}
                 <span className="ml-auto text-xs text-muted-foreground">
                   {new Date(e.started_at).toLocaleString()}
                 </span>
+
                 {e.user_id === userId && (
                   <Button
                     size="icon"

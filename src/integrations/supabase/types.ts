@@ -186,6 +186,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          comment_id: string | null
           created_at: string
           id: string
           kind: string
@@ -196,6 +197,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          comment_id?: string | null
           created_at?: string
           id?: string
           kind: string
@@ -206,6 +208,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          comment_id?: string | null
           created_at?: string
           id?: string
           kind?: string
@@ -215,6 +218,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_task_id_fkey"
             columns: ["task_id"]

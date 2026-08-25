@@ -72,7 +72,14 @@ function TimeReportPage() {
   const profiles = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
 
   const clientList = clients.data ?? [];
-  const logged = (entries.data ?? []).filter((e) => e.minutes);
+  const myClientId = me.profile?.client_id ?? null;
+  const logged = (entries.data ?? [])
+    .filter((e) => e.minutes)
+    .filter((e) =>
+      me.isStaff
+        ? true
+        : (e.tasks?.client_id ?? null) === myClientId,
+    );
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -167,6 +174,7 @@ function TimeReportPage() {
             Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
           </p>
         </div>
+        {me.isStaff && (
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft md:w-auto">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
@@ -273,6 +281,7 @@ function TimeReportPage() {
             </Button>
           </div>
         </div>
+        )}
       </div>
 
 
@@ -346,7 +355,7 @@ function TimeReportPage() {
             })}
             {logged.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={me.isStaff ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
                   No time logged yet.
                 </td>
               </tr>

@@ -113,6 +113,28 @@ export async function sendTaskCommentEmail(
   await sendEmail(email, `New comment on "${taskTitle}"`, html);
 }
 
+export async function sendTaskMentionEmail(
+  email: string,
+  taskTitle: string,
+  mentionerName: string,
+  commentBody: string,
+  link: string,
+) {
+  const html = shell(
+    `You were mentioned on: ${taskTitle}`,
+    `<p>Hi there,</p>
+     <p><strong>${mentionerName}</strong> mentioned you in a comment on a task:</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
+       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${commentBody}</p>
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
+     </p>`,
+  );
+  await sendEmail(email, `${mentionerName} mentioned you on "${taskTitle}"`, html);
+}
+
 export async function sendTaskUpdateEmail(
   email: string,
   heading: string,

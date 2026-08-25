@@ -77,6 +77,9 @@ function TimeReportPage() {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const [from, setFrom] = useState(isoDay(monthStart));
   const [to, setTo] = useState(isoDay(today));
+  const [action, setAction] = useState<AuditAction | "">("");
+  const [taskId, setTaskId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("");
   const [exporting, setExporting] = useState(false);
 
   const exportAudit = async () => {
@@ -86,12 +89,20 @@ function TimeReportPage() {
     }
     setExporting(true);
     try {
-      const rows = await fetchTimeAuditRange(from, to);
-      if (rows.length === 0) {
-        toast.error("No audit activity in that date range");
+      const rows = await fetchTimeAuditRange(from, to, {
+        action: action || null,
+        taskId: taskId || null,
+      });
+      const taskList = tasks.data ?? [];
+      const filtered = rows.filter((r) => {
+        if (!clientId) return true;
+        const task = taskList.find((t) => t.id === r.task_id);
+        return task?.client_id === clientId;
+      });
+      if (filtered.length === 0) {
+        toast.error("No audit activity matches the selected filters");
         return;
       }
-      const taskList = tasks.data ?? [];
       const people = profiles.data ?? [];
       const csv = toCsv(
         [
@@ -109,7 +120,7 @@ function TimeReportPage() {
           "Note",
           "Time entry ID",
         ],
-        rows.map((r) => {
+        filtered.map((r) => {
           const task = taskList.find((t) => t.id === r.task_id);
           return [
             new Date(r.created_at).toISOString(),
@@ -128,8 +139,14 @@ function TimeReportPage() {
           ];
         }),
       );
-      downloadTextFile(`audit-trail-${from}-to-${to}.csv`, csv);
-      toast.success(`Exported ${rows.length} audit ${rows.length === 1 ? "event" : "events"}`);
+      const parts = [from, to];
+      if (action) parts.push(action);
+      if (clientId) parts.push(clientList.find((c) => c.id === clientId)?.name ?? "client");
+      if (taskId) parts.push(taskList.find((t) => t.id === taskId)?.title ?? "task");
+      downloadTextFile(`audit-trail-${parts.join("-")}.csv`, csv);
+      toast.success(
+        `Exported ${filtered.length} audit ${filtered.length === 1 ? "event" : "events"}`,
+      );
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

@@ -55,6 +55,9 @@ function ClientsPage() {
 
   const [name, setName] = useState("");
   const [retainer, setRetainer] = useState("");
+  const [business, setBusiness] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [creditClient, setCreditClient] = useState("");
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
@@ -66,12 +69,21 @@ function ClientsPage() {
       const raw = retainer.trim();
       const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
-      const { error } = await db.from("clients").insert({ name: clean, retainer_hours: hours });
+      const { error } = await db.from("clients").insert({
+        name: clean,
+        retainer_hours: hours,
+        business_name: business.trim() || null,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       setName("");
       setRetainer("");
+      setBusiness("");
+      setEmail("");
+      setPhone("");
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Client added");
     },
@@ -111,10 +123,42 @@ function ClientsPage() {
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-semibold">Add a client</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_150px_auto] sm:items-end">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="c-name">Name</Label>
                 <Input id="c-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-business">Business name — optional</Label>
+                <Input
+                  id="c-business"
+                  value={business}
+                  maxLength={160}
+                  placeholder="Optional"
+                  onChange={(e) => setBusiness(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-email">Email — optional</Label>
+                <Input
+                  id="c-email"
+                  type="email"
+                  value={email}
+                  maxLength={200}
+                  placeholder="Optional"
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-phone">Phone — optional</Label>
+                <Input
+                  id="c-phone"
+                  type="tel"
+                  value={phone}
+                  maxLength={40}
+                  placeholder="Optional"
+                  onChange={(e) => setPhone(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="c-retainer">Retainer (h/month) — optional</Label>
@@ -128,9 +172,11 @@ function ClientsPage() {
                   onChange={(e) => setRetainer(e.target.value)}
                 />
               </div>
-              <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
-                <Plus className="mr-1.5 size-4" /> Add
-              </Button>
+              <div className="flex items-end">
+                <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
+                  <Plus className="mr-1.5 size-4" /> Add
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -182,6 +228,7 @@ function ClientsPage() {
           <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-2.5 text-left">Client</th>
+              <th className="px-4 py-2.5 text-left">Contact</th>
               <th className="px-4 py-2.5 text-right">Retainer</th>
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
@@ -193,7 +240,17 @@ function ClientsPage() {
               const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
               return (
                 <tr key={c.id} className="border-t border-border">
-                  <td className="px-4 py-2.5 font-medium">{c.name}</td>
+                  <td className="px-4 py-2.5 font-medium">
+                    {c.name}
+                    {c.business_name && (
+                      <span className="block text-xs font-normal text-muted-foreground">{c.business_name}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                    {c.email && <span className="block">{c.email}</span>}
+                    {c.phone && <span className="block">{c.phone}</span>}
+                    {!c.email && !c.phone && <span>—</span>}
+                  </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}
                   </td>
@@ -207,7 +264,7 @@ function ClientsPage() {
             })}
             {clientList.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   No clients yet.
                 </td>
               </tr>

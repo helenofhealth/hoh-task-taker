@@ -34,6 +34,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,9 +44,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/board" });
+      if (data.session) window.location.href = redirectTarget;
     });
-  }, [navigate]);
+  }, [redirectTarget]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +57,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/board`,
+            emailRedirectTo: `${window.location.origin}${redirectTarget}`,
             data: { full_name: name },
           },
         });
@@ -65,7 +67,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/board" });
+      window.location.href = redirectTarget;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {

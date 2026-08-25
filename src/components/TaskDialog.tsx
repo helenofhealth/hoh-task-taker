@@ -932,6 +932,26 @@ export function TaskDialog({
                       <>
                         <p className="mt-1.5 whitespace-pre-wrap text-sm">{renderCommentBody(c.body, profiles)}</p>
                         <div className="mt-2 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => {
+                              if (replyingTo === c.id) {
+                                setReplyingTo(null);
+                                setReplyBody("");
+                                setReplyMentionQuery(null);
+                              } else {
+                                setReplyingTo(c.id);
+                                setReplyBody("");
+                                setReplyMentionQuery(null);
+                                setTimeout(() => replyRef.current?.focus(), 50);
+                              }
+                            }}
+                          >
+                            <MessageSquare className="size-3.5" />
+                            Reply{replies.length > 0 ? ` (${replies.length})` : ""}
+                          </Button>
                           {(isOwn || canEdit) && (
                             <Button
                               size="sm"

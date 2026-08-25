@@ -33,6 +33,7 @@ import {
   elapsedMinutes,
   fetchAttachments,
   fetchComments,
+  formatClock,
   formatDuration,
   roundedPreview,
   startTimer,
@@ -79,9 +80,10 @@ export function TaskDialog({
 
   useEffect(() => setDraft(task), [task]);
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 15000);
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
 
   const taskEntries = useMemo(
     () => entries.filter((e) => e.task_id === task?.id),
@@ -126,7 +128,7 @@ export function TaskDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time_entries"] });
-      if (running) toast.success("Timer stopped — logged in 15-minute increments");
+      if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -205,6 +207,10 @@ export function TaskDialog({
 
   if (!task || !draft) return null;
   const runningRaw = running ? elapsedMinutes(running.started_at) : 0;
+  void tick; // re-render every second so the live timer stays accurate
+  const willLog = roundedPreview(runningRaw);
+  const nextStepIn = Math.max(0, Math.ceil(willLog - runningRaw));
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -225,29 +231,43 @@ export function TaskDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-primary-soft p-3">
-          <div className="text-sm">
-            <span className="font-semibold">{formatDuration(totalMinutes)}</span>
-            <span className="text-muted-foreground"> tracked</span>
-            {running && (
-              <span className="ml-2 text-primary">
-                · running {formatDuration(Math.floor(runningRaw))} → logs{" "}
-                {formatDuration(roundedPreview(runningRaw))}
-                <span key={tick} />
-              </span>
-            )}
+        <div className="space-y-2 rounded-xl bg-primary-soft p-3">
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-sm">
+              <span className="font-semibold">{formatDuration(totalMinutes)}</span>
+              <span className="text-muted-foreground"> tracked</span>
+              {running && (
+                <span className="ml-2 font-medium text-primary">
+                  · running {formatClock(runningRaw)}
+                </span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant={running ? "destructive" : "default"}
+              className="ml-auto"
+              onClick={() => timer.mutate()}
+              disabled={timer.isPending}
+            >
+              {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
+              {running ? "Stop timer" : "Start timer"}
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant={running ? "destructive" : "default"}
-            className="ml-auto"
-            onClick={() => timer.mutate()}
-            disabled={timer.isPending}
-          >
-            {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
-            {running ? "Stop timer" : "Start timer"}
-          </Button>
+          {running && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg bg-card px-3 py-2 text-xs">
+              <span className="text-muted-foreground">Stopping now logs</span>
+              <Badge className="bg-primary text-primary-foreground">
+                {formatDuration(willLog)}
+              </Badge>
+              <span className="text-muted-foreground">
+                (rounded up to 15-minute increments · next step in{" "}
+                {nextStepIn === 0 ? "less than a minute" : `${nextStepIn} min`})
+              </span>
+            </div>
+          )}
         </div>
+
 
         <Tabs defaultValue="details">
           <TabsList>

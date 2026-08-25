@@ -60,6 +60,20 @@ const emptyForm: FormState = { name: "", email: "", phone: "", role: "member", h
 
 function TeamPage() {
   const me = useMe();
+
+  if (!me.isStaff) {
+    return (
+      <AppShell>
+        <p className="text-muted-foreground">Only team members can view this page.</p>
+      </AppShell>
+    );
+  }
+
+  return <StaffTeamPage />;
+}
+
+function StaffTeamPage() {
+  const me = useMe();
   const qc = useQueryClient();
   const listFn = useServerFn(listTeamMembers);
   const inviteFn = useServerFn(inviteTeamMember);
@@ -110,14 +124,6 @@ function TeamPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
-  if (!me.isStaff) {
-    return (
-      <AppShell>
-        <p className="text-muted-foreground">Only team members can view this page.</p>
-      </AppShell>
-    );
-  }
 
   return (
     <AppShell>

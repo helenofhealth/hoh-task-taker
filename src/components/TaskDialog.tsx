@@ -643,7 +643,9 @@ export function TaskDialog({
                     </span>
                     <span>{new Date(c.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm">{c.body}</p>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
+                    {renderCommentBody(c.body, profiles)}
+                  </p>
                 </div>
               ))}
               {(comments.data ?? []).length === 0 && (
@@ -651,13 +653,42 @@ export function TaskDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Textarea
-                rows={3}
-                placeholder="Leave a comment…"
-                value={comment}
-                maxLength={4000}
-                onChange={(e) => setComment(e.target.value)}
-              />
+              <div className="relative">
+                <Textarea
+                  ref={commentRef}
+                  rows={3}
+                  placeholder="Leave a comment… use @ to mention a teammate"
+                  value={comment}
+                  maxLength={4000}
+                  onChange={(e) =>
+                    onCommentChange(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setMentionQuery(null);
+                  }}
+                  onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+                />
+                {mentionCandidates.length > 0 && (
+                  <div className="absolute bottom-full left-0 z-10 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                    {mentionCandidates.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          insertMention(p);
+                        }}
+                      >
+                        <span className="flex size-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                          {profileName(p).slice(0, 1).toUpperCase()}
+                        </span>
+                        <span className="truncate">{profileName(p)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button onClick={() => addComment.mutate()} disabled={addComment.isPending}>
                 Post comment
               </Button>

@@ -82,6 +82,48 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_assignments: boolean
+          email_comments: boolean
+          email_mentions: boolean
+          email_status: boolean
+          inapp_assignments: boolean
+          inapp_comments: boolean
+          inapp_mentions: boolean
+          inapp_status: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_assignments?: boolean
+          email_comments?: boolean
+          email_mentions?: boolean
+          email_status?: boolean
+          inapp_assignments?: boolean
+          inapp_comments?: boolean
+          inapp_mentions?: boolean
+          inapp_status?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_assignments?: boolean
+          email_comments?: boolean
+          email_mentions?: boolean
+          email_status?: boolean
+          inapp_assignments?: boolean
+          inapp_comments?: boolean
+          inapp_mentions?: boolean
+          inapp_status?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null

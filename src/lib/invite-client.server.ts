@@ -154,6 +154,33 @@ export async function sendTaskUpdateEmail(
   await sendEmail(email, heading, html);
 }
 
+// Batched update email: one message summarizing several quick changes on a task.
+export async function sendBatchedUpdatesEmail(
+  email: string,
+  heading: string,
+  lines: string[],
+  link: string,
+) {
+  const items = lines
+    .map(
+      (l) =>
+        `<div style="border-bottom:1px solid #f0e0e8;padding:10px 0;"><p style="margin:0;font-size:14px;color:#4a1d33;">${l}</p></div>`,
+    )
+    .join("");
+  const html = shell(
+    heading,
+    `<p>Hi there,</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
+       ${items}
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+     </p>
+     <p style="color: #666; font-size: 13px;">Quick changes are grouped into one email so your inbox stays tidy.</p>`,
+  );
+  await sendEmail(email, heading, html);
+}
+
 export interface DigestItem {
   kind: string;
   title: string;

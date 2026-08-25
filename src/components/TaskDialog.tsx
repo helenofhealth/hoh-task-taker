@@ -305,7 +305,7 @@ export function TaskDialog({
               size="sm"
               variant={running ? "destructive" : "default"}
               className="ml-auto"
-              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate())}
+              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate({}))}
               disabled={timer.isPending}
             >
               {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}

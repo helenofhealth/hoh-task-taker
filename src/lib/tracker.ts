@@ -288,8 +288,8 @@ export async function stopTimer(
 ) {
   const patch: Record<string, unknown> = { ended_at: new Date().toISOString() };
   if (override && override.overageMinutes > 0) {
-    patch.limit_override = true;
-    patch.override_minutes = Math.round(override.overageMinutes * 100) / 100;
+    patch['limit_override'] = true;
+    patch['override_minutes'] = Math.round(override.overageMinutes * 100) / 100;
   }
   const { error } = await db.from("time_entries").update(patch).eq("id", entryId);
   if (error) throw error;

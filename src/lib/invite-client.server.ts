@@ -32,8 +32,21 @@ async function sendEmail(to: string, subject: string, html: string) {
 function shell(title: string, body: string) {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px;">
-      <h1 style="color: #c2185b; font-size: 22px;">${title}</h1>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+          <td style="vertical-align: middle;">
+            <img src="${LOGO_URL}" alt="${APP_NAME} logo" width="40" height="40" style="display: block; border-radius: 10px;" />
+          </td>
+          <td style="vertical-align: middle; padding-left: 12px; font-size: 17px; font-weight: bold; color: #c2185b;">
+            ${APP_NAME}
+          </td>
+        </tr>
+      </table>
+      <h1 style="color: #c2185b; font-size: 22px; margin-top: 0;">${title}</h1>
       ${body}
+      <p style="color: #999; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+        Sent by ${APP_NAME} &middot; no-reply@tasks.helenofhealth.com
+      </p>
     </div>`;
 }
 

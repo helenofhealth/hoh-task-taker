@@ -515,8 +515,7 @@ function TimeReportPage() {
         </div>
       </div>
 
-        </div>
-      </div>
+
 
       <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

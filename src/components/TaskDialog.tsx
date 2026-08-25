@@ -149,6 +149,10 @@ export function TaskDialog({
   const editRef = useRef<HTMLTextAreaElement>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const commentRefs = useRef(new Map<string, HTMLDivElement>());
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyMentionQuery, setReplyMentionQuery] = useState<string | null>(null);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setDraft(task);
@@ -358,13 +362,13 @@ export function TaskDialog({
   }
 
   const addComment = useMutation({
-    mutationFn: async () => {
-      const body = comment.trim();
+    mutationFn: async ({ body: rawBody, parentId }: { body: string; parentId: string | null }) => {
+      const body = rawBody.trim();
       if (!body) throw new Error("Write something first");
       if (body.length > 4000) throw new Error("Comment is too long");
       const { data, error } = await db
         .from("task_comments")
-        .insert({ task_id: task!.id, user_id: userId, body })
+        .insert({ task_id: task!.id, user_id: userId, body, parent_id: parentId })
         .select("id")
         .single();
       if (error) throw error;
@@ -382,13 +386,66 @@ export function TaskDialog({
         },
       }).catch(() => {});
     },
-    onSuccess: () => {
-      setComment("");
-      setMentionQuery(null);
+    onSuccess: (_v, vars) => {
+      if (vars.parentId) {
+        setReplyingTo(null);
+        setReplyBody("");
+        setReplyMentionQuery(null);
+      } else {
+        setComment("");
+        setMentionQuery(null);
+      }
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function onReplyChange(value: string, caret: number) {
+    setReplyBody(value);
+    const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
+    setReplyMentionQuery(m ? (m[1] ?? "") : null);
+  }
+
+  function insertReplyMention(p: Profile) {
+    const caret = replyRef.current?.selectionStart ?? replyBody.length;
+    const name = profileName(p);
+    const before = replyBody.slice(0, caret).replace(/@[^\n@]{0,40}$/, `@${name} `);
+    setReplyBody(before + replyBody.slice(caret));
+    setReplyMentionQuery(null);
+    replyRef.current?.focus();
+  }
+
+  const replyMentionCandidates = useMemo(() => {
+    if (replyMentionQuery === null) return [];
+    const q = replyMentionQuery.toLowerCase();
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => profileName(p).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [replyMentionQuery, profiles, userId]);
+
+  // Group replies under their top-level parent comment.
+  const commentThreads = useMemo(() => {
+    const all = comments.data ?? [];
+    const byId = new Map(all.map((c) => [c.id, c]));
+    const roots: Comment[] = [];
+    const children = new Map<string, Comment[]>();
+    for (const c of all) {
+      const root = c.parent_id && byId.has(c.parent_id)
+        ? (byId.get(c.parent_id)!.parent_id && byId.has(byId.get(c.parent_id)!.parent_id!)
+            ? byId.get(byId.get(c.parent_id)!.parent_id!)!.id
+            : c.parent_id)
+        : null;
+      if (root && byId.has(root)) {
+        const list = children.get(root) ?? [];
+        list.push(c);
+        children.set(root, list);
+      } else {
+        roots.push(c);
+      }
+    }
+    return { roots, children, byId };
+  }, [comments.data]);
 
   const saveEdit = useMutation({
     mutationFn: async (commentId: string) => {

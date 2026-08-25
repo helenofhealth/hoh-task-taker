@@ -23,6 +23,7 @@ import { Route as AuthenticatedTimeReportRouteImport } from './routes/_authentic
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicDigestRouteImport } from './routes/api/public/digest'
+import { Route as ApiPublicEmailFlushRouteImport } from './routes/api/public/email-flush'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -96,6 +97,11 @@ const ApiPublicDigestRoute = ApiPublicDigestRouteImport.update({
   path: '/api/public/digest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEmailFlushRoute = ApiPublicEmailFlushRouteImport.update({
+  id: '/api/public/email-flush',
+  path: '/api/public/email-flush',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
+  '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
+  '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
+  '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
+    | '/api/public/email-flush'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
+    | '/api/public/email-flush'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
+    | '/api/public/email-flush'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicDigestRoute: typeof ApiPublicDigestRoute
+  ApiPublicEmailFlushRoute: typeof ApiPublicEmailFlushRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/email-flush': {
+      id: '/api/public/email-flush'
+      path: '/api/public/email-flush'
+      fullPath: '/api/public/email-flush'
+      preLoaderRoute: typeof ApiPublicEmailFlushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -338,6 +358,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicDigestRoute: ApiPublicDigestRoute,
+  ApiPublicEmailFlushRoute: ApiPublicEmailFlushRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

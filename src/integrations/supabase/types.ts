@@ -44,6 +44,50 @@ export type Database = {
         }
         Relationships: []
       }
+      email_outbox: {
+        Row: {
+          category: string
+          created_at: string
+          heading: string
+          id: string
+          line: string
+          link: string
+          task_id: string | null
+          task_title: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          heading: string
+          id?: string
+          line: string
+          link: string
+          task_id?: string | null
+          task_title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          heading?: string
+          id?: string
+          line?: string
+          link?: string
+          task_id?: string | null
+          task_title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hour_credits: {
         Row: {
           client_id: string

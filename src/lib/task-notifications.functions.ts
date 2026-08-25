@@ -100,7 +100,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
 
     const loaded = await loadTaskAndRecipients(context.supabase, context.userId, data.taskId, false);
     if (!loaded) throw new Error("Forbidden");
-    const { supabaseAdmin, task, recipientIds, actorName, clientName } = loaded;
+    const { supabaseAdmin, task, recipientIds, actorName } = loaded;
     if (task.status !== data.newStatus) return { ok: true as const, sent: 0 }; // stale call
 
     const oldLabel = STATUS_LABELS[data.oldStatus] ?? data.oldStatus;
@@ -109,7 +109,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
     const { filterByPrefs } = await import("./notifications.server");
-    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, recipientIds, "status");
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, recipientIds, "status", { deferQuietHours: true });
 
     await createNotifications(inapp, {
       taskId: task.id,
@@ -118,18 +118,18 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
       body: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
     });
 
-    const emails = await recipientEmails(supabaseAdmin, emailIds);
-    const { sendTaskStatusEmail } = await import("./invite-client.server");
-    let sent = 0;
-    for (const email of emails) {
-      try {
-        await sendTaskStatusEmail(email, task.title, clientName, oldLabel, newLabel, actorName, link);
-        sent++;
-      } catch (err) {
-        console.error("Status email to recipient failed:", err);
-      }
-    }
-    return { ok: true as const, sent };
+    // Queue emails for the batched flush so rapid status flips merge into one
+    // summary email instead of one email per change.
+    const { queueEmailBatch } = await import("./notifications.server");
+    await queueEmailBatch(supabaseAdmin, emailIds, {
+      taskId: task.id,
+      taskTitle: task.title,
+      category: "status",
+      heading: `"${task.title}" moved to ${newLabel}`,
+      line: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
+      link,
+    });
+    return { ok: true as const, sent: emailIds.length };
   });
 
 // Notifies the task owner, followers, and other commenters about a new comment.
@@ -184,7 +184,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const regularIds = recipientIds.filter((id) => !mentionSet.has(id));
 
     const { filterByPrefs } = await import("./notifications.server");
-    const commentPrefs = await filterByPrefs(supabaseAdmin, regularIds, "comments");
+    const commentPrefs = await filterByPrefs(supabaseAdmin, regularIds, "comments", { deferQuietHours: true });
     const mentionPrefs = await filterByPrefs(supabaseAdmin, mentionIds, "mentions");
 
     await createNotifications(commentPrefs.inapp, {
@@ -200,17 +200,18 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
       body: snippet,
     });
 
-    const { sendTaskCommentEmail, sendTaskMentionEmail } = await import("./invite-client.server");
-    let sent = 0;
-    const emails = await recipientEmails(supabaseAdmin, commentPrefs.email);
-    for (const email of emails) {
-      try {
-        await sendTaskCommentEmail(email, task.title, actorName, snippet, link);
-        sent++;
-      } catch (err) {
-        console.error("Comment email to recipient failed:", err);
-      }
-    }
+    const { sendTaskMentionEmail } = await import("./invite-client.server");
+    // Regular comment emails go through the batched outbox; mentions stay instant.
+    const { queueEmailBatch } = await import("./notifications.server");
+    await queueEmailBatch(supabaseAdmin, commentPrefs.email, {
+      taskId: task.id,
+      taskTitle: task.title,
+      category: "comments",
+      heading: `New comment on "${task.title}"`,
+      line: `${actorName}: ${snippet}`,
+      link,
+    });
+    let sent = commentPrefs.email.length;
     const mentionEmails = await recipientEmails(supabaseAdmin, mentionPrefs.email);
     for (const email of mentionEmails) {
       try {
@@ -298,9 +299,25 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
 
     const { filterByPrefs } = await import("./notifications.server");
     const category = data.kind === "details" ? "status" : "assignments";
-    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category);
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category, {
+      deferQuietHours: data.kind === "details",
+    });
 
     await createNotifications(inapp, { taskId: task.id, kind: data.kind, title, body });
+
+    if (data.kind === "details") {
+      // Detail edits are batched so a flurry of tweaks sends one summary email.
+      const { queueEmailBatch } = await import("./notifications.server");
+      await queueEmailBatch(supabaseAdmin, emailIds, {
+        taskId: task.id,
+        taskTitle: task.title,
+        category: "status",
+        heading: `"${task.title}" was updated`,
+        line: body,
+        link,
+      });
+      return { ok: true as const, sent: emailIds.length };
+    }
 
     const emails = await recipientEmails(supabaseAdmin, emailIds);
     const { sendTaskUpdateEmail } = await import("./invite-client.server");

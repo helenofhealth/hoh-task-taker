@@ -1,0 +1,1 @@
+CREATE POLICY "email outbox system only" ON public.email_outbox FOR ALL TO authenticated USING (false) WITH CHECK (false);

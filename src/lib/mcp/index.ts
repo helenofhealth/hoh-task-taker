@@ -1,4 +1,4 @@
-import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import { auth, defineMcp, type AnyToolDefinition } from "@lovable.dev/mcp-js";
 import listTasksTool from "./tools/list-tasks";
 import getTaskTool from "./tools/get-task";
 import createTaskTool from "./tools/create-task";

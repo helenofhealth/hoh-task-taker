@@ -89,6 +89,8 @@
   --status-completed: oklch(0.66 0.13 160);
   --warning: oklch(0.72 0.14 65);
   --warning-foreground: oklch(0.3 0.08 60);
+  --warning-soft: oklch(0.965 0.04 78);
+  --surface-muted: oklch(0.972 0.009 340);
   --success: oklch(0.66 0.13 160);
 }
 

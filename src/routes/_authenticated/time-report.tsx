@@ -58,6 +58,70 @@ function TimeReportPage() {
   const clientList = clients.data ?? [];
   const logged = (entries.data ?? []).filter((e) => e.minutes);
 
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const [from, setFrom] = useState(isoDay(monthStart));
+  const [to, setTo] = useState(isoDay(today));
+  const [exporting, setExporting] = useState(false);
+
+  const exportAudit = async () => {
+    if (from > to) {
+      toast.error("Start date must be before the end date");
+      return;
+    }
+    setExporting(true);
+    try {
+      const rows = await fetchTimeAuditRange(from, to);
+      if (rows.length === 0) {
+        toast.error("No audit activity in that date range");
+        return;
+      }
+      const taskList = tasks.data ?? [];
+      const people = profiles.data ?? [];
+      const csv = toCsv(
+        [
+          "Recorded at",
+          "Action",
+          "Task",
+          "Client",
+          "Performed by",
+          "Timer owner",
+          "Timer started",
+          "Timer stopped",
+          "Measured minutes",
+          "Logged minutes",
+          "Rounding added (min)",
+          "Note",
+          "Time entry ID",
+        ],
+        rows.map((r) => {
+          const task = taskList.find((t) => t.id === r.task_id);
+          return [
+            new Date(r.created_at).toISOString(),
+            r.action,
+            task?.title ?? r.task_id,
+            clientList.find((c) => c.id === task?.client_id)?.name ?? "",
+            r.actor_id ? displayName(people, r.actor_id) : "",
+            r.entry_user_id ? displayName(people, r.entry_user_id) : "",
+            r.started_at ? new Date(r.started_at).toISOString() : "",
+            r.ended_at ? new Date(r.ended_at).toISOString() : "",
+            r.raw_minutes ?? "",
+            r.rounded_minutes ?? "",
+            r.rounding_delta_minutes ?? "",
+            r.note ?? "",
+            r.time_entry_id,
+          ];
+        }),
+      );
+      downloadTextFile(`audit-trail-${from}-to-${to}.csv`, csv);
+      toast.success(`Exported ${rows.length} audit ${rows.length === 1 ? "event" : "events"}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold tracking-tight">Time report</h1>

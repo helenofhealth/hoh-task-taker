@@ -1,0 +1,2 @@
+ALTER TABLE public.notifications ADD COLUMN comment_id uuid REFERENCES public.task_comments(id) ON DELETE CASCADE;
+CREATE INDEX idx_notifications_comment ON public.notifications (comment_id) WHERE comment_id IS NOT NULL;

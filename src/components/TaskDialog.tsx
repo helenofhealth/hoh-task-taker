@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 
 import {
+  notifyCommentDeleted,
+  notifyCommentEdited,
   notifyTaskComment,
   notifyTaskEvent,
   notifyTaskStatusChange,
@@ -67,6 +69,7 @@ import {
   startTimer,
   stopTimer,
   updateComment,
+  deleteComment,
   type Client,
   type Comment,
   type CommentEdit,
@@ -402,14 +405,7 @@ export function TaskDialog({
         .select("id")
         .single();
       if (error) throw error;
-      // Exact mention match per profile — "@Maria Elena" must not also match "Maria".
-      const mentionIds = profiles
-        .filter((p) => p.id !== userId)
-        .filter((p) => {
-          const name = profileName(p).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          return new RegExp(`@${name}(?=$|[^\\p{L}\\p{N}_])`, "u").test(body);
-        })
-        .map((p) => p.id);
+      const mentionIds = extractMentionIds(body);
       // Fire-and-forget: email + in-app notification for owner/followers/commenters/mentions.
       notifyComment({
         data: {
@@ -482,9 +478,34 @@ export function TaskDialog({
     return { roots, children, byId };
   }, [comments.data]);
 
+  // Exact @mention detection shared by post + edit paths — "@Maria Elena"
+  // must not also match "Maria".
+  function extractMentionIds(body: string): string[] {
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => {
+        const name = profileName(p).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`@${name}(?=$|[^\\p{L}\\p{N}_])`, "u").test(body);
+      })
+      .map((p) => p.id);
+  }
+
+  const notifyCommentEditedFn = useServerFn(notifyCommentEdited);
+  const notifyCommentDeletedFn = useServerFn(notifyCommentDeleted);
+
   const saveEdit = useMutation({
     mutationFn: async (commentId: string) => {
       await updateComment(commentId, editBody);
+      // Fire-and-forget: sync mention notifications with the edited text.
+      notifyCommentEditedFn({
+        data: {
+          taskId: task!.id,
+          commentId,
+          commentBody: editBody.trim(),
+          origin: window.location.origin,
+          mentionIds: extractMentionIds(editBody.trim()),
+        },
+      }).catch(() => {});
     },
     onSuccess: () => {
       setEditingId(null);
@@ -492,6 +513,24 @@ export function TaskDialog({
       setEditMentionQuery(null);
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
       qc.invalidateQueries({ queryKey: ["comment_edits", task?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const removeComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      await deleteComment(commentId);
+      // Fire-and-forget: remove notifications that point at the deleted comment.
+      notifyCommentDeletedFn({
+        data: { taskId: task!.id, commentId },
+      }).catch(() => {});
+    },
+    onSuccess: () => {
+      setDeleteTarget(null);
+      toast.success("Comment deleted");
+      qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -721,6 +760,28 @@ export function TaskDialog({
                 Override and log
               </AlertDialogAction>
 
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes the comment. Any unread notifications pointing to it will
+                be removed too — mention emails already delivered can&apos;t be unsent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteTarget && removeComment.mutate(deleteTarget)}
+                disabled={removeComment.isPending}
+              >
+                {removeComment.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Delete comment
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -1004,6 +1065,17 @@ export function TaskDialog({
                               Edit
                             </Button>
                           )}
+                          {(isOwn || canEdit) && replies.length === 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTarget(c.id)}
+                            >
+                              <Trash2 className="size-3.5" />
+                              Delete
+                            </Button>
+                          )}
                           {history.length > 0 && (
                             <Button
                               size="sm"
@@ -1161,6 +1233,17 @@ export function TaskDialog({
                                       >
                                         <Pencil className="size-3" />
                                         Edit
+                                      </Button>
+                                    )}
+                                    {(rIsOwn || canEdit) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                                        onClick={() => setDeleteTarget(r.id)}
+                                      >
+                                        <Trash2 className="size-3" />
+                                        Delete
                                       </Button>
                                     )}
                                     {rHistory.length > 0 && (

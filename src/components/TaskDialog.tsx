@@ -402,8 +402,13 @@ export function TaskDialog({
         .select("id")
         .single();
       if (error) throw error;
+      // Exact mention match per profile — "@Maria Elena" must not also match "Maria".
       const mentionIds = profiles
-        .filter((p) => p.id !== userId && body.includes(`@${profileName(p)}`))
+        .filter((p) => p.id !== userId)
+        .filter((p) => {
+          const name = profileName(p).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return new RegExp(`@${name}(?=$|[^\\p{L}\\p{N}_])`, "u").test(body);
+        })
         .map((p) => p.id);
       // Fire-and-forget: email + in-app notification for owner/followers/commenters/mentions.
       notifyComment({

@@ -149,6 +149,14 @@ export function NewTaskDialog({
       if (error) throw error;
       if (ownerId && created) {
         await db.from("task_owners").insert({ task_id: created.id, user_id: ownerId });
+      }
+      const followers = followerIds.filter((id) => id && id !== ownerId);
+      if (created && followers.length > 0) {
+        await db
+          .from("task_followers")
+          .insert(followers.map((id) => ({ task_id: created.id, user_id: id })));
+      }
+      if (created && (ownerId || followers.length > 0)) {
         notifyEvent({
           data: {
             taskId: created.id,

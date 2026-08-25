@@ -299,7 +299,9 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
 
     const { filterByPrefs } = await import("./notifications.server");
     const category = data.kind === "details" ? "status" : "assignments";
-    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category);
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category, {
+      deferQuietHours: data.kind === "details",
+    });
 
     await createNotifications(inapp, { taskId: task.id, kind: data.kind, title, body });
 

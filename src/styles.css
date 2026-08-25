@@ -51,6 +51,8 @@
   --color-status-completed: var(--status-completed);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-surface-muted: var(--surface-muted);
   --color-success: var(--success);
 
   --shadow-soft: 0 1px 2px oklch(0.28 0.08 340 / 0.04), 0 8px 24px -12px oklch(0.28 0.08 340 / 0.14);

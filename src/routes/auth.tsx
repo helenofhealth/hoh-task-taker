@@ -36,6 +36,26 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [resetBusy, setResetBusy] = useState(false);
+
+  async function sendResetEmail() {
+    if (!email) {
+      toast.error("Enter your email address first");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset email sent — check your inbox");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setResetBusy(false);
+    }
+  }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -107,7 +127,19 @@ function AuthPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={sendResetEmail}
+                  disabled={resetBusy}
+                  className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                >
+                  {resetBusy ? "Sending…" : "Forgot password?"}
+                </button>
+              )}
+            </div>
             <Input
               id="password"
               type="password"

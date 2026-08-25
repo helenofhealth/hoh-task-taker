@@ -109,7 +109,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
     const { filterByPrefs } = await import("./notifications.server");
-    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, recipientIds, "status");
+    const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, recipientIds, "status", { deferQuietHours: true });
 
     await createNotifications(inapp, {
       taskId: task.id,
@@ -184,7 +184,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const regularIds = recipientIds.filter((id) => !mentionSet.has(id));
 
     const { filterByPrefs } = await import("./notifications.server");
-    const commentPrefs = await filterByPrefs(supabaseAdmin, regularIds, "comments");
+    const commentPrefs = await filterByPrefs(supabaseAdmin, regularIds, "comments", { deferQuietHours: true });
     const mentionPrefs = await filterByPrefs(supabaseAdmin, mentionIds, "mentions");
 
     await createNotifications(commentPrefs.inapp, {
@@ -302,6 +302,20 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
     const { inapp, email: emailIds } = await filterByPrefs(supabaseAdmin, notifyIds, category);
 
     await createNotifications(inapp, { taskId: task.id, kind: data.kind, title, body });
+
+    if (data.kind === "details") {
+      // Detail edits are batched so a flurry of tweaks sends one summary email.
+      const { queueEmailBatch } = await import("./notifications.server");
+      await queueEmailBatch(supabaseAdmin, emailIds, {
+        taskId: task.id,
+        taskTitle: task.title,
+        category: "status",
+        heading: `"${task.title}" was updated`,
+        line: body,
+        link,
+      });
+      return { ok: true as const, sent: emailIds.length };
+    }
 
     const emails = await recipientEmails(supabaseAdmin, emailIds);
     const { sendTaskUpdateEmail } = await import("./invite-client.server");

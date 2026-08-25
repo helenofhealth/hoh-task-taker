@@ -124,10 +124,51 @@ function TimeReportPage() {
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold tracking-tight">Time report</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Time report</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
+          <div className="space-y-1">
+            <Label htmlFor="audit-from" className="text-xs text-muted-foreground">
+              From
+            </Label>
+            <Input
+              id="audit-from"
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-[9.5rem]"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-to" className="text-xs text-muted-foreground">
+              To
+            </Label>
+            <Input
+              id="audit-to"
+              type="date"
+              value={to}
+              min={from}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-[9.5rem]"
+            />
+          </div>
+          <Button onClick={exportAudit} disabled={exporting}>
+            {exporting ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 size-4" />
+            )}
+            Export audit
+          </Button>
+        </div>
+      </div>
+
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {clientList.map((c) => {

@@ -10,13 +10,10 @@ export const Route = createFileRoute("/api/public/digest")({
         const token = request.headers.get("x-cron-token") ?? "";
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const { data: config } = await supabaseAdmin
-          .from("config" as never)
-          .select("value")
-          .eq("key", "digest_cron_token")
-          .maybeSingle();
-        const expected = (config as { value: string } | null)?.value;
-        if (!expected || token !== expected) {
+        const { data: valid } = await supabaseAdmin.rpc("verify_digest_cron_token", {
+          _token: token,
+        } as never);
+        if (!valid) {
           return new Response("Unauthorized", { status: 401 });
         }
 

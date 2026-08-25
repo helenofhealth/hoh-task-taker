@@ -71,6 +71,33 @@ import {
 
 const db = supabase as unknown as { from: (t: string) => any };
 
+function profileName(p: Profile): string {
+  return p.full_name || p.email || "teammate";
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Renders a comment body with @mentions highlighted.
+function renderCommentBody(body: string, profiles: Profile[]) {
+  const names = profiles
+    .map((p) => p.full_name || p.email)
+    .filter((n): n is string => !!n);
+  if (names.length === 0) return body;
+  const pattern = new RegExp(`@(${names.map(escapeRegExp).join("|")})`, "g");
+  const parts = body.split(pattern);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} className="rounded bg-primary-soft px-1 font-medium text-primary">
+        @{part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface Props {
   task: Task | null;
   open: boolean;
@@ -97,6 +124,8 @@ export function TaskDialog({
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
   const [comment, setComment] = useState("");
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -221,6 +250,31 @@ export function TaskDialog({
 
   const notifyComment = useServerFn(notifyTaskComment);
 
+  // @mention autocomplete in the comment composer.
+  const mentionCandidates = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => profileName(p).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [mentionQuery, profiles, userId]);
+
+  function onCommentChange(value: string, caret: number) {
+    setComment(value);
+    const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
+    setMentionQuery(m ? (m[1] ?? "") : null);
+  }
+
+  function insertMention(p: Profile) {
+    const caret = commentRef.current?.selectionStart ?? comment.length;
+    const name = profileName(p);
+    const before = comment.slice(0, caret).replace(/@[^\n@]{0,40}$/, `@${name} `);
+    setComment(before + comment.slice(caret));
+    setMentionQuery(null);
+    commentRef.current?.focus();
+  }
+
   const addComment = useMutation({
     mutationFn: async () => {
       const body = comment.trim();
@@ -230,13 +284,22 @@ export function TaskDialog({
         .from("task_comments")
         .insert({ task_id: task!.id, user_id: userId, body });
       if (error) throw error;
-      // Fire-and-forget: email + in-app notification for owner/followers/commenters.
+      const mentionIds = profiles
+        .filter((p) => p.id !== userId && body.includes(`@${profileName(p)}`))
+        .map((p) => p.id);
+      // Fire-and-forget: email + in-app notification for owner/followers/commenters/mentions.
       notifyComment({
-        data: { taskId: task!.id, commentBody: body, origin: window.location.origin },
+        data: {
+          taskId: task!.id,
+          commentBody: body,
+          origin: window.location.origin,
+          mentionIds,
+        },
       }).catch(() => {});
     },
     onSuccess: () => {
       setComment("");
+      setMentionQuery(null);
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -580,7 +643,9 @@ export function TaskDialog({
                     </span>
                     <span>{new Date(c.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm">{c.body}</p>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
+                    {renderCommentBody(c.body, profiles)}
+                  </p>
                 </div>
               ))}
               {(comments.data ?? []).length === 0 && (
@@ -588,13 +653,42 @@ export function TaskDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Textarea
-                rows={3}
-                placeholder="Leave a comment…"
-                value={comment}
-                maxLength={4000}
-                onChange={(e) => setComment(e.target.value)}
-              />
+              <div className="relative">
+                <Textarea
+                  ref={commentRef}
+                  rows={3}
+                  placeholder="Leave a comment… use @ to mention a teammate"
+                  value={comment}
+                  maxLength={4000}
+                  onChange={(e) =>
+                    onCommentChange(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setMentionQuery(null);
+                  }}
+                  onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+                />
+                {mentionCandidates.length > 0 && (
+                  <div className="absolute bottom-full left-0 z-10 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                    {mentionCandidates.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          insertMention(p);
+                        }}
+                      >
+                        <span className="flex size-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                          {profileName(p).slice(0, 1).toUpperCase()}
+                        </span>
+                        <span className="truncate">{profileName(p)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button onClick={() => addComment.mutate()} disabled={addComment.isPending}>
                 Post comment
               </Button>

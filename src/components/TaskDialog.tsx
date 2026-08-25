@@ -34,6 +34,7 @@ import {
   elapsedMinutes,
   fetchAttachments,
   fetchComments,
+  fetchTimeAudit,
   formatClock,
   formatDuration,
   roundedPreview,

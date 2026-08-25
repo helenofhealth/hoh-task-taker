@@ -250,6 +250,31 @@ export function TaskDialog({
 
   const notifyComment = useServerFn(notifyTaskComment);
 
+  // @mention autocomplete in the comment composer.
+  const mentionCandidates = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => profileName(p).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [mentionQuery, profiles, userId]);
+
+  function onCommentChange(value: string, caret: number) {
+    setComment(value);
+    const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
+    setMentionQuery(m ? m[1] : null);
+  }
+
+  function insertMention(p: Profile) {
+    const caret = commentRef.current?.selectionStart ?? comment.length;
+    const name = profileName(p);
+    const before = comment.slice(0, caret).replace(/@[^\n@]{0,40}$/, `@${name} `);
+    setComment(before + comment.slice(caret));
+    setMentionQuery(null);
+    commentRef.current?.focus();
+  }
+
   const addComment = useMutation({
     mutationFn: async () => {
       const body = comment.trim();
@@ -259,13 +284,22 @@ export function TaskDialog({
         .from("task_comments")
         .insert({ task_id: task!.id, user_id: userId, body });
       if (error) throw error;
-      // Fire-and-forget: email + in-app notification for owner/followers/commenters.
+      const mentionIds = profiles
+        .filter((p) => p.id !== userId && body.includes(`@${profileName(p)}`))
+        .map((p) => p.id);
+      // Fire-and-forget: email + in-app notification for owner/followers/commenters/mentions.
       notifyComment({
-        data: { taskId: task!.id, commentBody: body, origin: window.location.origin },
+        data: {
+          taskId: task!.id,
+          commentBody: body,
+          origin: window.location.origin,
+          mentionIds,
+        },
       }).catch(() => {});
     },
     onSuccess: () => {
       setComment("");
+      setMentionQuery(null);
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),

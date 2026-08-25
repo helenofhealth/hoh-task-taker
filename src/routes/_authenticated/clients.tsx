@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Mail, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -107,6 +107,21 @@ function ClientsPage() {
       else if (result.invited === false) toast.success("Client added — existing account linked");
       else toast.success("Client added");
     },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resendInvite = useMutation({
+    mutationFn: async (client: { id: string; email: string; name: string }) => {
+      await inviteClient({
+        data: {
+          clientId: client.id,
+          email: client.email,
+          name: client.name,
+          origin: window.location.origin,
+        },
+      });
+    },
+    onSuccess: () => toast.success("Activation email sent"),
     onError: (e: Error) => toast.error(e.message),
   });
 

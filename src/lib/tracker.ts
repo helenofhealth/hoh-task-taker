@@ -17,7 +17,7 @@ export interface Client {
   name: string;
   retainer_hours: number;
   business_name?: string | null;
-  email?: string | null;
+  email: string;
   phone?: string | null;
 }
 
@@ -92,6 +92,15 @@ export interface Comment {
   task_id: string;
   user_id: string;
   body: string;
+  created_at: string;
+  edited_at: string | null;
+}
+
+export interface CommentEdit {
+  id: string;
+  comment_id: string;
+  edited_by: string;
+  old_body: string;
   created_at: string;
 }
 
@@ -259,6 +268,24 @@ export async function fetchComments(taskId: string): Promise<Comment[]> {
     .order("created_at");
   if (error) throw error;
   return (data ?? []) as Comment[];
+}
+
+export async function fetchCommentEdits(commentIds: string[]): Promise<CommentEdit[]> {
+  if (commentIds.length === 0) return [];
+  const { data, error } = await db
+    .from("task_comment_edits")
+    .select("*")
+    .in("comment_id", commentIds)
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []) as CommentEdit[];
+}
+
+export async function updateComment(commentId: string, newBody: string) {
+  if (!newBody.trim()) throw new Error("Comment can't be empty");
+  if (newBody.length > 4000) throw new Error("Comment is too long");
+  const { error } = await db.from("task_comments").update({ body: newBody.trim() }).eq("id", commentId);
+  if (error) throw error;
 }
 
 export async function fetchAttachments(taskId: string): Promise<Attachment[]> {

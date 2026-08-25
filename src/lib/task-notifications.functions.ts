@@ -11,6 +11,7 @@ interface NotifyInput {
 
 interface NotifyCommentInput {
   taskId: string;
+  commentId: string;
   commentBody: string;
   origin: string;
   mentionIds?: string[];
@@ -144,7 +145,8 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
 
     const snippet =
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
-    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
 
     // Only users who may see the task can be mentioned: staff or members of
     // the task's client. Mentioned users already in the regular audience get

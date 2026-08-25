@@ -14,6 +14,7 @@ import {
   History,
   Loader2,
   Paperclip,
+  Pencil,
   Play,
   Square,
   Trash2,
@@ -55,13 +56,17 @@ import {
   formatHours,
   fetchAttachments,
   fetchComments,
+  fetchCommentEdits,
   fetchTimeAudit,
   formatClock,
   formatDuration,
   roundedPreview,
   startTimer,
   stopTimer,
+  updateComment,
   type Client,
+  type Comment,
+  type CommentEdit,
   type Profile,
   type Task,
   type TaskPriority,
@@ -108,6 +113,8 @@ interface Props {
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
+  initialCommentId?: string;
+  onInitialCommentUsed?: () => void;
 }
 
 export function TaskDialog({
@@ -120,23 +127,41 @@ export function TaskDialog({
   entries,
   userId,
   canEdit,
+  initialCommentId,
+  onInitialCommentUsed,
 }: Props) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
   const [comment, setComment] = useState("");
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const commentRef = useRef<HTMLTextAreaElement>(null);
+  const [tab, setTab] = useState("details");
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [overrunOpen, setOverrunOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
+  const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);
+  const editRef = useRef<HTMLTextAreaElement>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const commentRefs = useRef(new Map<string, HTMLDivElement>());
 
-  useEffect(() => setDraft(task), [task]);
+  useEffect(() => {
+    setDraft(task);
+    if (!open) {
+      setTab("details");
+      setEditingId(null);
+      setHistoryId(null);
+      setComment("");
+    }
+  }, [task, open]);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
 
 
   const taskEntries = useMemo(
@@ -151,6 +176,21 @@ export function TaskDialog({
     queryFn: () => fetchComments(task!.id),
     enabled: !!task && open,
   });
+  const commentIds = useMemo(() => (comments.data ?? []).map((c) => c.id), [comments.data]);
+  const edits = useQuery({
+    queryKey: ["comment_edits", task?.id],
+    queryFn: () => fetchCommentEdits(commentIds),
+    enabled: !!task && open && commentIds.length > 0,
+  });
+  const editsByComment = useMemo(() => {
+    const map = new Map<string, CommentEdit[]>();
+    for (const e of edits.data ?? []) {
+      const list = map.get(e.comment_id) ?? [];
+      list.push(e);
+      map.set(e.comment_id, list);
+    }
+    return map;
+  }, [edits.data]);
   const attachments = useQuery({
     queryKey: ["attachments", task?.id],
     queryFn: () => fetchAttachments(task!.id),
@@ -260,6 +300,30 @@ export function TaskDialog({
       .slice(0, 6);
   }, [mentionQuery, profiles, userId]);
 
+  function onEditChange(value: string, caret: number) {
+    setEditBody(value);
+    const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
+    setEditMentionQuery(m ? (m[1] ?? "") : null);
+  }
+
+  function insertEditMention(p: Profile) {
+    const caret = editRef.current?.selectionStart ?? editBody.length;
+    const name = profileName(p);
+    const before = editBody.slice(0, caret).replace(/@[^\n@]{0,40}$/, `@${name} `);
+    setEditBody(before + editBody.slice(caret));
+    setEditMentionQuery(null);
+    editRef.current?.focus();
+  }
+
+  const editMentionCandidates = useMemo(() => {
+    if (editMentionQuery === null) return [];
+    const q = editMentionQuery.toLowerCase();
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => profileName(p).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [editMentionQuery, profiles, userId]);
+
   function onCommentChange(value: string, caret: number) {
     setComment(value);
     const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
@@ -280,9 +344,11 @@ export function TaskDialog({
       const body = comment.trim();
       if (!body) throw new Error("Write something first");
       if (body.length > 4000) throw new Error("Comment is too long");
-      const { error } = await db
+      const { data, error } = await db
         .from("task_comments")
-        .insert({ task_id: task!.id, user_id: userId, body });
+        .insert({ task_id: task!.id, user_id: userId, body })
+        .select("id")
+        .single();
       if (error) throw error;
       const mentionIds = profiles
         .filter((p) => p.id !== userId && body.includes(`@${profileName(p)}`))
@@ -291,6 +357,7 @@ export function TaskDialog({
       notifyComment({
         data: {
           taskId: task!.id,
+          commentId: (data as { id: string }).id,
           commentBody: body,
           origin: window.location.origin,
           mentionIds,
@@ -301,6 +368,20 @@ export function TaskDialog({
       setComment("");
       setMentionQuery(null);
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveEdit = useMutation({
+    mutationFn: async (commentId: string) => {
+      await updateComment(commentId, editBody);
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      setEditBody("");
+      setEditMentionQuery(null);
+      qc.invalidateQueries({ queryKey: ["comments", task?.id] });
+      qc.invalidateQueries({ queryKey: ["comment_edits", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -486,7 +567,7 @@ export function TaskDialog({
         </AlertDialog>
 
 
-        <Tabs defaultValue="details">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="comments">Comments ({comments.data?.length ?? 0})</TabsTrigger>
@@ -635,19 +716,143 @@ export function TaskDialog({
 
           <TabsContent value="comments" className="space-y-4 pt-4">
             <div className="space-y-3">
-              {(comments.data ?? []).map((c) => (
-                <div key={c.id} className="rounded-xl border border-border p-3">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">
-                      {displayName(profiles, c.user_id)}
-                    </span>
-                    <span>{new Date(c.created_at).toLocaleString()}</span>
+              {(comments.data ?? []).map((c) => {
+                const history = editsByComment.get(c.id) ?? [];
+                const isOwn = c.user_id === userId;
+                const isEditing = editingId === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    ref={(el) => {
+                      if (el) commentRefs.current.set(c.id, el);
+                    }}
+                    className="rounded-xl border border-border p-3 transition-all"
+                  >
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">{displayName(profiles, c.user_id)}</span>
+                      <div className="flex items-center gap-2">
+                        {c.edited_at && (
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            edited
+                          </span>
+                        )}
+                        <span>{new Date(c.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    {isEditing ? (
+                      <div className="relative mt-2">
+                        <Textarea
+                          ref={editRef}
+                          rows={3}
+                          value={editBody}
+                          maxLength={4000}
+                          onChange={(e) =>
+                            onEditChange(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingId(null);
+                              setEditMentionQuery(null);
+                            }
+                          }}
+                          onBlur={() => setTimeout(() => setEditMentionQuery(null), 150)}
+                        />
+                        {editMentionCandidates.length > 0 && (
+                          <div className="absolute bottom-full left-0 z-10 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                            {editMentionCandidates.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  insertEditMention(p);
+                                }}
+                              >
+                                <span className="flex size-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                                  {profileName(p).slice(0, 1).toUpperCase()}
+                                </span>
+                                <span className="truncate">{profileName(p)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            disabled={saveEdit.isPending || !editBody.trim() || editBody.trim() === c.body}
+                            onClick={() => saveEdit.mutate(c.id)}
+                          >
+                            {saveEdit.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditBody("");
+                              setEditMentionQuery(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mt-1.5 whitespace-pre-wrap text-sm">{renderCommentBody(c.body, profiles)}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          {(isOwn || canEdit) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1 px-2 text-xs"
+                              onClick={() => {
+                                setEditingId(c.id);
+                                setEditBody(c.body);
+                                setEditMentionQuery(null);
+                                setTimeout(() => editRef.current?.focus(), 50);
+                              }}
+                            >
+                              <Pencil className="size-3.5" />
+                              Edit
+                            </Button>
+                          )}
+                          {history.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1 px-2 text-xs"
+                              onClick={() => setHistoryId(historyId === c.id ? null : c.id)}
+                            >
+                              <History className="size-3.5" />
+                              {history.length} edit{history.length > 1 ? "s" : ""}
+                            </Button>
+                          )}
+                        </div>
+                        {historyId === c.id && (
+                          <div className="mt-3 space-y-2 rounded-xl border border-border/70 bg-surface-muted p-3">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Edit history
+                            </div>
+                            {history.map((h, i) => (
+                              <div key={h.id} className="text-xs">
+                                <span className="font-medium text-muted-foreground">{i + 1}.</span>{" "}
+                                <span className="whitespace-pre-wrap">{h.old_body}</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  — {displayName(profiles, h.edited_by ?? "")} on{" "}
+                                  {new Date(h.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
-                    {renderCommentBody(c.body, profiles)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
               {(comments.data ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground">No comments yet.</p>
               )}

@@ -71,6 +71,33 @@ import {
 
 const db = supabase as unknown as { from: (t: string) => any };
 
+function profileName(p: Profile): string {
+  return p.full_name || p.email || "teammate";
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Renders a comment body with @mentions highlighted.
+function renderCommentBody(body: string, profiles: Profile[]) {
+  const names = profiles
+    .map((p) => p.full_name || p.email)
+    .filter((n): n is string => !!n);
+  if (names.length === 0) return body;
+  const pattern = new RegExp(`@(${names.map(escapeRegExp).join("|")})`, "g");
+  const parts = body.split(pattern);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} className="rounded bg-primary-soft px-1 font-medium text-primary">
+        @{part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface Props {
   task: Task | null;
   open: boolean;

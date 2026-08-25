@@ -206,6 +206,10 @@ export function TaskDialog({
 
   if (!task || !draft) return null;
   const runningRaw = running ? elapsedMinutes(running.started_at) : 0;
+  void tick; // re-render every second so the live timer stays accurate
+  const willLog = roundedPreview(runningRaw);
+  const nextStepIn = Math.max(0, Math.ceil(willLog - runningRaw));
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

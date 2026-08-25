@@ -267,10 +267,6 @@ export function TaskDialog({
           )}
         </div>
 
-            {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
-            {running ? "Stop timer" : "Start timer"}
-          </Button>
-        </div>
 
         <Tabs defaultValue="details">
           <TabsList>

@@ -30,7 +30,7 @@ export async function sendActivationEmail(
       "X-Connection-Api-Key": resendApiKey,
     },
     body: JSON.stringify({
-      from: "Client Portal <onboarding@resend.dev>",
+      from: "Bloom <noreply@tasks.helenofhealth.com>",
       to: [email],
       subject: "You're invited — activate your client portal account",
       html,

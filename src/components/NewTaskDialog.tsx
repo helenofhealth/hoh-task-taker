@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Client, Profile } from "@/lib/tracker";
+import { currentMonthStart, type Client, type Profile } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
 
@@ -54,16 +54,21 @@ export function NewTaskDialog({
   const [ncBusiness, setNcBusiness] = useState("");
   const [ncEmail, setNcEmail] = useState("");
   const [ncPhone, setNcPhone] = useState("");
+  const [ncHours, setNcHours] = useState("");
+  const [ncKind, setNcKind] = useState("package");
 
   const createClient = useMutation({
     mutationFn: async () => {
       const clean = ncName.trim();
       if (!clean) throw new Error("Client name is required");
+      const rawHours = ncHours.trim();
+      const hours = rawHours === "" ? 0 : Number(rawHours);
+      if (!Number.isFinite(hours) || hours < 0) throw new Error("Hours must be 0 or more");
       const { data, error } = await db
         .from("clients")
         .insert({
           name: clean,
-          retainer_hours: 0,
+          retainer_hours: ncKind === "retainer" ? hours : 0,
           business_name: ncBusiness.trim() || null,
           email: ncEmail.trim() || null,
           phone: ncPhone.trim() || null,
@@ -71,7 +76,17 @@ export function NewTaskDialog({
         .select("id")
         .single();
       if (error) throw error;
-      return data as { id: string };
+      const created = data as { id: string };
+      if (hours > 0) {
+        const { error: creditError } = await db.from("hour_credits").insert({
+          client_id: created.id,
+          hours,
+          kind: ncKind,
+          effective_month: ncKind === "retainer" ? currentMonthStart() : null,
+        });
+        if (creditError) throw creditError;
+      }
+      return created;
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -81,6 +96,9 @@ export function NewTaskDialog({
       setNcBusiness("");
       setNcEmail("");
       setNcPhone("");
+      setNcHours("");
+      setNcKind("package");
+      qc.invalidateQueries({ queryKey: ["credits"] });
       toast.success("Client added");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -255,6 +273,28 @@ export function NewTaskDialog({
                     placeholder="Optional"
                     onChange={(e) => setNcPhone(e.target.value)}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="nc-hours">Hours bought — optional</Label>
+                  <Input
+                    id="nc-hours"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={ncHours}
+                    placeholder="Optional"
+                    onChange={(e) => setNcHours(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Hours type</Label>
+                  <Select value={ncKind} onValueChange={setNcKind}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="package">Hour block</SelectItem>
+                      <SelectItem value="retainer">Monthly retainer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <Button

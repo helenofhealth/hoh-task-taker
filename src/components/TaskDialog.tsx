@@ -13,6 +13,7 @@ import {
   Download,
   History,
   Loader2,
+  MessageSquare,
   Paperclip,
   Pencil,
   Play,

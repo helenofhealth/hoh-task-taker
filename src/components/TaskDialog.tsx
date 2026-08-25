@@ -686,21 +686,13 @@ export function TaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Owner">
-                <Select
-                  value={draft.owner_id ?? ""}
+              <Field label="Start date">
+                <Input
+                  type="date"
                   disabled={!canEdit}
-                  onValueChange={(v) => save.mutate({ owner_id: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Assign someone" /></SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.full_name || p.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={draft.start_date ?? ""}
+                  onChange={(e) => save.mutate({ start_date: e.target.value || null })}
+                />
               </Field>
               <Field label="Start date">
                 <Input

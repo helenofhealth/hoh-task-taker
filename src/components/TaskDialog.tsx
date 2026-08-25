@@ -10,6 +10,7 @@ import {
 } from "@/lib/task-notifications.functions";
 import {
   AlertTriangle,
+  ArrowRightLeft,
   Download,
   History,
   Loader2,
@@ -19,6 +20,7 @@ import {
   Play,
   Square,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -224,6 +226,32 @@ export function TaskDialog({
     queryFn: () => fetchTimeAudit(task!.id),
     enabled: !!task && open,
   });
+
+  const activity = useQuery({
+    queryKey: ["task_activity", task?.id],
+    enabled: !!task && open,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("task_activity")
+        .select("id, actor_id, kind, detail, created_at")
+        .eq("task_id", task!.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data ?? []) as {
+        id: string;
+        actor_id: string | null;
+        kind: string;
+        detail: string;
+        created_at: string;
+      }[];
+    },
+  });
+  const actorName = (id: string | null) => {
+    if (!id) return "System";
+    const p = profiles.find((pr) => pr.id === id);
+    return p ? profileName(p) : id === userId ? "You" : "Someone";
+  };
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -698,6 +726,7 @@ export function TaskDialog({
             <TabsTrigger value="comments">Comments ({comments.data?.length ?? 0})</TabsTrigger>
             <TabsTrigger value="files">Documents ({attachments.data?.length ?? 0})</TabsTrigger>
             <TabsTrigger value="time">Time ({taskEntries.filter((e) => e.minutes).length})</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 pt-4">
@@ -1439,6 +1468,47 @@ export function TaskDialog({
               ))}
               {(audit.data ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground">No timer activity recorded yet.</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="pt-4">
+            <div className="max-h-96 space-y-1 overflow-y-auto pr-1">
+              {(activity.data ?? []).map((a) => (
+                <div key={a.id} className="flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-muted/50">
+                  <span className="mt-0.5 rounded-full bg-primary-soft p-1.5 text-accent-foreground">
+                    {a.kind === "comment" ? (
+                      <MessageSquare className="size-3.5" />
+                    ) : a.kind === "status" ? (
+                      <ArrowRightLeft className="size-3.5" />
+                    ) : a.kind === "assignment" || a.kind === "follower" ? (
+                      <UserPlus className="size-3.5" />
+                    ) : a.kind === "file" ? (
+                      <Paperclip className="size-3.5" />
+                    ) : (
+                      <Pencil className="size-3.5" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-medium">{actorName(a.actor_id)}</span>{" "}
+                      <span className="text-muted-foreground">{a.detail}</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {new Date(a.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {activity.isLoading && (
+                <p className="flex items-center gap-2 px-2 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Loading activity…
+                </p>
+              )}
+              {!activity.isLoading && (activity.data ?? []).length === 0 && (
+                <p className="px-2 py-6 text-sm text-muted-foreground">
+                  No activity recorded yet — changes will appear here as they happen.
+                </p>
               )}
             </div>
           </TabsContent>

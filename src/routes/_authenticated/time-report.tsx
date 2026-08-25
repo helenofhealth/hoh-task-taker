@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Bar,
@@ -29,8 +29,10 @@ import { displayName, useMe } from "@/hooks/useAuth";
 import {
   type AuditAction,
   computeBalance,
+  downloadPdfReport,
   downloadTextFile,
   downloadXlsxFile,
+
   fetchClients,
   fetchCredits,
   fetchProfiles,
@@ -118,7 +120,49 @@ function TimeReportPage() {
     if (clientFilter && taskClientId(e.task_id, e.tasks?.client_id) !== clientFilter) return false;
     return true;
   });
-  const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "report-csv" | "report-pdf" | null>(
+    null,
+  );
+
+  const rawMinutes = (e: { started_at: string; ended_at: string | null }) =>
+    e.ended_at
+      ? Math.max(0, (new Date(e.ended_at).getTime() - new Date(e.started_at).getTime()) / 60000)
+      : 0;
+
+  /** Detailed timeline: client → task → entries, newest first. */
+  const timeline = useMemo(() => {
+    const taskList = tasks.data ?? [];
+    const byClient = new Map<
+      string,
+      { clientId: string | null; name: string; minutes: number; overrides: number; tasks: Map<string, { title: string; minutes: number; entries: typeof filteredLogged }> }
+    >();
+    const sorted = [...filteredLogged].sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
+    for (const e of sorted) {
+      const task = taskList.find((t) => t.id === e.task_id);
+      const cid = task?.client_id ?? e.tasks?.client_id ?? null;
+      const key = cid ?? "none";
+      if (!byClient.has(key))
+        byClient.set(key, {
+          clientId: cid,
+          name: clientList.find((c) => c.id === cid)?.name ?? "No client",
+          minutes: 0,
+          overrides: 0,
+          tasks: new Map(),
+        });
+      const group = byClient.get(key)!;
+      group.minutes += e.minutes ?? 0;
+      if (e.limit_override) group.overrides += 1;
+      const tKey = e.task_id;
+      if (!group.tasks.has(tKey))
+        group.tasks.set(tKey, { title: task?.title ?? "Task", minutes: 0, entries: [] });
+      const tGroup = group.tasks.get(tKey)!;
+      tGroup.minutes += e.minutes ?? 0;
+      tGroup.entries.push(e);
+    }
+    return [...byClient.values()]
+      .sort((a, b) => b.minutes - a.minutes)
+      .map((g) => ({ ...g, taskGroups: [...g.tasks.values()].sort((a, b) => b.minutes - a.minutes) }));
+  }, [filteredLogged, tasks.data, clientList]);
 
   const weekly = useMemo(() => {
     const start = new Date(`${from}T00:00:00`);
@@ -147,6 +191,85 @@ function TimeReportPage() {
   }, [filteredLogged, from, to]);
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
+
+  /** Time report export (CSV or PDF) for one client, or every client in view.
+   *  Per-client exports ignore the client dropdown so any card can be exported. */
+  const exportReport = async (format: "csv" | "pdf", onlyClientId?: string | null) => {
+    const taskList = tasks.data ?? [];
+    const source = onlyClientId
+      ? logged.filter(
+          (e) =>
+            inRange(e.started_at) &&
+            (!taskFilter || e.task_id === taskFilter) &&
+            taskClientId(e.task_id, e.tasks?.client_id) === onlyClientId,
+        )
+      : filteredLogged;
+    const rows = [...source]
+      .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))
+      .map((e) => {
+        const task = taskList.find((t) => t.id === e.task_id);
+        const cid = task?.client_id ?? e.tasks?.client_id ?? null;
+        return [
+          clientList.find((c) => c.id === cid)?.name ?? "No client",
+          task?.title ?? "Task",
+          displayName(profiles.data ?? [], e.user_id),
+          new Date(e.started_at).toLocaleString(),
+          e.ended_at ? new Date(e.ended_at).toLocaleTimeString() : "",
+          Math.round(rawMinutes(e)),
+          e.minutes ?? 0,
+          formatDuration(e.minutes ?? 0),
+          e.limit_override ? "Yes" : "",
+          e.override_minutes ? Math.round(Number(e.override_minutes)) : "",
+        ];
+      });
+
+    if (rows.length === 0) {
+      toast.error("No logged time matches the current filters");
+      return;
+    }
+    const headers = [
+      "Client",
+      "Task",
+      "Member",
+      "Started",
+      "Stopped",
+      "Measured min",
+      "Logged min",
+      "Logged",
+      "Limit override",
+      "Overage min",
+    ];
+    const label = onlyClientId
+      ? (clientList.find((c) => c.id === onlyClientId)?.name ?? "client").replace(/[^\w-]+/g, "_")
+      : "all-clients";
+    setExporting(format === "pdf" ? "report-pdf" : "report-csv");
+    try {
+      const baseName = `time-report-${label}-${from}-${to}`;
+      if (format === "pdf") {
+        const totalMinutes = rows.reduce((s, r) => s + Number(r[6] ?? 0), 0);
+        await downloadPdfReport(
+          `${baseName}.pdf`,
+          `Time report — ${onlyClientId ? clientList.find((c) => c.id === onlyClientId)?.name ?? "Client" : "All clients"}`,
+          [
+            `Period: ${from} to ${to}`,
+            `Entries: ${rows.length} · Total logged: ${formatHours(totalMinutes / 60)} (15-minute increments)`,
+            `Overrides: ${rows.filter((r) => r[8] === "Yes").length}`,
+          ],
+          headers,
+          rows,
+          [1.2, 2, 1.2, 1.4, 0.9, 0.8, 0.8, 0.8, 0.8, 0.8],
+        );
+      } else {
+        downloadTextFile(`${baseName}.csv`, toCsv(headers, rows));
+      }
+      toast.success(`Exported ${rows.length} ${rows.length === 1 ? "entry" : "entries"} as ${format.toUpperCase()}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExporting(null);
+    }
+  };
+
 
   const exportAudit = async (format: "csv" | "xlsx") => {
     if (from > to) {
@@ -182,6 +305,8 @@ function TimeReportPage() {
         "Measured minutes",
         "Logged minutes",
         "Rounding added (min)",
+        "Limit override",
+        "Overage minutes",
         "Note",
         "Time entry ID",
       ];
@@ -199,10 +324,13 @@ function TimeReportPage() {
           r.raw_minutes ?? "",
           r.rounded_minutes ?? "",
           r.rounding_delta_minutes ?? "",
+          r.limit_override ? "Yes" : "",
+          r.override_minutes ?? "",
           r.note ?? "",
           r.time_entry_id,
         ];
       });
+
       const parts = [from, to];
       if (actionFilter) parts.push(actionFilter);
       if (clientFilter) parts.push(clientList.find((c) => c.id === clientFilter)?.name ?? "client");
@@ -342,7 +470,7 @@ function TimeReportPage() {
               ) : (
                 <Download className="mr-2 size-4" />
               )}
-              Export CSV
+              Audit CSV
             </Button>
             <Button
               variant="secondary"
@@ -354,13 +482,50 @@ function TimeReportPage() {
               ) : (
                 <FileSpreadsheet className="mr-2 size-4" />
               )}
-              Export XLSX
+              Audit XLSX
             </Button>
               </>
             )}
           </div>
+          {me.isStaff && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <span className="text-xs text-muted-foreground">
+                Time report{clientFilter
+                  ? ` for ${clientList.find((c) => c.id === clientFilter)?.name ?? "client"}`
+                  : " for all clients"}:
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportReport("csv", clientFilter)}
+                disabled={exporting !== null}
+              >
+                {exporting === "report-csv" ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 size-4" />
+                )}
+                Report CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportReport("pdf", clientFilter)}
+                disabled={exporting !== null}
+              >
+                {exporting === "report-pdf" ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <FileText className="mr-2 size-4" />
+                )}
+                Report PDF
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+
+
 
       <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -443,7 +608,32 @@ function TimeReportPage() {
                 <Stat label="Monthly retainer" value={formatHours(b.monthRetainer)} />
                 <Stat label="Used this month" value={formatHours(b.monthUsed)} />
               </dl>
+              {me.isStaff && (
+                <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
+                  <span className="text-xs text-muted-foreground">Export {from} → {to}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto"
+                    onClick={() => exportReport("csv", c.id)}
+                    disabled={exporting !== null}
+                  >
+                    <Download className="mr-1.5 size-3.5" />
+                    CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("pdf", c.id)}
+                    disabled={exporting !== null}
+                  >
+                    <FileText className="mr-1.5 size-3.5" />
+                    PDF
+                  </Button>
+                </div>
+              )}
             </div>
+
           );
         })}
         {clientList.length === 0 && (
@@ -453,7 +643,98 @@ function TimeReportPage() {
         )}
       </div>
 
+      <h2 className="mt-10 text-lg font-semibold">Detailed timeline</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Every time entry grouped by client and task, with the measured duration, the 15-minute
+        increment that was billed, and any remaining-hours override.
+      </p>
+      <div className="mt-4 space-y-4">
+        {timeline.map((g) => (
+          <section
+            key={g.clientId ?? "none"}
+            className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+          >
+            <header className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-muted px-4 py-3">
+              <h3 className="font-semibold">{g.name}</h3>
+              <Badge variant="secondary">{formatDuration(g.minutes)}</Badge>
+              {g.overrides > 0 && (
+                <Badge className="bg-warning-soft text-warning-foreground">
+                  {g.overrides} override{g.overrides === 1 ? "" : "s"}
+                </Badge>
+              )}
+              {me.isStaff && g.clientId && (
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("csv", g.clientId)}
+                    disabled={exporting !== null}
+                  >
+                    <Download className="mr-1.5 size-3.5" />
+                    CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("pdf", g.clientId)}
+                    disabled={exporting !== null}
+                  >
+                    <FileText className="mr-1.5 size-3.5" />
+                    PDF
+                  </Button>
+                </div>
+              )}
+            </header>
+            <div className="divide-y divide-border">
+              {g.taskGroups.map((t) => (
+                <div key={t.title + t.minutes} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{t.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.entries.length} entr{t.entries.length === 1 ? "y" : "ies"}
+                    </span>
+                    <span className="ml-auto text-sm font-medium">{formatDuration(t.minutes)}</span>
+                  </div>
+                  <ol className="mt-2 space-y-1.5 border-l border-border pl-4">
+                    {t.entries.map((e) => (
+                      <li key={e.id} className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">
+                          {new Date(e.started_at).toLocaleString()}
+                        </span>
+                        {me.isStaff && (
+                          <span className="text-muted-foreground">
+                            · {displayName(profiles.data ?? [], e.user_id)}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground">
+                          · measured {Math.round(rawMinutes(e))}m
+                        </span>
+                        <Badge variant="outline">billed {formatDuration(e.minutes ?? 0)}</Badge>
+                        {e.limit_override && (
+                          <Badge className="bg-warning-soft text-warning-foreground">
+                            Override
+                            {e.override_minutes
+                              ? ` +${Math.round(Number(e.override_minutes))}m`
+                              : ""}
+                          </Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+        {timeline.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No time logged for the selected filters yet.
+          </p>
+        )}
+      </div>
+
       <h2 className="mt-10 text-lg font-semibold">Logged time</h2>
+
       <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         <table className="w-full text-sm">
           <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">

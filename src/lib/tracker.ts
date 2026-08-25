@@ -51,6 +51,8 @@ export interface TimeEntry {
   ended_at: string | null;
   minutes: number | null;
   note: string | null;
+  limit_override?: boolean | null;
+  override_minutes?: number | null;
 }
 
 export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";
@@ -69,7 +71,10 @@ export interface TimeEntryAudit {
   rounding_delta_minutes: number | null;
   note: string | null;
   created_at: string;
+  limit_override?: boolean | null;
+  override_minutes?: number | null;
 }
+
 
 export interface HourCredit {
   id: string;
@@ -274,13 +279,97 @@ export async function startTimer(taskId: string, userId: string) {
   if (error) throw error;
 }
 
-export async function stopTimer(entryId: string) {
-  const { error } = await db
-    .from("time_entries")
-    .update({ ended_at: new Date().toISOString() })
-    .eq("id", entryId);
+/** Stops a running timer. Pass an override when the logged time knowingly
+ *  exceeds the client's remaining hours — it is recorded on the entry and in
+ *  the audit trail. */
+export async function stopTimer(
+  entryId: string,
+  override?: { overageMinutes: number } | null,
+) {
+  const patch: Record<string, unknown> = { ended_at: new Date().toISOString() };
+  if (override && override.overageMinutes > 0) {
+    patch['limit_override'] = true;
+    patch['override_minutes'] = Math.round(override.overageMinutes * 100) / 100;
+  }
+  const { error } = await db.from("time_entries").update(patch).eq("id", entryId);
   if (error) throw error;
 }
+
+/** Trigger a browser download for a simple tabular PDF report. */
+export async function downloadPdfReport(
+  fileName: string,
+  title: string,
+  subtitle: string[],
+  headers: string[],
+  rows: unknown[][],
+  columnWidths?: number[],
+) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 36;
+  const usable = pageWidth - margin * 2;
+  const weights = columnWidths ?? headers.map(() => 1);
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+  const widths = weights.map((w) => (w / weightSum) * usable);
+
+  let y = margin;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(title, margin, y);
+  y += 16;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  for (const line of subtitle) {
+    doc.text(line, margin, y);
+    y += 12;
+  }
+  y += 6;
+
+  const drawHead = () => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    let x = margin;
+    headers.forEach((h, i) => {
+      doc.text(String(h), x, y);
+      x += widths[i]!;
+    });
+    y += 6;
+    doc.setDrawColor(200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+    doc.setFont("helvetica", "normal");
+  };
+  drawHead();
+
+  for (const row of rows) {
+    if (y > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+      drawHead();
+    }
+    let x = margin;
+    row.forEach((cell, i) => {
+      const text = cell == null ? "" : String(cell);
+      const lines = doc.splitTextToSize(text, widths[i]! - 6) as string[];
+      doc.text(lines.slice(0, 2), x, y);
+      x += widths[i]!;
+    });
+    y += 14;
+  }
+
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 
 /** Formatting ----------------------------------------------------------- */
 

@@ -277,8 +277,10 @@ export type Database = {
           created_at: string
           ended_at: string | null
           id: string
+          limit_override: boolean
           minutes: number | null
           note: string | null
+          override_minutes: number | null
           started_at: string
           task_id: string
           user_id: string
@@ -287,8 +289,10 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           id?: string
+          limit_override?: boolean
           minutes?: number | null
           note?: string | null
+          override_minutes?: number | null
           started_at?: string
           task_id: string
           user_id: string
@@ -297,8 +301,10 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           id?: string
+          limit_override?: boolean
           minutes?: number | null
           note?: string | null
+          override_minutes?: number | null
           started_at?: string
           task_id?: string
           user_id?: string
@@ -321,7 +327,9 @@ export type Database = {
           ended_at: string | null
           entry_user_id: string | null
           id: string
+          limit_override: boolean
           note: string | null
+          override_minutes: number | null
           raw_minutes: number | null
           rounded_minutes: number | null
           rounding_delta_minutes: number | null
@@ -336,7 +344,9 @@ export type Database = {
           ended_at?: string | null
           entry_user_id?: string | null
           id?: string
+          limit_override?: boolean
           note?: string | null
+          override_minutes?: number | null
           raw_minutes?: number | null
           rounded_minutes?: number | null
           rounding_delta_minutes?: number | null
@@ -351,7 +361,9 @@ export type Database = {
           ended_at?: string | null
           entry_user_id?: string | null
           id?: string
+          limit_override?: boolean
           note?: string | null
+          override_minutes?: number | null
           raw_minutes?: number | null
           rounded_minutes?: number | null
           rounding_delta_minutes?: number | null

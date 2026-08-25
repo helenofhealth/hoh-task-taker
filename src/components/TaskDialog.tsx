@@ -152,17 +152,29 @@ export function TaskDialog({
   const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
 
   const timer = useMutation({
-    mutationFn: async () => {
-      if (running) await stopTimer(running.id);
-      else await startTimer(task!.id, userId);
+    mutationFn: async (opts?: { override?: boolean; overageMinutes?: number }) => {
+      if (running) {
+        await stopTimer(
+          running.id,
+          opts?.override && (opts.overageMinutes ?? 0) > 0
+            ? { overageMinutes: opts.overageMinutes! }
+            : null,
+        );
+      } else await startTimer(task!.id, userId);
     },
-    onSuccess: () => {
+    onSuccess: (_data, opts) => {
       setOverrunOpen(false);
       refreshTime();
-      if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
+      if (running)
+        toast.success(
+          `Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)${
+            opts?.override ? " · limit override recorded in the audit log" : ""
+          }`,
+        );
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const addComment = useMutation({
     mutationFn: async () => {
@@ -293,7 +305,7 @@ export function TaskDialog({
               size="sm"
               variant={running ? "destructive" : "default"}
               className="ml-auto"
-              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate())}
+              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate({}))}
               disabled={timer.isPending}
             >
               {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
@@ -338,9 +350,13 @@ export function TaskDialog({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep running</AlertDialogCancel>
-              <AlertDialogAction onClick={() => timer.mutate()} disabled={timer.isPending}>
+              <AlertDialogAction
+                onClick={() => timer.mutate({ override: true, overageMinutes: overBy })}
+                disabled={timer.isPending}
+              >
                 Override and log
               </AlertDialogAction>
+
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -560,9 +576,15 @@ export function TaskDialog({
               >
                 <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
                 <span>{displayName(profiles, e.user_id)}</span>
+                {e.limit_override && (
+                  <Badge className="bg-warning-soft text-warning-foreground">
+                    Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}
+                  </Badge>
+                )}
                 <span className="ml-auto text-xs text-muted-foreground">
                   {new Date(e.started_at).toLocaleString()}
                 </span>
+
                 {e.user_id === userId && (
                   <Button
                     size="icon"
@@ -598,10 +620,24 @@ export function TaskDialog({
                         on behalf of {displayName(profiles, a.entry_user_id)}
                       </span>
                     )}
+                    {a.limit_override && (
+                      <Badge className="bg-warning-soft text-warning-foreground">
+                        Limit override
+                      </Badge>
+                    )}
                     <span className="ml-auto text-xs text-muted-foreground">
                       {new Date(a.created_at).toLocaleString()}
                     </span>
                   </div>
+                  {a.limit_override && (
+                    <p className="mt-1.5 text-xs font-medium text-warning-foreground">
+                      Remaining-hours limit overridden
+                      {a.override_minutes
+                        ? ` — ${formatDuration(Math.round(Number(a.override_minutes)))} beyond the balance`
+                        : ""}
+                    </p>
+                  )}
+
                   {a.rounded_minutes != null && (
                     <p className="mt-1.5 text-xs text-muted-foreground">
                       Measured {formatDuration(Math.round(a.raw_minutes ?? 0))} → logged{" "}

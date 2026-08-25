@@ -48,10 +48,9 @@ function AuthPage() {
     }
     setResetBusy(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      await requestPasswordReset({
+        data: { email, origin: window.location.origin },
       });
-      if (error) throw error;
       toast.success("Password reset email sent — check your inbox");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -59,6 +58,7 @@ function AuthPage() {
       setResetBusy(false);
     }
   }
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

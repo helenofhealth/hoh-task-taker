@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { inviteClient } from "@/lib/invite-client.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,9 +85,21 @@ export function NewTaskDialog({
           kind: ncKind,
           effective_month: ncKind === "retainer" ? currentMonthStart() : null,
         });
-        if (creditError) throw creditError;
+      if (creditError) throw creditError;
       }
-      return created;
+      const contactEmail = ncEmail.trim();
+      if (contactEmail) {
+        const result = await inviteClient({
+          data: {
+            clientId: created.id,
+            email: contactEmail,
+            name: clean,
+            origin: window.location.origin,
+          },
+        });
+        return { ...created, invited: result.invited };
+      }
+      return { ...created, invited: null as boolean | null };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -99,7 +112,9 @@ export function NewTaskDialog({
       setNcHours("");
       setNcKind("package");
       qc.invalidateQueries({ queryKey: ["credits"] });
-      toast.success("Client added");
+      if (data.invited === true) toast.success("Client added — invitation email sent");
+      else if (data.invited === false) toast.success("Client added — existing account linked");
+      else toast.success("Client added");
     },
     onError: (e: Error) => toast.error(e.message),
   });

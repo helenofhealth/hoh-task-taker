@@ -263,7 +263,7 @@ export function TaskDialog({
   function onCommentChange(value: string, caret: number) {
     setComment(value);
     const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
-    setMentionQuery(m ? m[1] : null);
+    setMentionQuery(m ? (m[1] ?? "") : null);
   }
 
   function insertMention(p: Profile) {

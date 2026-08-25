@@ -304,6 +304,62 @@ export type Database = {
           },
         ]
       }
+      time_entry_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          ended_at: string | null
+          entry_user_id: string | null
+          id: string
+          note: string | null
+          raw_minutes: number | null
+          rounded_minutes: number | null
+          rounding_delta_minutes: number | null
+          started_at: string | null
+          task_id: string
+          time_entry_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          entry_user_id?: string | null
+          id?: string
+          note?: string | null
+          raw_minutes?: number | null
+          rounded_minutes?: number | null
+          rounding_delta_minutes?: number | null
+          started_at?: string | null
+          task_id: string
+          time_entry_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          entry_user_id?: string | null
+          id?: string
+          note?: string | null
+          raw_minutes?: number | null
+          rounded_minutes?: number | null
+          rounding_delta_minutes?: number | null
+          started_at?: string | null
+          task_id?: string
+          time_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entry_audit_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

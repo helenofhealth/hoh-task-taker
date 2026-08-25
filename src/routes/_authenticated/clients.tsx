@@ -183,6 +183,9 @@ function ClientsPage() {
                   placeholder="Optional"
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  When an email is set, an activation email is sent automatically on save.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="c-phone">Phone — optional</Label>

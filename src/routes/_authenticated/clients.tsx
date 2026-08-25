@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Mail, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -110,6 +110,21 @@ function ClientsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const resendInvite = useMutation({
+    mutationFn: async (client: { id: string; email: string; name: string }) => {
+      await inviteClient({
+        data: {
+          clientId: client.id,
+          email: client.email,
+          name: client.name,
+          origin: window.location.origin,
+        },
+      });
+    },
+    onSuccess: () => toast.success("Activation email sent"),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const addCredit = useMutation({
     mutationFn: async () => {
       if (!creditClient) throw new Error("Pick a client");
@@ -168,6 +183,9 @@ function ClientsPage() {
                   placeholder="Optional"
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  When an email is set, an activation email is sent automatically on save.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="c-phone">Phone — optional</Label>
@@ -253,6 +271,7 @@ function ClientsPage() {
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
+              <th className="px-4 py-2.5 text-right">Invite</th>
             </tr>
           </thead>
           <tbody>
@@ -279,12 +298,28 @@ function ClientsPage() {
                   <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
                     {formatHours(b.remaining)}
                   </td>
+                  <td className="px-4 py-2.5 text-right">
+                    {c.email ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={resendInvite.isPending}
+                        onClick={() =>
+                          resendInvite.mutate({ id: c.id, email: c.email!, name: c.name })
+                        }
+                      >
+                        <Mail className="mr-1.5 size-3.5" /> Resend activation email
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No email</span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {clientList.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   No clients yet.
                 </td>
               </tr>

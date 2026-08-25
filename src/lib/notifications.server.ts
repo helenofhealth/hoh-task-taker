@@ -46,7 +46,7 @@ export async function filterByPrefs(
     .from("notification_preferences")
     .select("*")
     .in("user_id", userIds);
-  const prefMap = new Map((prefs ?? []).map((p: any) => [p.user_id, p]));
+  const prefMap = new Map<string, any>((prefs ?? []).map((p: any) => [p.user_id, p]));
   const cols = PREF_COLUMNS[category];
   const inapp: string[] = [];
   const email: string[] = [];

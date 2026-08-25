@@ -65,6 +65,9 @@ export const inviteClient = createServerFn({ method: "POST" })
 
     const userId = invited.user?.id;
     if (userId) await linkUserToClient(userId);
-    if (userId) await sendActivationEmail(data.email, data.name, data.origin);
+    if (userId) {
+      const { sendActivationEmail } = await import("./invite-client.server");
+      await sendActivationEmail(data.email, data.name, data.origin);
+    }
     return { ok: true as const, invited: true as const, userId };
   });

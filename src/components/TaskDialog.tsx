@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   Download,
   History,
   Loader2,
@@ -30,8 +31,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { displayName } from "@/hooks/useAuth";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   STATUSES,
+  computeBalance,
   elapsedMinutes,
+  fetchCredits,
+  formatHours,
   fetchAttachments,
   fetchComments,
   fetchTimeAudit,
@@ -79,6 +93,7 @@ export function TaskDialog({
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [overrunOpen, setOverrunOpen] = useState(false);
 
   useEffect(() => setDraft(task), [task]);
   useEffect(() => {
@@ -134,12 +149,15 @@ export function TaskDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
+
   const timer = useMutation({
     mutationFn: async () => {
       if (running) await stopTimer(running.id);
       else await startTimer(task!.id, userId);
     },
     onSuccess: () => {
+      setOverrunOpen(false);
       refreshTime();
       if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
     },
@@ -224,6 +242,21 @@ export function TaskDialog({
   const willLog = roundedPreview(runningRaw);
   const nextStepIn = Math.max(0, Math.ceil(willLog - runningRaw));
 
+  const balance = task.client_id
+    ? computeBalance(
+        task.client_id,
+        clients,
+        credits.data ?? [],
+        entries as (TimeEntry & { tasks: { client_id: string | null } | null })[],
+      )
+    : null;
+  const remainingMinutes = balance ? balance.remaining * 60 : null;
+  const overBy =
+    running && remainingMinutes !== null && willLog > remainingMinutes
+      ? willLog - remainingMinutes
+      : 0;
+  const wouldExceed = overBy > 0;
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -260,7 +293,7 @@ export function TaskDialog({
               size="sm"
               variant={running ? "destructive" : "default"}
               className="ml-auto"
-              onClick={() => timer.mutate()}
+              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate())}
               disabled={timer.isPending}
             >
               {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
@@ -279,7 +312,38 @@ export function TaskDialog({
               </span>
             </div>
           )}
+          {wouldExceed && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs">
+              <AlertTriangle className="size-3.5 text-warning" />
+              <span className="font-medium">
+                This would exceed the client&apos;s remaining hours by {formatDuration(Math.round(overBy))}
+              </span>
+              <span className="text-muted-foreground">
+                ({formatHours(balance?.remaining ?? 0)} left) — you can still stop and log it.
+              </span>
+            </div>
+          )}
         </div>
+
+        <AlertDialog open={overrunOpen} onOpenChange={setOverrunOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Log time beyond the remaining hours?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Stopping now logs {formatDuration(willLog)}, but this client only has{" "}
+                {formatHours(balance?.remaining ?? 0)} remaining — that&apos;s{" "}
+                {formatDuration(Math.round(overBy))} over the balance. You can override and log it
+                anyway, or keep the timer running while hours are topped up.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep running</AlertDialogCancel>
+              <AlertDialogAction onClick={() => timer.mutate()} disabled={timer.isPending}>
+                Override and log
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
 
         <Tabs defaultValue="details">

@@ -13,6 +13,7 @@ const nav = [
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
   { to: "/clients", label: "Clients" },
+  { to: "/settings", label: "Settings" },
 ];
 
 export function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {

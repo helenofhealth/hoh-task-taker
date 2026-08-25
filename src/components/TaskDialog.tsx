@@ -113,7 +113,7 @@ interface Props {
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
-  initialCommentId?: string;
+  initialCommentId?: string | undefined;
   onInitialCommentUsed?: () => void;
 }
 

@@ -33,6 +33,7 @@ import {
   elapsedMinutes,
   fetchAttachments,
   fetchComments,
+  formatClock,
   formatDuration,
   roundedPreview,
   startTimer,
@@ -127,7 +128,7 @@ export function TaskDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time_entries"] });
-      if (running) toast.success("Timer stopped — logged in 15-minute increments");
+      if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

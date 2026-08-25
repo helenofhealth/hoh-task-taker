@@ -192,6 +192,16 @@ export function elapsedMinutes(startedAt: string) {
   return Math.max(0, (Date.now() - new Date(startedAt).getTime()) / 60000);
 }
 
+/** hh:mm:ss clock for a running timer. */
+export function formatClock(minutes: number) {
+  const total = Math.max(0, Math.floor(minutes * 60));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
 /** Rounds up to the next 15-minute increment (minimum 15). */
 export function roundedPreview(minutes: number) {
   return Math.max(15, Math.ceil(minutes / 15) * 15);

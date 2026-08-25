@@ -28,6 +28,7 @@ import {
   fetchClients,
   fetchCredits,
   fetchFollowers,
+  fetchOwners,
   fetchProfiles,
   fetchTasks,
   fetchTimeEntries,
@@ -81,6 +82,7 @@ function BoardPage() {
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
   const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
   const followers = useQuery({ queryKey: ["followers"], queryFn: fetchFollowers });
+  const owners = useQuery({ queryKey: ["owners"], queryFn: fetchOwners });
   const commentRows = useQuery({
     queryKey: ["comment_counts"],
     queryFn: async () => {
@@ -318,6 +320,7 @@ function BoardPage() {
         profiles={profiles.data ?? []}
         clients={clientList}
         followers={followers.data ?? []}
+        owners={owners.data ?? []}
         entries={entries.data ?? []}
         userId={me.userId ?? ""}
         canEdit={me.isStaff}

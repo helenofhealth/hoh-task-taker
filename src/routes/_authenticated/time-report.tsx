@@ -643,7 +643,98 @@ function TimeReportPage() {
         )}
       </div>
 
+      <h2 className="mt-10 text-lg font-semibold">Detailed timeline</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Every time entry grouped by client and task, with the measured duration, the 15-minute
+        increment that was billed, and any remaining-hours override.
+      </p>
+      <div className="mt-4 space-y-4">
+        {timeline.map((g) => (
+          <section
+            key={g.clientId ?? "none"}
+            className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+          >
+            <header className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-muted px-4 py-3">
+              <h3 className="font-semibold">{g.name}</h3>
+              <Badge variant="secondary">{formatDuration(g.minutes)}</Badge>
+              {g.overrides > 0 && (
+                <Badge className="bg-warning-soft text-warning-foreground">
+                  {g.overrides} override{g.overrides === 1 ? "" : "s"}
+                </Badge>
+              )}
+              {me.isStaff && g.clientId && (
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("csv", g.clientId)}
+                    disabled={exporting !== null}
+                  >
+                    <Download className="mr-1.5 size-3.5" />
+                    CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("pdf", g.clientId)}
+                    disabled={exporting !== null}
+                  >
+                    <FileText className="mr-1.5 size-3.5" />
+                    PDF
+                  </Button>
+                </div>
+              )}
+            </header>
+            <div className="divide-y divide-border">
+              {g.taskGroups.map((t) => (
+                <div key={t.title + t.minutes} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{t.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.entries.length} entr{t.entries.length === 1 ? "y" : "ies"}
+                    </span>
+                    <span className="ml-auto text-sm font-medium">{formatDuration(t.minutes)}</span>
+                  </div>
+                  <ol className="mt-2 space-y-1.5 border-l border-border pl-4">
+                    {t.entries.map((e) => (
+                      <li key={e.id} className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">
+                          {new Date(e.started_at).toLocaleString()}
+                        </span>
+                        {me.isStaff && (
+                          <span className="text-muted-foreground">
+                            · {displayName(profiles.data ?? [], e.user_id)}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground">
+                          · measured {Math.round(rawMinutes(e))}m
+                        </span>
+                        <Badge variant="outline">billed {formatDuration(e.minutes ?? 0)}</Badge>
+                        {e.limit_override && (
+                          <Badge className="bg-warning-soft text-warning-foreground">
+                            Override
+                            {e.override_minutes
+                              ? ` +${Math.round(Number(e.override_minutes))}m`
+                              : ""}
+                          </Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+        {timeline.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No time logged for the selected filters yet.
+          </p>
+        )}
+      </div>
+
       <h2 className="mt-10 text-lg font-semibold">Logged time</h2>
+
       <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         <table className="w-full text-sm">
           <thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">

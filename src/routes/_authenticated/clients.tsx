@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { inviteClient } from "@/lib/invite-client.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,23 +70,42 @@ function ClientsPage() {
       const raw = retainer.trim();
       const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
-      const { error } = await db.from("clients").insert({
-        name: clean,
-        retainer_hours: hours,
-        business_name: business.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-      });
+      const contactEmail = email.trim();
+      const { data, error } = await db
+        .from("clients")
+        .insert({
+          name: clean,
+          retainer_hours: hours,
+          business_name: business.trim() || null,
+          email: contactEmail || null,
+          phone: phone.trim() || null,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (contactEmail) {
+        const result = await inviteClient({
+          data: {
+            clientId: (data as { id: string }).id,
+            email: contactEmail,
+            name: clean,
+            origin: window.location.origin,
+          },
+        });
+        return { invited: result.invited };
+      }
+      return { invited: null };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       setName("");
       setRetainer("");
       setBusiness("");
       setEmail("");
       setPhone("");
       qc.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("Client added");
+      if (result.invited === true) toast.success("Client added — invitation email sent");
+      else if (result.invited === false) toast.success("Client added — existing account linked");
+      else toast.success("Client added");
     },
     onError: (e: Error) => toast.error(e.message),
   });

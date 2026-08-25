@@ -1274,7 +1274,7 @@ export function TaskDialog({
                   </div>
                 )}
               </div>
-              <Button onClick={() => addComment.mutate()} disabled={addComment.isPending}>
+              <Button onClick={() => addComment.mutate({ body: comment, parentId: null })} disabled={addComment.isPending}>
                 Post comment
               </Button>
             </div>

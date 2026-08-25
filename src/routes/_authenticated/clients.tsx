@@ -54,7 +54,7 @@ function ClientsPage() {
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
 
   const [name, setName] = useState("");
-  const [retainer, setRetainer] = useState("0");
+  const [retainer, setRetainer] = useState("");
   const [creditClient, setCreditClient] = useState("");
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
@@ -63,13 +63,15 @@ function ClientsPage() {
     mutationFn: async () => {
       const clean = name.trim();
       if (!clean) throw new Error("Client name is required");
-      const hours = Number(retainer);
+      const raw = retainer.trim();
+      const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
       const { error } = await db.from("clients").insert({ name: clean, retainer_hours: hours });
       if (error) throw error;
     },
     onSuccess: () => {
       setName("");
+      setRetainer("");
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Client added");
     },
@@ -115,12 +117,13 @@ function ClientsPage() {
                 <Input id="c-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="c-retainer">Retainer (h/month)</Label>
+                <Label htmlFor="c-retainer">Retainer (h/month) — optional</Label>
                 <Input
                   id="c-retainer"
                   type="number"
                   min="0"
                   step="0.5"
+                  placeholder="Optional"
                   value={retainer}
                   onChange={(e) => setRetainer(e.target.value)}
                 />

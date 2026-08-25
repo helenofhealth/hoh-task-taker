@@ -14,12 +14,12 @@ const DEDUP_WINDOW_MS = 5 * 60 * 1000;
 
 export async function createNotifications(
   userIds: string[],
-  payload: { taskId: string; kind: string; title: string; body?: string },
+  payload: { taskId: string; kind: string; title: string; body?: string; commentId?: string },
 ) {
   if (userIds.length === 0) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS).toISOString();
-  const { data: existing } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("notifications")
     .select("id, user_id")
     .in("user_id", userIds)
@@ -28,6 +28,10 @@ export async function createNotifications(
     .is("read_at", null)
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false });
+  // Comment-scoped notifications dedupe against the exact comment so edits
+  // update the original item instead of stacking.
+  if (payload.commentId) query = query.eq("comment_id", payload.commentId);
+  const { data: existing } = await query;
 
   // Update the newest unread match per user (bump title/body/created_at);
   // insert fresh rows for everyone else.
@@ -40,6 +44,7 @@ export async function createNotifications(
     .map((user_id) => ({
       user_id,
       task_id: payload.taskId,
+      comment_id: payload.commentId ?? null,
       kind: payload.kind,
       title: payload.title,
       body: payload.body ?? null,

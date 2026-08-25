@@ -295,6 +295,11 @@ export async function updateComment(commentId: string, newBody: string) {
   if (error) throw error;
 }
 
+export async function deleteComment(commentId: string) {
+  const { error } = await db.from("task_comments").delete().eq("id", commentId);
+  if (error) throw error;
+}
+
 export async function fetchAttachments(taskId: string): Promise<Attachment[]> {
   const { data, error } = await db
     .from("task_attachments")

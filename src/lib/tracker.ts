@@ -149,17 +149,26 @@ export async function fetchTimeAudit(taskId?: string): Promise<TimeEntryAudit[]>
   return (data ?? []) as TimeEntryAudit[];
 }
 
-/** Audit rows recorded between two dates (inclusive), oldest first. */
-export async function fetchTimeAuditRange(from: string, to: string): Promise<TimeEntryAudit[]> {
+/** Audit rows recorded between two dates (inclusive), oldest first.
+ *  Optionally filter by action and/or task id. Client filtering is best done
+ *  by the caller using the tasks list (audit rows do not store client_id). */
+export async function fetchTimeAuditRange(
+  from: string,
+  to: string,
+  options?: { action?: AuditAction | null; taskId?: string | null },
+): Promise<TimeEntryAudit[]> {
   const start = new Date(`${from}T00:00:00`);
   const end = new Date(`${to}T00:00:00`);
   end.setDate(end.getDate() + 1);
-  const { data, error } = await db
+  let q = db
     .from("time_entry_audit")
     .select("*")
     .gte("created_at", start.toISOString())
     .lt("created_at", end.toISOString())
     .order("created_at", { ascending: true });
+  if (options?.action) q = q.eq("action", options.action);
+  if (options?.taskId) q = q.eq("task_id", options.taskId);
+  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as TimeEntryAudit[];
 }

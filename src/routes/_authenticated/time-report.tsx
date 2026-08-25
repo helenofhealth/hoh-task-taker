@@ -9,8 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { displayName, useMe } from "@/hooks/useAuth";
 import {
+  type AuditAction,
   computeBalance,
   downloadTextFile,
   fetchClients,
@@ -27,6 +35,13 @@ import {
 function isoDay(d: Date) {
   return d.toISOString().slice(0, 10);
 }
+
+const AUDIT_ACTIONS: { value: AuditAction; label: string }[] = [
+  { value: "started", label: "Started" },
+  { value: "stopped", label: "Stopped" },
+  { value: "adjusted", label: "Adjusted" },
+  { value: "deleted", label: "Deleted" },
+];
 
 export const Route = createFileRoute("/_authenticated/time-report")({
   head: () => ({
@@ -62,6 +77,9 @@ function TimeReportPage() {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const [from, setFrom] = useState(isoDay(monthStart));
   const [to, setTo] = useState(isoDay(today));
+  const [action, setAction] = useState<AuditAction | "">("");
+  const [taskId, setTaskId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("");
   const [exporting, setExporting] = useState(false);
 
   const exportAudit = async () => {
@@ -71,12 +89,20 @@ function TimeReportPage() {
     }
     setExporting(true);
     try {
-      const rows = await fetchTimeAuditRange(from, to);
-      if (rows.length === 0) {
-        toast.error("No audit activity in that date range");
+      const rows = await fetchTimeAuditRange(from, to, {
+        action: action || null,
+        taskId: taskId || null,
+      });
+      const taskList = tasks.data ?? [];
+      const filtered = rows.filter((r) => {
+        if (!clientId) return true;
+        const task = taskList.find((t) => t.id === r.task_id);
+        return task?.client_id === clientId;
+      });
+      if (filtered.length === 0) {
+        toast.error("No audit activity matches the selected filters");
         return;
       }
-      const taskList = tasks.data ?? [];
       const people = profiles.data ?? [];
       const csv = toCsv(
         [
@@ -94,7 +120,7 @@ function TimeReportPage() {
           "Note",
           "Time entry ID",
         ],
-        rows.map((r) => {
+        filtered.map((r) => {
           const task = taskList.find((t) => t.id === r.task_id);
           return [
             new Date(r.created_at).toISOString(),
@@ -113,8 +139,14 @@ function TimeReportPage() {
           ];
         }),
       );
-      downloadTextFile(`audit-trail-${from}-to-${to}.csv`, csv);
-      toast.success(`Exported ${rows.length} audit ${rows.length === 1 ? "event" : "events"}`);
+      const parts = [from, to];
+      if (action) parts.push(action);
+      if (clientId) parts.push(clientList.find((c) => c.id === clientId)?.name ?? "client");
+      if (taskId) parts.push(taskList.find((t) => t.id === taskId)?.title ?? "task");
+      downloadTextFile(`audit-trail-${parts.join("-")}.csv`, csv);
+      toast.success(
+        `Exported ${filtered.length} audit ${filtered.length === 1 ? "event" : "events"}`,
+      );
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -131,41 +163,99 @@ function TimeReportPage() {
             Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
-          <div className="space-y-1">
-            <Label htmlFor="audit-from" className="text-xs text-muted-foreground">
-              From
-            </Label>
-            <Input
-              id="audit-from"
-              type="date"
-              value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
-              className="w-[9.5rem]"
-            />
+        <div className="flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft md:w-auto">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="audit-from" className="text-xs text-muted-foreground">
+                From
+              </Label>
+              <Input
+                id="audit-from"
+                type="date"
+                value={from}
+                max={to}
+                onChange={(e) => setFrom(e.target.value)}
+                className="w-[9.5rem]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="audit-to" className="text-xs text-muted-foreground">
+                To
+              </Label>
+              <Input
+                id="audit-to"
+                type="date"
+                value={to}
+                min={from}
+                onChange={(e) => setTo(e.target.value)}
+                className="w-[9.5rem]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Action</Label>
+              <Select value={action} onValueChange={(v) => setAction(v as AuditAction | "")}>
+                <SelectTrigger className="w-[9.5rem]">
+                  <SelectValue placeholder="Any action" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any action</SelectItem>
+                  {AUDIT_ACTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value}>
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Client</Label>
+              <Select
+                value={clientId}
+                onValueChange={(v) => {
+                  setClientId(v);
+                  setTaskId("");
+                }}
+              >
+                <SelectTrigger className="w-[10rem]">
+                  <SelectValue placeholder="All clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All clients</SelectItem>
+                  {clientList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Task</Label>
+              <Select value={taskId} onValueChange={(v) => setTaskId(v)}>
+                <SelectTrigger className="w-[12rem]">
+                  <SelectValue placeholder="All tasks" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All tasks</SelectItem>
+                  {(tasks.data ?? [])
+                    .filter((t) => !clientId || t.client_id === clientId)
+                    .map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.title}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={exportAudit} disabled={exporting}>
+              {exporting ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 size-4" />
+              )}
+              Export audit
+            </Button>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="audit-to" className="text-xs text-muted-foreground">
-              To
-            </Label>
-            <Input
-              id="audit-to"
-              type="date"
-              value={to}
-              min={from}
-              onChange={(e) => setTo(e.target.value)}
-              className="w-[9.5rem]"
-            />
-          </div>
-          <Button onClick={exportAudit} disabled={exporting}>
-            {exporting ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 size-4" />
-            )}
-            Export audit
-          </Button>
         </div>
       </div>
 

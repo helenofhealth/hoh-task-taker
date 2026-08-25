@@ -259,6 +259,41 @@ export type Database = {
           },
         ]
       }
+      task_activity: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          detail: string
+          id: string
+          kind: string
+          task_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          detail: string
+          id?: string
+          kind: string
+          task_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_activity_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_attachments: {
         Row: {
           created_at: string

@@ -1,17 +1,32 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, MessageSquare, ArrowRightLeft, UserPlus, Pencil, Sparkles, AtSign } from "lucide-react";
+import {
+  Bell,
+  MessageSquare,
+  ArrowRightLeft,
+  UserPlus,
+  Pencil,
+  Sparkles,
+  AtSign,
+  Search,
+  Loader2,
+  CheckCheck,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMe } from "@/hooks/useAuth";
 import {
+  NOTIFICATIONS_PAGE_SIZE,
   fetchMyNotifications,
+  fetchUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationsRead,
 } from "@/lib/notifications.functions";
 
 function timeAgo(iso: string) {
@@ -33,15 +48,36 @@ export function NotificationBell() {
   const qc = useQueryClient();
   const me = useMe();
   const fetchNotifications = useServerFn(fetchMyNotifications);
+  const fetchUnreadCount = useServerFn(fetchUnreadNotificationCount);
   const markAll = useServerFn(markAllNotificationsRead);
   const markOne = useServerFn(markNotificationRead);
+  const markMany = useServerFn(markNotificationsRead);
 
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
 
-  const notifications = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => fetchNotifications(),
+  // Debounce the search box so typing doesn't fire a query per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const notifications = useInfiniteQuery({
+    queryKey: ["notifications", "list", search],
+    queryFn: ({ pageParam }) =>
+      fetchNotifications({ data: { q: search, offset: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length === NOTIFICATIONS_PAGE_SIZE
+        ? pages.reduce((total, p) => total + p.length, 0)
+        : undefined,
+  });
+
+  const unreadCount = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: () => fetchUnreadCount(),
   });
 
   // Real-time: refresh the list the moment a notification for this user is
@@ -66,8 +102,8 @@ export function NotificationBell() {
     };
   }, [me.userId, qc]);
 
-  const items = notifications.data ?? [];
-  const unread = items.filter((n: any) => !n.read_at);
+  const items = (notifications.data?.pages ?? []).flat();
+  const unreadTotal = unreadCount.data ?? items.filter((n: any) => !n.read_at).length;
 
   const filtered = items.filter((n: any) => {
     if (readFilter === "unread" && n.read_at) return false;
@@ -75,21 +111,21 @@ export function NotificationBell() {
     if (kindFilter === "status" && !STATUS_KINDS.has(n.kind)) return false;
     return true;
   });
+  const filteredUnreadIds = filtered.filter((n: any) => !n.read_at).map((n: any) => n.id);
+  const filtersActive = search !== "" || readFilter !== "all" || kindFilter !== "all";
 
-  const markAllRead = useMutation({
-    mutationFn: () => markAll(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["notifications"] });
+  const markAllRead = useMutation({ mutationFn: () => markAll(), onSuccess: invalidate });
+  const markShownRead = useMutation({
+    mutationFn: (ids: string[]) => markMany({ data: { ids } }),
+    onSuccess: invalidate,
   });
   const markRead = useMutation({
     mutationFn: (id: string) => markOne({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: invalidate,
   });
 
-  const filterButton = (
-    active: boolean,
-    label: string,
-    onClick: () => void,
-  ) => (
+  const filterButton = (active: boolean, label: string, onClick: () => void) => (
     <button
       key={label}
       onClick={onClick}
@@ -108,9 +144,9 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <Button size="icon" variant="ghost" aria-label="Notifications" className="relative">
           <Bell className="size-4" />
-          {unread.length > 0 && (
+          {unreadTotal > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {unread.length > 9 ? "9+" : unread.length}
+              {unreadTotal > 9 ? "9+" : unreadTotal}
             </span>
           )}
         </Button>
@@ -118,7 +154,7 @@ export function NotificationBell() {
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <p className="text-sm font-semibold">Notifications</p>
-          {unread.length > 0 && (
+          {unreadTotal > 0 && (
             <button
               className="text-xs font-medium text-primary hover:underline"
               onClick={() => markAllRead.mutate()}
@@ -127,18 +163,48 @@ export function NotificationBell() {
             </button>
           )}
         </div>
+        <div className="border-b border-border px-4 py-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search notifications…"
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-4 py-2">
           {filterButton(readFilter === "all", "All", () => setReadFilter("all"))}
-          {filterButton(readFilter === "unread", `Unread (${unread.length})`, () => setReadFilter("unread"))}
+          {filterButton(readFilter === "unread", `Unread (${unreadTotal})`, () => setReadFilter("unread"))}
           <span className="mx-1 h-4 w-px bg-border" />
           {filterButton(kindFilter === "all", "Any type", () => setKindFilter("all"))}
           {filterButton(kindFilter === "comment", "Comments", () => setKindFilter("comment"))}
           {filterButton(kindFilter === "status", "Status changes", () => setKindFilter("status"))}
         </div>
+        {filtersActive && filteredUnreadIds.length > 0 && (
+          <div className="border-b border-border px-4 py-2">
+            <button
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              onClick={() => markShownRead.mutate(filteredUnreadIds)}
+              disabled={markShownRead.isPending}
+            >
+              <CheckCheck className="size-3.5" />
+              Mark shown as read ({filteredUnreadIds.length})
+            </button>
+          </div>
+        )}
         <ScrollArea className="max-h-96">
-          {filtered.length === 0 && (
+          {notifications.isLoading && (
+            <p className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Loading…
+            </p>
+          )}
+          {!notifications.isLoading && filtered.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              {items.length === 0 ? "No notifications yet." : "Nothing matches these filters."}
+              {items.length === 0 && !search
+                ? "No notifications yet."
+                : "Nothing matches your search or filters."}
             </p>
           )}
           {filtered.map((n: any) => (
@@ -178,6 +244,18 @@ export function NotificationBell() {
               {!n.read_at && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
             </button>
           ))}
+          {notifications.hasNextPage && (
+            <div className="px-4 py-2.5 text-center">
+              <button
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                onClick={() => notifications.fetchNextPage()}
+                disabled={notifications.isFetchingNextPage}
+              >
+                {notifications.isFetchingNextPage && <Loader2 className="size-3 animate-spin" />}
+                Load older notifications
+              </button>
+            </div>
+          )}
         </ScrollArea>
       </PopoverContent>
     </Popover>

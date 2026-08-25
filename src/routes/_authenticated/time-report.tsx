@@ -598,7 +598,32 @@ function TimeReportPage() {
                 <Stat label="Monthly retainer" value={formatHours(b.monthRetainer)} />
                 <Stat label="Used this month" value={formatHours(b.monthUsed)} />
               </dl>
+              {me.isStaff && (
+                <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
+                  <span className="text-xs text-muted-foreground">Export {from} → {to}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto"
+                    onClick={() => exportReport("csv", c.id)}
+                    disabled={exporting !== null}
+                  >
+                    <Download className="mr-1.5 size-3.5" />
+                    CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => exportReport("pdf", c.id)}
+                    disabled={exporting !== null}
+                  >
+                    <FileText className="mr-1.5 size-3.5" />
+                    PDF
+                  </Button>
+                </div>
+              )}
             </div>
+
           );
         })}
         {clientList.length === 0 && (

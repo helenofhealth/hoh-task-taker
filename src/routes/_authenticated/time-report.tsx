@@ -58,13 +58,13 @@ const AUDIT_ACTIONS: { value: AuditAction; label: string }[] = [
 export const Route = createFileRoute("/_authenticated/time-report")({
   head: () => ({
     meta: [
-      { title: "Time report — Bloom task tracker" },
+      { title: "Time report — Helen of Health Task Taker task tracker" },
       {
         name: "description",
         content:
           "See hours bought, hours used and remaining balance per client, plus every logged time entry.",
       },
-      { property: "og:title", content: "Time report — Bloom task tracker" },
+      { property: "og:title", content: "Time report — Helen of Health Task Taker task tracker" },
       {
         property: "og:description",
         content: "Client hour balances and a full log of time tracked in 15-minute increments.",

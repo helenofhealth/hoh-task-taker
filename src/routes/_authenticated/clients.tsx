@@ -32,12 +32,12 @@ const db = supabase as unknown as { from: (t: string) => any };
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
     meta: [
-      { title: "Clients & hours — Bloom task tracker" },
+      { title: "Clients & hours — Helen of Health Task Taker task tracker" },
       {
         name: "description",
         content: "Manage clients, monthly retainers and purchased hour packages in one place.",
       },
-      { property: "og:title", content: "Clients & hours — Bloom task tracker" },
+      { property: "og:title", content: "Clients & hours — Helen of Health Task Taker task tracker" },
       {
         property: "og:description",
         content: "Add clients, set retainers and top up hour packages.",

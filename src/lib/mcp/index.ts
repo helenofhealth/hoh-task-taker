@@ -14,10 +14,10 @@ const projectRef = import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? "project-ref-u
 
 export default defineMcp({
   name: "bloom",
-  title: "Bloom",
+  title: "Helen of Health Task Taker",
   version: "0.1.0",
   instructions:
-    "Tools for Bloom, a client task & time tracker. Use list_tasks/get_task to read work, " +
+    "Tools for Helen of Health Task Taker, a client task & time tracker. Use list_tasks/get_task to read work, " +
     "create_task and update_task_status to manage the board, add_comment to discuss, " +
     "list_clients and get_time_report for client hour balances.",
   auth: auth.oauth.issuer({

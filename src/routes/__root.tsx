@@ -77,13 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bloom — Client task & time tracker" },
+      { title: "Helen of Health Task Taker" },
       {
         name: "description",
         content:
           "A friendly task board with drag-and-drop statuses, 15-minute time tracking and live client hour balances.",
       },
-      { property: "og:title", content: "Bloom — Client task & time tracker" },
+      { property: "og:title", content: "Helen of Health Task Taker" },
       {
         property: "og:description",
         content: "Track tasks, time and client hours in one calm, colourful workspace.",
@@ -99,7 +99,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,

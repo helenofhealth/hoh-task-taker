@@ -38,13 +38,13 @@ const db = supabase as unknown as { from: (t: string) => any };
 export const Route = createFileRoute("/_authenticated/board")({
   head: () => ({
     meta: [
-      { title: "Task board — Bloom task tracker" },
+      { title: "Task board — Helen of Health Task Taker task tracker" },
       {
         name: "description",
         content:
           "Drag tasks through Requested, In Progress, Review and Completed while tracking billable time in 15-minute increments.",
       },
-      { property: "og:title", content: "Task board — Bloom task tracker" },
+      { property: "og:title", content: "Task board — Helen of Health Task Taker task tracker" },
       {
         property: "og:description",
         content: "A friendlier kanban board with built-in time tracking and client hour balances.",

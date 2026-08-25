@@ -694,14 +694,6 @@ export function TaskDialog({
                   onChange={(e) => save.mutate({ start_date: e.target.value || null })}
                 />
               </Field>
-              <Field label="Start date">
-                <Input
-                  type="date"
-                  disabled={!canEdit}
-                  value={draft.start_date ?? ""}
-                  onChange={(e) => save.mutate({ start_date: e.target.value || null })}
-                />
-              </Field>
               <Field label="Due date">
                 <Input
                   type="date"

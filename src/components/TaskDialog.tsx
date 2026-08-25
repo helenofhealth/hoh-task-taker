@@ -124,6 +124,8 @@ export function TaskDialog({
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
   const [comment, setComment] = useState("");
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
   const [tick, setTick] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

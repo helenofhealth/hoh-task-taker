@@ -1,6 +1,10 @@
 // Server-only helper: sends outbound emails via the Resend connector gateway.
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const FROM = "Helen of Health Task Taker <no-reply@tasks.helenofhealth.com>";
+const APP_NAME = "Helen of Health Task Taker";
+// Absolute logo URL so email clients can render it (matches the app logo asset).
+const LOGO_URL =
+  "https://tasks.helenofhealth.com/__l5e/assets-v1/47b82122-da18-4ab3-bc46-69a7ae63330e/wire.png";
 
 async function sendEmail(to: string, subject: string, html: string) {
   const lovableApiKey = process.env["LOVABLE_API_KEY"];

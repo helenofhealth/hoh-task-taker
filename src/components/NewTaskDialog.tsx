@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
 import { notifyTaskEvent } from "@/lib/task-notifications.functions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +48,7 @@ export function NewTaskDialog({
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [ownerId, setOwnerId] = useState(userId);
+  const [followerIds, setFollowerIds] = useState<string[]>([]);
   const [priority, setPriority] = useState("normal");
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");

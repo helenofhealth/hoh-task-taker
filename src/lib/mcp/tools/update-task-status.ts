@@ -10,7 +10,7 @@ export default defineTool({
   inputSchema: {
     task_id: z.string().uuid().describe("The task id."),
     status: z
-      .enum(["requested", "in_progress", "review", "completed"])
+      .enum(["requested", "in_progress", "on_hold", "review", "completed"])
       .describe("Target status/column."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },

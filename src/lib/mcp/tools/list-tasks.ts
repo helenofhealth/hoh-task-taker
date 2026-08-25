@@ -9,7 +9,7 @@ export default defineTool({
     "List tasks the signed-in user can see, optionally filtered by status or client. Returns task id, title, status, priority, owner, dates and client.",
   inputSchema: {
     status: z
-      .enum(["requested", "in_progress", "review", "completed"])
+      .enum(["requested", "in_progress", "on_hold", "review", "completed"])
       .optional()
       .describe("Filter by board column/status."),
     client_id: z.string().uuid().optional().describe("Filter by client id."),

@@ -179,7 +179,7 @@ function BoardPage() {
           </Select>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {balances.slice(0, 4).map(({ client, balance }) =>
             client ? (
               <div key={client.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
@@ -209,7 +209,7 @@ function BoardPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-5">
         {STATUSES.map((col) => {
           const items = filtered.filter((t) => t.status === col.key);
           return (

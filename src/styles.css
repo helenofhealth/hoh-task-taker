@@ -48,6 +48,7 @@
   --color-status-requested: var(--status-requested);
   --color-status-progress: var(--status-progress);
   --color-status-review: var(--status-review);
+  --color-status-hold: var(--status-hold);
   --color-status-completed: var(--status-completed);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
@@ -85,6 +86,7 @@
   --plum-foreground: oklch(0.99 0.005 340);
   --status-requested: oklch(0.6 0.09 300);
   --status-progress: oklch(0.72 0.14 65);
+  --status-hold: oklch(0.62 0.06 260);
   --status-review: oklch(0.74 0.155 350);
   --status-completed: oklch(0.66 0.13 160);
   --warning: oklch(0.72 0.14 65);

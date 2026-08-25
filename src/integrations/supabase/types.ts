@@ -444,7 +444,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "member" | "client"
       task_priority: "low" | "normal" | "high" | "urgent"
-      task_status: "requested" | "in_progress" | "review" | "completed"
+      task_status:
+        | "requested"
+        | "in_progress"
+        | "review"
+        | "completed"
+        | "on_hold"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -574,7 +579,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "member", "client"],
       task_priority: ["low", "normal", "high", "urgent"],
-      task_status: ["requested", "in_progress", "review", "completed"],
+      task_status: [
+        "requested",
+        "in_progress",
+        "review",
+        "completed",
+        "on_hold",
+      ],
     },
   },
 } as const

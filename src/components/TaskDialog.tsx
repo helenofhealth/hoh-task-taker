@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import {
   notifyTaskComment,
+  notifyTaskEvent,
   notifyTaskStatusChange,
 } from "@/lib/task-notifications.functions";
 import {
@@ -144,19 +145,42 @@ export function TaskDialog({
   };
 
   const notifyStatus = useServerFn(notifyTaskStatusChange);
+  const notifyEvent = useServerFn(notifyTaskEvent);
 
   const save = useMutation({
     mutationFn: async (patch: Partial<Task>) => {
       const { error } = await db.from("tasks").update(patch).eq("id", task!.id);
       if (error) throw error;
-      if (patch.status && task && patch.status !== task.status) {
+      if (!task) return;
+      const origin = window.location.origin;
+      if (patch.status && patch.status !== task.status) {
         notifyStatus({
           data: {
             taskId: task.id,
             oldStatus: task.status,
             newStatus: patch.status,
-            origin: window.location.origin,
+            origin,
           },
+        }).catch(() => {});
+      }
+      if (patch.owner_id !== undefined && patch.owner_id !== task.owner_id && patch.owner_id) {
+        notifyEvent({
+          data: { taskId: task.id, kind: "assigned", targetUserId: patch.owner_id, origin },
+        }).catch(() => {});
+      }
+      const changed: string[] = [];
+      if (patch.title !== undefined && patch.title !== task.title) changed.push("the title");
+      if (patch.due_date !== undefined && patch.due_date !== task.due_date)
+        changed.push(patch.due_date ? `the due date to ${patch.due_date}` : "removed the due date");
+      if (patch.start_date !== undefined && patch.start_date !== task.start_date)
+        changed.push(
+          patch.start_date ? `the start date to ${patch.start_date}` : "removed the start date",
+        );
+      if (patch.priority !== undefined && patch.priority !== task.priority)
+        changed.push(`the priority to ${patch.priority}`);
+      if (changed.length > 0) {
+        notifyEvent({
+          data: { taskId: task.id, kind: "details", detail: changed.join(" and "), origin },
         }).catch(() => {});
       }
     },
@@ -232,6 +256,14 @@ export function TaskDialog({
           .from("task_followers")
           .insert({ task_id: task!.id, user_id: id });
         if (error) throw error;
+        notifyEvent({
+          data: {
+            taskId: task!.id,
+            kind: "follower_added",
+            targetUserId: id,
+            origin: window.location.origin,
+          },
+        }).catch(() => {});
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["followers"] }),

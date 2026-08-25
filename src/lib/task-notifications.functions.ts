@@ -160,3 +160,90 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     }
     return { ok: true as const, sent };
   });
+
+type TaskEventKind = "assigned" | "follower_added" | "created" | "details";
+
+interface NotifyTaskEventInput {
+  taskId: string;
+  kind: TaskEventKind;
+  detail?: string;
+  targetUserId?: string;
+  origin: string;
+}
+
+const EVENT_KINDS: TaskEventKind[] = ["assigned", "follower_added", "created", "details"];
+
+// Notifies about task changes beyond status/comments: a task was created for
+// you, you were assigned as owner, you were added as a follower, or task
+// details (title, dates, priority) changed.
+export const notifyTaskEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: NotifyTaskEventInput) => {
+    if (!input.taskId) throw new Error("Task is required");
+    if (!EVENT_KINDS.includes(input.kind)) throw new Error("Unknown event kind");
+    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const { createNotifications } = await import("./notifications.server");
+    const loaded = await loadTaskAndRecipients(context.supabase, context.userId, data.taskId, false);
+    if (!loaded) throw new Error("Forbidden");
+    const { supabaseAdmin, task, recipientIds, actorName } = loaded;
+
+    // Assignment and follower events notify the affected user; created/details
+    // events go to the whole audience (owner + followers) minus the actor.
+    let notifyIds: string[];
+    if (data.kind === "assigned" || data.kind === "follower_added") {
+      const target = data.targetUserId;
+      if (!target) throw new Error("Target user is required");
+      const { data: targetProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("id", target)
+        .maybeSingle();
+      if (!targetProfile) return { ok: true as const, sent: 0 };
+      notifyIds = target === context.userId ? [] : [target];
+    } else {
+      notifyIds = recipientIds;
+    }
+
+    let title: string;
+    let body: string;
+    switch (data.kind) {
+      case "assigned":
+        title = `You were assigned "${task.title}"`;
+        body = `${actorName} made you the owner of this task.`;
+        break;
+      case "follower_added":
+        title = `You were added as a follower of "${task.title}"`;
+        body = `${actorName} added you to the task's team.`;
+        break;
+      case "created":
+        title = `New task: "${task.title}"`;
+        body = data.detail
+          ? `${actorName} created this task — ${data.detail}`
+          : `${actorName} created this task.`;
+        break;
+      default:
+        title = `"${task.title}" was updated`;
+        body = data.detail
+          ? `${actorName} updated ${data.detail}.`
+          : `${actorName} updated this task.`;
+    }
+
+    const link = `${data.origin.replace(/\/+$/, "")}/board`;
+    await createNotifications(notifyIds, { taskId: task.id, kind: data.kind, title, body });
+
+    const emails = await recipientEmails(supabaseAdmin, notifyIds);
+    const { sendTaskUpdateEmail } = await import("./invite-client.server");
+    let sent = 0;
+    for (const email of emails) {
+      try {
+        await sendTaskUpdateEmail(email, title, `${body}<br/><strong>${task.title}</strong>`, link);
+        sent++;
+      } catch (err) {
+        console.error("Task update email to recipient failed:", err);
+      }
+    }
+    return { ok: true as const, sent };
+  });

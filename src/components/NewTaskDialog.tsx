@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
+import { notifyTaskEvent } from "@/lib/task-notifications.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,25 +121,41 @@ export function NewTaskDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const notifyEvent = useServerFn(notifyTaskEvent);
+
   const create = useMutation({
     mutationFn: async () => {
       const clean = title.trim();
       if (!clean) throw new Error("Give the task a title");
       if (!clientId) throw new Error("Pick a client");
-      const { error } = await db.from("tasks").insert({
-        title: clean,
-        description: description.trim() || null,
-        client_id: clientId,
-        owner_id: ownerId || null,
-        priority,
-        start_date: startDate || null,
-        due_date: dueDate || null,
-        is_recurring: recurring,
-        recurrence: recurring ? recurrence : null,
-        created_by: userId,
-        position: Date.now(),
-      });
+      const { data: created, error } = await db
+        .from("tasks")
+        .insert({
+          title: clean,
+          description: description.trim() || null,
+          client_id: clientId,
+          owner_id: ownerId || null,
+          priority,
+          start_date: startDate || null,
+          due_date: dueDate || null,
+          is_recurring: recurring,
+          recurrence: recurring ? recurrence : null,
+          created_by: userId,
+          position: Date.now(),
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (ownerId && created) {
+        notifyEvent({
+          data: {
+            taskId: created.id,
+            kind: "created",
+            ...(dueDate ? { detail: `due ${dueDate}` } : {}),
+            origin: window.location.origin,
+          },
+        }).catch(() => {});
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] });

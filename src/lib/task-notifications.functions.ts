@@ -97,6 +97,8 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
     const { supabaseAdmin, task, recipientIds, actorName, clientName } = loaded;
     if (task.status !== data.newStatus) return { ok: true as const, sent: 0 }; // stale call
 
+    const oldLabel = STATUS_LABELS[data.oldStatus] ?? data.oldStatus;
+    const newLabel = STATUS_LABELS[data.newStatus] ?? data.newStatus;
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 

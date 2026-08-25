@@ -268,6 +268,7 @@ function ClientsPage() {
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
+              <th className="px-4 py-2.5 text-right">Invite</th>
             </tr>
           </thead>
           <tbody>
@@ -293,6 +294,22 @@ function ClientsPage() {
                   <td className="px-4 py-2.5 text-right text-muted-foreground">{formatHours(b.used)}</td>
                   <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
                     {formatHours(b.remaining)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    {c.email ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={resendInvite.isPending}
+                        onClick={() =>
+                          resendInvite.mutate({ id: c.id, email: c.email!, name: c.name })
+                        }
+                      >
+                        <Mail className="mr-1.5 size-3.5" /> Resend activation email
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No email</span>
+                    )}
                   </td>
                 </tr>
               );

@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, MessageSquare, ArrowRightLeft, UserPlus, Pencil, Sparkles, AtSign } from "lucide-react";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMe } from "@/hooks/useAuth";
 import {
   fetchMyNotifications,
   markAllNotificationsRead,
@@ -20,20 +23,58 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type ReadFilter = "all" | "unread";
+type KindFilter = "all" | "comment" | "status";
+
+const COMMENT_KINDS = new Set(["comment", "mention"]);
+const STATUS_KINDS = new Set(["status", "details"]);
+
 export function NotificationBell() {
   const qc = useQueryClient();
+  const me = useMe();
   const fetchNotifications = useServerFn(fetchMyNotifications);
   const markAll = useServerFn(markAllNotificationsRead);
   const markOne = useServerFn(markNotificationRead);
 
+  const [readFilter, setReadFilter] = useState<ReadFilter>("all");
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+
   const notifications = useQuery({
     queryKey: ["notifications"],
     queryFn: () => fetchNotifications(),
-    refetchInterval: 30000,
   });
+
+  // Real-time: refresh the list the moment a notification for this user is
+  // inserted, updated, or deleted — no polling.
+  useEffect(() => {
+    if (!me.userId) return;
+    const channel = supabase
+      .channel(`notifications:${me.userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${me.userId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [me.userId, qc]);
 
   const items = notifications.data ?? [];
   const unread = items.filter((n: any) => !n.read_at);
+
+  const filtered = items.filter((n: any) => {
+    if (readFilter === "unread" && n.read_at) return false;
+    if (kindFilter === "comment" && !COMMENT_KINDS.has(n.kind)) return false;
+    if (kindFilter === "status" && !STATUS_KINDS.has(n.kind)) return false;
+    return true;
+  });
 
   const markAllRead = useMutation({
     mutationFn: () => markAll(),
@@ -43,6 +84,24 @@ export function NotificationBell() {
     mutationFn: (id: string) => markOne({ data: { id } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
+
+  const filterButton = (
+    active: boolean,
+    label: string,
+    onClick: () => void,
+  ) => (
+    <button
+      key={label}
+      onClick={onClick}
+      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <Popover>
@@ -68,13 +127,21 @@ export function NotificationBell() {
             </button>
           )}
         </div>
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-4 py-2">
+          {filterButton(readFilter === "all", "All", () => setReadFilter("all"))}
+          {filterButton(readFilter === "unread", `Unread (${unread.length})`, () => setReadFilter("unread"))}
+          <span className="mx-1 h-4 w-px bg-border" />
+          {filterButton(kindFilter === "all", "Any type", () => setKindFilter("all"))}
+          {filterButton(kindFilter === "comment", "Comments", () => setKindFilter("comment"))}
+          {filterButton(kindFilter === "status", "Status changes", () => setKindFilter("status"))}
+        </div>
         <ScrollArea className="max-h-96">
-          {items.length === 0 && (
+          {filtered.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No notifications yet.
+              {items.length === 0 ? "No notifications yet." : "Nothing matches these filters."}
             </p>
           )}
-          {items.map((n: any) => (
+          {filtered.map((n: any) => (
             <button
               key={n.id}
               onClick={() => !n.read_at && markRead.mutate(n.id)}

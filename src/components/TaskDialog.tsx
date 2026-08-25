@@ -110,6 +110,7 @@ interface Props {
   profiles: Profile[];
   clients: Client[];
   followers: { task_id: string; user_id: string }[];
+  owners: { task_id: string; user_id: string }[];
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
@@ -124,6 +125,7 @@ export function TaskDialog({
   profiles,
   clients,
   followers,
+  owners,
   entries,
   userId,
   canEdit,
@@ -222,6 +224,7 @@ export function TaskDialog({
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["time_entries"] });
     qc.invalidateQueries({ queryKey: ["followers"] });
+    qc.invalidateQueries({ queryKey: ["owners"] });
   };
 
   const refreshTime = () => {

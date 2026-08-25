@@ -12,9 +12,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Reset password — Helen of Health Task Taker task tracker" },
+      { title: "Reset password — Helen of Health Task Taker" },
       { name: "description", content: "Set a new password for your Helen of Health Task Taker workspace." },
-      { property: "og:title", content: "Reset password — Helen of Health Task Taker task tracker" },
+      { property: "og:title", content: "Reset password — Helen of Health Task Taker" },
       { property: "og:description", content: "Set a new password for your Helen of Health Task Taker workspace." },
     ],
   }),

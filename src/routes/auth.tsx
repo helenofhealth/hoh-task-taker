@@ -21,12 +21,12 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Helen of Health Task Taker task tracker" },
+      { title: "Sign in — Helen of Health Task Taker" },
       {
         name: "description",
         content: "Sign in to your Helen of Health Task Taker workspace to manage client tasks, time and hours.",
       },
-      { property: "og:title", content: "Sign in — Helen of Health Task Taker task tracker" },
+      { property: "og:title", content: "Sign in — Helen of Health Task Taker" },
       { property: "og:description", content: "Access your client task board and time reports." },
     ],
   }),

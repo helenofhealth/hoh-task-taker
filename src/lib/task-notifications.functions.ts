@@ -345,3 +345,143 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
     }
     return { ok: true as const, sent };
   });
+
+interface NotifyCommentEditInput {
+  taskId: string;
+  commentId: string;
+  commentBody: string;
+  origin: string;
+  mentionIds?: string[];
+}
+
+// Syncs mention notifications after a comment is edited: newly mentioned users
+// get the full mention notification + email, users no longer mentioned have
+// their (unread) mention notification removed, and still-mentioned users get
+// their original notification updated in place with the new text.
+export const notifyCommentEdited = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: NotifyCommentEditInput) => {
+    if (!input.taskId || !input.commentId) throw new Error("Task and comment are required");
+    const body = input.commentBody?.trim();
+    if (!body) throw new Error("Comment is required");
+    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
+    const mentionIds = Array.isArray(input.mentionIds)
+      ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
+      : [];
+    return { ...input, commentBody: body, mentionIds };
+  })
+  .handler(async ({ data, context }) => {
+    const { createNotifications, filterByPrefs } = await import("./notifications.server");
+    const loaded = await loadTaskAndRecipients(context.supabase, context.userId, data.taskId, true);
+    if (!loaded) throw new Error("Forbidden");
+    const { supabaseAdmin, task, actorName } = loaded;
+
+    // Only the comment author (or an admin) may rewrite its notifications.
+    const { data: comment } = await supabaseAdmin
+      .from("task_comments")
+      .select("id, user_id")
+      .eq("id", data.commentId)
+      .maybeSingle();
+    if (!comment) return { ok: true as const }; // comment gone — nothing to sync
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (comment.user_id !== context.userId && !isAdmin) throw new Error("Forbidden");
+
+    const mentionIds = await resolveMentionIds(
+      supabaseAdmin,
+      (data.mentionIds ?? []).filter((id) => id !== context.userId),
+      (task as any).client_id ?? null,
+    );
+    const nowSet = new Set(mentionIds);
+
+    // Existing mention notifications for this comment.
+    const { data: existing } = await supabaseAdmin
+      .from("notifications")
+      .select("id, user_id, read_at")
+      .eq("comment_id", data.commentId)
+      .eq("kind", "mention");
+    const prevByUser = new Map<string, { id: string; read: boolean }>();
+    for (const n of existing ?? []) {
+      if (!prevByUser.has(n.user_id)) prevByUser.set(n.user_id, { id: n.id, read: !!n.read_at });
+    }
+
+    const snippet =
+      data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
+    const title = `${actorName} mentioned you on "${task.title}" (edited)`;
+
+    // Removed mentions: delete their unread mention notification.
+    const removedIds = [...prevByUser.keys()].filter((id) => !nowSet.has(id));
+    const removedUnread = removedIds
+      .map((id) => prevByUser.get(id)!)
+      .filter((n) => !n.read)
+      .map((n) => n.id);
+    if (removedUnread.length > 0) {
+      await supabaseAdmin.from("notifications").delete().in("id", removedUnread);
+    }
+
+    // Still-mentioned users: update their original notification in place.
+    const stillMentioned = mentionIds.filter((id) => prevByUser.has(id));
+    for (const id of stillMentioned) {
+      await supabaseAdmin
+        .from("notifications")
+        .update({ title, body: snippet, created_at: new Date().toISOString() })
+        .eq("id", prevByUser.get(id)!.id);
+    }
+
+    // Newly mentioned users: full mention notification + instant email.
+    const newlyMentioned = mentionIds.filter((id) => !prevByUser.has(id));
+    const mentionPrefs = await filterByPrefs(supabaseAdmin, newlyMentioned, "mentions");
+    await createNotifications(mentionPrefs.inapp, {
+      taskId: task.id,
+      kind: "mention",
+      title,
+      body: snippet,
+      commentId: data.commentId,
+    });
+    const { sendTaskMentionEmail } = await import("./invite-client.server");
+    const emails = await recipientEmails(supabaseAdmin, mentionPrefs.email);
+    let sent = 0;
+    for (const email of emails) {
+      try {
+        await sendTaskMentionEmail(email, task.title, actorName, snippet, link);
+        sent++;
+      } catch (err) {
+        console.error("Mention email to recipient failed:", err);
+      }
+    }
+
+    // Refresh the snippet on unread regular "comment" notifications for this comment.
+    await supabaseAdmin
+      .from("notifications")
+      .update({ body: `${actorName}: ${snippet}` })
+      .eq("comment_id", data.commentId)
+      .eq("kind", "comment")
+      .is("read_at", null);
+
+    return { ok: true as const, sent };
+  });
+
+// Removes notifications tied to a deleted comment so nobody is pointed at
+// content that no longer exists. Emails already delivered can't be unsent.
+export const notifyCommentDeleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { taskId: string; commentId: string }) => {
+    if (!input.taskId || !input.commentId) throw new Error("Task and comment are required");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const { data: canSee } = await context.supabase.rpc("can_see_task", { _task_id: data.taskId });
+    if (!canSee) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Delete unread notifications linked to the comment (mention + comment kinds).
+    await supabaseAdmin
+      .from("notifications")
+      .delete()
+      .eq("comment_id", data.commentId)
+      .is("read_at", null);
+    return { ok: true as const };
+  });

@@ -5,9 +5,11 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { requestPasswordReset } from "@/lib/reset-password.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 
 /** Accept only same-origin relative paths (used by the OAuth consent flow). */
 function safeNext(next: string | undefined): string | null {
@@ -46,10 +48,9 @@ function AuthPage() {
     }
     setResetBusy(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      await requestPasswordReset({
+        data: { email, origin: window.location.origin },
       });
-      if (error) throw error;
       toast.success("Password reset email sent — check your inbox");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -57,6 +58,7 @@ function AuthPage() {
       setResetBusy(false);
     }
   }
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

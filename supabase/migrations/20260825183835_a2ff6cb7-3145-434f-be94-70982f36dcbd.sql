@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.log_comment_edit() FROM PUBLIC, anon, authenticated;

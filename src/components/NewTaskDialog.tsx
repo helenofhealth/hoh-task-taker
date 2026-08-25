@@ -146,6 +146,7 @@ export function NewTaskDialog({
         .single();
       if (error) throw error;
       if (ownerId && created) {
+        await db.from("task_owners").insert({ task_id: created.id, user_id: ownerId });
         notifyEvent({
           data: {
             taskId: created.id,

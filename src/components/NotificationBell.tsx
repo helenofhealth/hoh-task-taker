@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, MessageSquare, ArrowRightLeft, UserPlus, Pencil, Sparkles } from "lucide-react";
+import { Bell, MessageSquare, ArrowRightLeft, UserPlus, Pencil, Sparkles, AtSign } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -83,7 +83,9 @@ export function NotificationBell() {
               }`}
             >
               <span className="mt-0.5 rounded-full bg-primary-soft p-1.5 text-accent-foreground">
-                {n.kind === "comment" ? (
+                {n.kind === "mention" ? (
+                  <AtSign className="size-3.5" />
+                ) : n.kind === "comment" ? (
                   <MessageSquare className="size-3.5" />
                 ) : n.kind === "assigned" || n.kind === "follower_added" ? (
                   <UserPlus className="size-3.5" />

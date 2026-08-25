@@ -230,8 +230,8 @@ export function TaskDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-primary-soft p-3">
         <div className="space-y-2 rounded-xl bg-primary-soft p-3">
+
           <div className="flex flex-wrap items-center gap-2">
             <div className="text-sm">
               <span className="font-semibold">{formatDuration(totalMinutes)}</span>

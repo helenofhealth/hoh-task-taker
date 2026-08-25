@@ -136,6 +136,19 @@ export async function fetchTimeEntries(): Promise<(TimeEntry & { tasks: { client
   return data ?? [];
 }
 
+/** Timer audit trail. Pass a task id to scope it to one task. */
+export async function fetchTimeAudit(taskId?: string): Promise<TimeEntryAudit[]> {
+  let q = db
+    .from("time_entry_audit")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (taskId) q = q.eq("task_id", taskId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as TimeEntryAudit[];
+}
+
 export async function fetchCredits(): Promise<HourCredit[]> {
   const { data, error } = await db
     .from("hour_credits")

@@ -72,7 +72,14 @@ function TimeReportPage() {
   const profiles = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
 
   const clientList = clients.data ?? [];
-  const logged = (entries.data ?? []).filter((e) => e.minutes);
+  const myClientId = me.profile?.client_id ?? null;
+  const logged = (entries.data ?? [])
+    .filter((e) => e.minutes)
+    .filter((e) =>
+      me.isStaff
+        ? true
+        : (e.tasks?.client_id ?? null) === myClientId,
+    );
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -348,7 +355,7 @@ function TimeReportPage() {
             })}
             {logged.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={me.isStaff ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
                   No time logged yet.
                 </td>
               </tr>

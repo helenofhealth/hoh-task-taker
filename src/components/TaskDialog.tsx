@@ -13,6 +13,7 @@ import {
   Download,
   History,
   Loader2,
+  MessageSquare,
   Paperclip,
   Pencil,
   Play,
@@ -149,6 +150,10 @@ export function TaskDialog({
   const editRef = useRef<HTMLTextAreaElement>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const commentRefs = useRef(new Map<string, HTMLDivElement>());
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyMentionQuery, setReplyMentionQuery] = useState<string | null>(null);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setDraft(task);
@@ -358,13 +363,13 @@ export function TaskDialog({
   }
 
   const addComment = useMutation({
-    mutationFn: async () => {
-      const body = comment.trim();
+    mutationFn: async ({ body: rawBody, parentId }: { body: string; parentId: string | null }) => {
+      const body = rawBody.trim();
       if (!body) throw new Error("Write something first");
       if (body.length > 4000) throw new Error("Comment is too long");
       const { data, error } = await db
         .from("task_comments")
-        .insert({ task_id: task!.id, user_id: userId, body })
+        .insert({ task_id: task!.id, user_id: userId, body, parent_id: parentId })
         .select("id")
         .single();
       if (error) throw error;
@@ -382,13 +387,66 @@ export function TaskDialog({
         },
       }).catch(() => {});
     },
-    onSuccess: () => {
-      setComment("");
-      setMentionQuery(null);
+    onSuccess: (_v, vars) => {
+      if (vars.parentId) {
+        setReplyingTo(null);
+        setReplyBody("");
+        setReplyMentionQuery(null);
+      } else {
+        setComment("");
+        setMentionQuery(null);
+      }
       qc.invalidateQueries({ queryKey: ["comments", task?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function onReplyChange(value: string, caret: number) {
+    setReplyBody(value);
+    const m = value.slice(0, caret).match(/@([^\n@]{0,40})$/);
+    setReplyMentionQuery(m ? (m[1] ?? "") : null);
+  }
+
+  function insertReplyMention(p: Profile) {
+    const caret = replyRef.current?.selectionStart ?? replyBody.length;
+    const name = profileName(p);
+    const before = replyBody.slice(0, caret).replace(/@[^\n@]{0,40}$/, `@${name} `);
+    setReplyBody(before + replyBody.slice(caret));
+    setReplyMentionQuery(null);
+    replyRef.current?.focus();
+  }
+
+  const replyMentionCandidates = useMemo(() => {
+    if (replyMentionQuery === null) return [];
+    const q = replyMentionQuery.toLowerCase();
+    return profiles
+      .filter((p) => p.id !== userId)
+      .filter((p) => profileName(p).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [replyMentionQuery, profiles, userId]);
+
+  // Group replies under their top-level parent comment.
+  const commentThreads = useMemo(() => {
+    const all = comments.data ?? [];
+    const byId = new Map(all.map((c) => [c.id, c]));
+    const roots: Comment[] = [];
+    const children = new Map<string, Comment[]>();
+    for (const c of all) {
+      const root = c.parent_id && byId.has(c.parent_id)
+        ? (byId.get(c.parent_id)!.parent_id && byId.has(byId.get(c.parent_id)!.parent_id!)
+            ? byId.get(byId.get(c.parent_id)!.parent_id!)!.id
+            : c.parent_id)
+        : null;
+      if (root && byId.has(root)) {
+        const list = children.get(root) ?? [];
+        list.push(c);
+        children.set(root, list);
+      } else {
+        roots.push(c);
+      }
+    }
+    return { roots, children, byId };
+  }, [comments.data]);
 
   const saveEdit = useMutation({
     mutationFn: async (commentId: string) => {
@@ -787,10 +845,11 @@ export function TaskDialog({
 
           <TabsContent value="comments" className="space-y-4 pt-4">
             <div className="space-y-3">
-              {(comments.data ?? []).map((c) => {
+              {commentThreads.roots.map((c) => {
                 const history = editsByComment.get(c.id) ?? [];
                 const isOwn = c.user_id === userId;
                 const isEditing = editingId === c.id;
+                const replies = commentThreads.children.get(c.id) ?? [];
                 return (
                   <div
                     key={c.id}
@@ -874,6 +933,26 @@ export function TaskDialog({
                       <>
                         <p className="mt-1.5 whitespace-pre-wrap text-sm">{renderCommentBody(c.body, profiles)}</p>
                         <div className="mt-2 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => {
+                              if (replyingTo === c.id) {
+                                setReplyingTo(null);
+                                setReplyBody("");
+                                setReplyMentionQuery(null);
+                              } else {
+                                setReplyingTo(c.id);
+                                setReplyBody("");
+                                setReplyMentionQuery(null);
+                                setTimeout(() => replyRef.current?.focus(), 50);
+                              }
+                            }}
+                          >
+                            <MessageSquare className="size-3.5" />
+                            Reply{replies.length > 0 ? ` (${replies.length})` : ""}
+                          </Button>
                           {(isOwn || canEdit) && (
                             <Button
                               size="sm"
@@ -921,6 +1000,237 @@ export function TaskDialog({
                         )}
                       </>
                     )}
+
+                    {replies.length > 0 && (
+                      <div className="mt-3 space-y-2 border-l-2 border-primary-soft pl-3">
+                        {replies.map((r) => {
+                          const rHistory = editsByComment.get(r.id) ?? [];
+                          const rIsOwn = r.user_id === userId;
+                          const rIsEditing = editingId === r.id;
+                          const rParent = r.parent_id ? commentThreads.byId.get(r.parent_id) : undefined;
+                          return (
+                            <div
+                              key={r.id}
+                              ref={(el) => {
+                                if (el) commentRefs.current.set(r.id, el);
+                              }}
+                              className="rounded-xl border border-border/70 bg-surface-muted p-2.5"
+                            >
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground">
+                                  {displayName(profiles, r.user_id)}
+                                  {rParent && rParent.user_id !== r.user_id && (
+                                    <span className="ml-1 font-normal text-muted-foreground">
+                                      replying to {displayName(profiles, rParent.user_id)}
+                                    </span>
+                                  )}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {r.edited_at && (
+                                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                      edited
+                                    </span>
+                                  )}
+                                  <span>{new Date(r.created_at).toLocaleString()}</span>
+                                </div>
+                              </div>
+                              {rIsEditing ? (
+                                <div className="relative mt-2">
+                                  <Textarea
+                                    ref={editRef}
+                                    rows={2}
+                                    value={editBody}
+                                    maxLength={4000}
+                                    onChange={(e) =>
+                                      onEditChange(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Escape") {
+                                        setEditingId(null);
+                                        setEditMentionQuery(null);
+                                      }
+                                    }}
+                                    onBlur={() => setTimeout(() => setEditMentionQuery(null), 150)}
+                                  />
+                                  {editMentionCandidates.length > 0 && (
+                                    <div className="absolute bottom-full left-0 z-10 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                                      {editMentionCandidates.map((p) => (
+                                        <button
+                                          key={p.id}
+                                          type="button"
+                                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            insertEditMention(p);
+                                          }}
+                                        >
+                                          <span className="flex size-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                                            {profileName(p).slice(0, 1).toUpperCase()}
+                                          </span>
+                                          <span className="truncate">{profileName(p)}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      disabled={saveEdit.isPending || !editBody.trim() || editBody.trim() === r.body}
+                                      onClick={() => saveEdit.mutate(r.id)}
+                                    >
+                                      {saveEdit.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingId(null);
+                                        setEditBody("");
+                                        setEditMentionQuery(null);
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="mt-1 whitespace-pre-wrap text-sm">{renderCommentBody(r.body, profiles)}</p>
+                                  <div className="mt-1.5 flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 gap-1 px-2 text-xs"
+                                      onClick={() => {
+                                        setReplyingTo(c.id);
+                                        setReplyBody(`@${displayName(profiles, r.user_id)} `);
+                                        setReplyMentionQuery(null);
+                                        setTimeout(() => replyRef.current?.focus(), 50);
+                                      }}
+                                    >
+                                      <MessageSquare className="size-3" />
+                                      Reply
+                                    </Button>
+                                    {(rIsOwn || canEdit) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 gap-1 px-2 text-xs"
+                                        onClick={() => {
+                                          setEditingId(r.id);
+                                          setEditBody(r.body);
+                                          setEditMentionQuery(null);
+                                          setTimeout(() => editRef.current?.focus(), 50);
+                                        }}
+                                      >
+                                        <Pencil className="size-3" />
+                                        Edit
+                                      </Button>
+                                    )}
+                                    {rHistory.length > 0 && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 gap-1 px-2 text-xs"
+                                        onClick={() => setHistoryId(historyId === r.id ? null : r.id)}
+                                      >
+                                        <History className="size-3" />
+                                        {rHistory.length}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {historyId === r.id && (
+                                    <div className="mt-2 space-y-2 rounded-xl border border-border/70 bg-background p-2.5">
+                                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Edit history
+                                      </div>
+                                      {rHistory.map((h, i) => (
+                                        <div key={h.id} className="text-xs">
+                                          <span className="font-medium text-muted-foreground">{i + 1}.</span>{" "}
+                                          <span className="whitespace-pre-wrap">{h.old_body}</span>
+                                          <span className="ml-2 text-muted-foreground">
+                                            — {displayName(profiles, h.edited_by ?? "")} on{" "}
+                                            {new Date(h.created_at).toLocaleString()}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {replyingTo === c.id && (
+                      <div className="relative mt-3 rounded-xl border border-primary/30 bg-primary-soft/40 p-3">
+                        <div className="mb-2 text-xs font-medium text-muted-foreground">
+                          Replying to {displayName(profiles, c.user_id)}
+                        </div>
+                        <Textarea
+                          ref={replyRef}
+                          rows={2}
+                          placeholder="Write a reply… use @ to mention a teammate"
+                          value={replyBody}
+                          maxLength={4000}
+                          onChange={(e) =>
+                            onReplyChange(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setReplyingTo(null);
+                              setReplyBody("");
+                              setReplyMentionQuery(null);
+                            }
+                          }}
+                          onBlur={() => setTimeout(() => setReplyMentionQuery(null), 150)}
+                        />
+                        {replyMentionCandidates.length > 0 && (
+                          <div className="absolute bottom-full left-0 z-10 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                            {replyMentionCandidates.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  insertReplyMention(p);
+                                }}
+                              >
+                                <span className="flex size-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                                  {profileName(p).slice(0, 1).toUpperCase()}
+                                </span>
+                                <span className="truncate">{profileName(p)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            disabled={addComment.isPending || !replyBody.trim()}
+                            onClick={() => addComment.mutate({ body: replyBody, parentId: c.id })}
+                          >
+                            {addComment.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                            Reply
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setReplyingTo(null);
+                              setReplyBody("");
+                              setReplyMentionQuery(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -965,7 +1275,7 @@ export function TaskDialog({
                   </div>
                 )}
               </div>
-              <Button onClick={() => addComment.mutate()} disabled={addComment.isPending}>
+              <Button onClick={() => addComment.mutate({ body: comment, parentId: null })} disabled={addComment.isPending}>
                 Post comment
               </Button>
             </div>

@@ -203,6 +203,7 @@ export type Database = {
           edited_by: string | null
           id: string
           old_body: string
+          parent_id: string | null
         }
         Insert: {
           comment_id: string
@@ -210,6 +211,7 @@ export type Database = {
           edited_by?: string | null
           id?: string
           old_body: string
+          parent_id?: string | null
         }
         Update: {
           comment_id?: string
@@ -217,6 +219,7 @@ export type Database = {
           edited_by?: string | null
           id?: string
           old_body?: string
+          parent_id?: string | null
         }
         Relationships: [
           {
@@ -234,6 +237,7 @@ export type Database = {
           created_at: string
           edited_at: string | null
           id: string
+          parent_id: string | null
           task_id: string
           user_id: string
         }
@@ -242,6 +246,7 @@ export type Database = {
           created_at?: string
           edited_at?: string | null
           id?: string
+          parent_id?: string | null
           task_id: string
           user_id: string
         }
@@ -250,10 +255,18 @@ export type Database = {
           created_at?: string
           edited_at?: string | null
           id?: string
+          parent_id?: string | null
           task_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "task_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_comments_task_id_fkey"
             columns: ["task_id"]

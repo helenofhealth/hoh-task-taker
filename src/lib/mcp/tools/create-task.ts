@@ -12,7 +12,7 @@ export default defineTool({
     description: z.string().optional().describe("Task description (markdown-ish text)."),
     client_id: z.string().uuid().optional().describe("Client to bill the task to (from list_clients)."),
     priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
-    status: z.enum(["requested", "in_progress", "review", "completed"]).default("requested"),
+    status: z.enum(["requested", "in_progress", "on_hold", "review", "completed"]).default("requested"),
     owner_id: z.string().uuid().optional().describe("User id of the task owner."),
     start_date: z.string().optional().describe("Start date, YYYY-MM-DD."),
     due_date: z.string().optional().describe("Due date, YYYY-MM-DD."),

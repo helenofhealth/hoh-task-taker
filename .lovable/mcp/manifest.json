@@ -126,6 +126,7 @@
               "enum": [
                 "requested",
                 "in_progress",
+                "on_hold",
                 "review",
                 "completed"
               ]

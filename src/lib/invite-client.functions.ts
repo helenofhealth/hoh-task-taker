@@ -48,7 +48,6 @@ export const inviteClient = createServerFn({ method: "POST" })
     const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: data.email,
-      password: undefined,
       options: {
         data: { full_name: data.name },
         redirectTo: `${data.origin}/auth`,

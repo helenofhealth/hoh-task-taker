@@ -29,8 +29,10 @@ import { displayName, useMe } from "@/hooks/useAuth";
 import {
   type AuditAction,
   computeBalance,
+  downloadPdfReport,
   downloadTextFile,
   downloadXlsxFile,
+
   fetchClients,
   fetchCredits,
   fetchProfiles,

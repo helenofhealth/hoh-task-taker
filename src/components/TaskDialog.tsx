@@ -196,7 +196,10 @@ export function TaskDialog({
 
   async function download(path: string) {
     const { data, error } = await supabase.storage.from("task-files").createSignedUrl(path, 60);
-    if (error || !data) return toast.error("Could not open the file");
+    if (error || !data) {
+      toast.error("Could not open the file");
+      return;
+    }
     window.open(data.signedUrl, "_blank", "noopener");
   }
 

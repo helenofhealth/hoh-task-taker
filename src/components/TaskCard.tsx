@@ -7,7 +7,7 @@ import { formatDuration, type Profile, type Task } from "@/lib/tracker";
 interface Props {
   task: Task;
   profiles: Profile[];
-  clientName?: string;
+  clientName?: string | undefined;
   trackedMinutes: number;
   commentCount: number;
   runningMinutes?: number | null;

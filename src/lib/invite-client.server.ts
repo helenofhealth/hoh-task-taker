@@ -1,12 +1,15 @@
-// Server-only helper: sends the client activation email via Resend.
+// Server-only helper: sends the client activation email via the Resend connector.
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+
 export async function sendActivationEmail(
   email: string,
   name: string | undefined,
   origin: string,
 ) {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) {
-    console.warn("RESEND_API_KEY not set; skipping activation email");
+  const lovableApiKey = process.env["LOVABLE_API_KEY"];
+  const resendApiKey = process.env["RESEND_API_KEY"];
+  if (!lovableApiKey || !resendApiKey) {
+    console.warn("Resend connector not configured; skipping activation email");
     return;
   }
   const html = `
@@ -19,11 +22,12 @@ export async function sendActivationEmail(
       </p>
       <p style="color: #666; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>
     </div>`;
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetch(`${GATEWAY_URL}/emails`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${lovableApiKey}`,
+      "X-Connection-Api-Key": resendApiKey,
     },
     body: JSON.stringify({
       from: "Client Portal <onboarding@resend.dev>",
@@ -36,7 +40,7 @@ export async function sendActivationEmail(
     const body = await res.text();
     console.error(`Resend send failed [${res.status}]: ${body}`);
     throw new Error(
-      `The account was created but the activation email failed to send [${res.status}]`,
+      `The account was created but the activation email failed to send [${res.status}]: ${body}`,
     );
   }
 }

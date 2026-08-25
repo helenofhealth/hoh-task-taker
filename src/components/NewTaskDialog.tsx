@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
 import { notifyTaskEvent } from "@/lib/task-notifications.functions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +48,7 @@ export function NewTaskDialog({
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [ownerId, setOwnerId] = useState(userId);
+  const [followerIds, setFollowerIds] = useState<string[]>([]);
   const [priority, setPriority] = useState("normal");
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -147,6 +149,14 @@ export function NewTaskDialog({
       if (error) throw error;
       if (ownerId && created) {
         await db.from("task_owners").insert({ task_id: created.id, user_id: ownerId });
+      }
+      const followers = followerIds.filter((id) => id && id !== ownerId);
+      if (created && followers.length > 0) {
+        await db
+          .from("task_followers")
+          .insert(followers.map((id) => ({ task_id: created.id, user_id: id })));
+      }
+      if (created && (ownerId || followers.length > 0)) {
         notifyEvent({
           data: {
             taskId: created.id,
@@ -162,6 +172,7 @@ export function NewTaskDialog({
       setOpen(false);
       setTitle("");
       setDescription("");
+      setFollowerIds([]);
       toast.success("Task created");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -225,6 +236,32 @@ export function NewTaskDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Followers — optional</Label>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-lg border border-border bg-surface-muted/40 px-3 py-2">
+                {profiles
+                  .filter((p) => p.id !== ownerId)
+                  .map((p) => {
+                    const checked = followerIds.includes(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setFollowerIds((prev) =>
+                              v === true ? [...prev, p.id] : prev.filter((id) => id !== p.id),
+                            )
+                          }
+                        />
+                        {p.full_name || p.email}
+                      </label>
+                    );
+                  })}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Priority</Label>

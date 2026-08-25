@@ -50,6 +50,24 @@ export interface TimeEntry {
   note: string | null;
 }
 
+export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";
+
+export interface TimeEntryAudit {
+  id: string;
+  time_entry_id: string;
+  task_id: string;
+  actor_id: string | null;
+  entry_user_id: string | null;
+  action: AuditAction;
+  started_at: string | null;
+  ended_at: string | null;
+  raw_minutes: number | null;
+  rounded_minutes: number | null;
+  rounding_delta_minutes: number | null;
+  note: string | null;
+  created_at: string;
+}
+
 export interface HourCredit {
   id: string;
   client_id: string;

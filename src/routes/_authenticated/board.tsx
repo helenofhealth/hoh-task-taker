@@ -75,13 +75,6 @@ function BoardPage() {
   const [openTask, setOpenTask] = useState<Task | null>(null);
   const initialCommentId = search.comment;
 
-  useEffect(() => {
-    if (search.task && tasks.data) {
-      const t = tasks.data.find((t) => t.id === search.task);
-      if (t) setOpenTask(t);
-    }
-  }, [search.task, tasks.data]);
-
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
   const profiles = useQuery({ queryKey: ["profiles"], queryFn: fetchProfiles });
@@ -96,6 +89,13 @@ function BoardPage() {
       return (data ?? []) as { task_id: string }[];
     },
   });
+
+  useEffect(() => {
+    if (search.task && tasks.data) {
+      const t = tasks.data.find((t) => t.id === search.task);
+      if (t) setOpenTask(t);
+    }
+  }, [search.task, tasks.data]);
 
   const notifyStatus = useServerFn(notifyTaskStatusChange);
 

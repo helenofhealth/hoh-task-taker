@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/wire.png.asset.json";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,10 +73,14 @@ function Consent() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-soft">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
-          B
+        <span className="flex size-11 items-center justify-center rounded-xl bg-card p-1">
+          <img
+            src={logoAsset.url}
+            alt="Helen of Health Task Taker"
+            className="size-8 rounded-lg object-contain"
+          />
         </span>
-        <h1 className="mt-4 text-xl font-semibold">Connect {clientName} to Bloom</h1>
+        <h1 className="mt-4 text-xl font-semibold">Connect {clientName} to Helen of Health Task Taker</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           This lets {clientName} view and manage your tasks, comments and time reports as you.
           You can revoke access at any time.

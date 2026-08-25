@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/wire.png.asset.json";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -20,12 +21,12 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Bloom task tracker" },
+      { title: "Sign in — Helen of Health Task Taker" },
       {
         name: "description",
-        content: "Sign in to your Bloom workspace to manage client tasks, time and hours.",
+        content: "Sign in to your Helen of Health Task Taker workspace to manage client tasks, time and hours.",
       },
-      { property: "og:title", content: "Sign in — Bloom task tracker" },
+      { property: "og:title", content: "Sign in — Helen of Health Task Taker" },
       { property: "og:description", content: "Access your client task board and time reports." },
     ],
   }),
@@ -98,10 +99,12 @@ function AuthPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-            B
-          </div>
-          <h1 className="text-2xl font-semibold">Bloom</h1>
+          <img
+            src={logoAsset.url}
+            alt="Helen of Health Task Taker"
+            className="mx-auto mb-4 size-12 rounded-2xl object-contain bg-card p-1"
+          />
+          <h1 className="text-2xl font-semibold">Helen of Health Task Taker</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Client tasks, time and hours — beautifully simple.
           </p>

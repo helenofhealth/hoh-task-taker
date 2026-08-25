@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/wire.png.asset.json";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
@@ -25,10 +26,12 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
       <header className="sticky top-0 z-20 border-b border-border bg-card/85 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
           <Link to="/board" className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground">
-              B
-            </span>
-            <span className="text-lg font-semibold">Bloom</span>
+            <img
+              src={logoAsset.url}
+              alt="Helen of Health Task Taker"
+              className="size-9 rounded-xl object-contain bg-card p-1"
+            />
+            <span className="text-lg font-semibold">Helen of Health Task Taker</span>
           </Link>
 
           <nav className="flex items-center gap-1 rounded-full bg-muted p-1">

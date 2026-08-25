@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/wire.png.asset.json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,10 +12,10 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Reset password — Bloom task tracker" },
-      { name: "description", content: "Set a new password for your Bloom workspace." },
-      { property: "og:title", content: "Reset password — Bloom task tracker" },
-      { property: "og:description", content: "Set a new password for your Bloom workspace." },
+      { title: "Reset password — Helen of Health Task Taker" },
+      { name: "description", content: "Set a new password for your Helen of Health Task Taker workspace." },
+      { property: "og:title", content: "Reset password — Helen of Health Task Taker" },
+      { property: "og:description", content: "Set a new password for your Helen of Health Task Taker workspace." },
     ],
   }),
   component: ResetPasswordPage,
@@ -52,12 +53,14 @@ function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-            B
-          </div>
+          <img
+            src={logoAsset.url}
+            alt="Helen of Health Task Taker"
+            className="mx-auto mb-4 size-12 rounded-2xl object-contain bg-card p-1"
+          />
           <h1 className="text-2xl font-semibold">Set a new password</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter a new password for your Bloom account.
+            Enter a new password for your Helen of Health Task Taker account.
           </p>
         </div>
 

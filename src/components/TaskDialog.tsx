@@ -243,7 +243,12 @@ export function TaskDialog({
   const nextStepIn = Math.max(0, Math.ceil(willLog - runningRaw));
 
   const balance = task.client_id
-    ? computeBalance(task.client_id, clients, credits.data ?? [], entries)
+    ? computeBalance(
+        task.client_id,
+        clients,
+        credits.data ?? [],
+        entries as (TimeEntry & { tasks: { client_id: string | null } | null })[],
+      )
     : null;
   const remainingMinutes = balance ? balance.remaining * 60 : null;
   const overBy =

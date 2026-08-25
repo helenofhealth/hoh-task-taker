@@ -74,7 +74,9 @@ const TIMEZONES = [
   "Australia/Sydney",
 ];
 
-const CATEGORIES: { key: string; emailKey: keyof Prefs; inappKey: keyof Prefs; label: string; description: string }[] = [
+type BoolKeys = { [K in keyof Prefs]: Prefs[K] extends boolean ? K : never }[keyof Prefs];
+
+const CATEGORIES: { key: string; emailKey: BoolKeys; inappKey: BoolKeys; label: string; description: string }[] = [
   { key: "comments", emailKey: "email_comments", inappKey: "inapp_comments", label: "Comments", description: "New comments and replies on tasks you follow" },
   { key: "mentions", emailKey: "email_mentions", inappKey: "inapp_mentions", label: "Mentions", description: "When someone @mentions you in a comment" },
   { key: "status", emailKey: "email_status", inappKey: "inapp_status", label: "Status & updates", description: "Status changes and edits to title, dates, or priority" },

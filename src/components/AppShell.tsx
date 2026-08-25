@@ -13,6 +13,7 @@ const nav = [
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
   { to: "/clients", label: "Clients" },
+  { to: "/team", label: "Team", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -37,7 +38,7 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
           </Link>
 
           <nav className="flex items-center gap-1 rounded-full bg-muted p-1">
-            {nav.map((item) => (
+            {nav.filter((item) => !item.staffOnly || me.isStaff).map((item) => (
               <Link
                 key={item.to}
                 to={item.to}

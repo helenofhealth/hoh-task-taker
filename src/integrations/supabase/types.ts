@@ -126,6 +126,24 @@ export type Database = {
           },
         ]
       }
+      member_rates: {
+        Row: {
+          hourly_rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          hourly_rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          hourly_rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -242,6 +260,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -250,6 +269,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -258,6 +278,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
         }
         Relationships: [
           {

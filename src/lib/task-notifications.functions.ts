@@ -86,6 +86,30 @@ async function recipientEmails(supabaseAdmin: any, recipientIds: string[]) {
   return (profiles ?? []).map((p: any) => p.email).filter((e: unknown): e is string => !!e);
 }
 
+// Only users who may see the task can be mentioned: staff or members of the
+// task's client. Returns the validated subset, deduplicated.
+async function resolveMentionIds(
+  supabaseAdmin: any,
+  candidateIds: string[],
+  taskClientId: string | null,
+): Promise<string[]> {
+  const ids = [...new Set(candidateIds)];
+  if (ids.length === 0) return [];
+  const { data: mentionProfiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id, client_id")
+    .in("id", ids);
+  const { data: staffRoles } = await supabaseAdmin
+    .from("user_roles")
+    .select("user_id")
+    .in("user_id", ids)
+    .in("role", ["admin", "member"]);
+  const staffSet = new Set((staffRoles ?? []).map((r: any) => r.user_id));
+  return (mentionProfiles ?? [])
+    .filter((p: any) => staffSet.has(p.id) || (taskClientId && p.client_id === taskClientId))
+    .map((p: any) => p.id);
+}
+
 // Notifies the task owner and followers when a task changes status.
 export const notifyTaskStatusChange = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

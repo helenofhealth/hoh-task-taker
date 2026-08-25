@@ -433,6 +433,55 @@ export function TaskDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleOwner = useMutation({
+    mutationFn: async (id: string) => {
+      const isOwner = owners.some((o) => o.task_id === task!.id && o.user_id === id);
+      if (isOwner) {
+        const { error } = await db
+          .from("task_owners")
+          .delete()
+          .eq("task_id", task!.id)
+          .eq("user_id", id);
+        if (error) throw error;
+        // Keep the legacy primary owner in sync: if the removed person was the
+        // primary owner, promote another remaining owner (or clear it).
+        if (task!.owner_id === id) {
+          const next = owners.find((o) => o.task_id === task!.id && o.user_id !== id);
+          const { error: syncError } = await db
+            .from("tasks")
+            .update({ owner_id: next?.user_id ?? null })
+            .eq("id", task!.id);
+          if (syncError) throw syncError;
+        }
+      } else {
+        const { error } = await db
+          .from("task_owners")
+          .insert({ task_id: task!.id, user_id: id });
+        if (error) throw error;
+        if (!task!.owner_id) {
+          const { error: syncError } = await db
+            .from("tasks")
+            .update({ owner_id: id })
+            .eq("id", task!.id);
+          if (syncError) throw syncError;
+        }
+        notifyEvent({
+          data: {
+            taskId: task!.id,
+            kind: "assigned",
+            targetUserId: id,
+            origin: window.location.origin,
+          },
+        }).catch(() => {});
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["owners"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   async function upload(file: File) {
     if (!task) return;
     if (file.size > 20 * 1024 * 1024) {

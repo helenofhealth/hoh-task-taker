@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +99,38 @@ function TimeReportPage() {
   const [clientId, setClientId] = useState<string>("");
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
 
+  const weekly = useMemo(() => {
+    const start = new Date(`${from}T00:00:00`);
+    const end = new Date(`${to}T23:59:59`);
+    const buckets = new Map<string, number>();
+    for (const e of logged) {
+      const d = new Date(e.started_at);
+      if (d < start || d > end) continue;
+      if (clientId) {
+        const task = (tasks.data ?? []).find((t) => t.id === e.task_id);
+        if ((task?.client_id ?? e.tasks?.client_id ?? null) !== clientId) continue;
+      }
+      const w = new Date(d);
+      const day = (w.getDay() + 6) % 7; // Monday start
+      w.setDate(w.getDate() - day);
+      w.setHours(0, 0, 0, 0);
+      const key = isoDay(new Date(w.getTime() - w.getTimezoneOffset() * 60000));
+      buckets.set(key, (buckets.get(key) ?? 0) + (e.minutes ?? 0));
+    }
+    return [...buckets.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([week, minutes]) => ({
+        week,
+        label: new Date(`${week}T00:00:00`).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+        hours: Math.round((minutes / 60) * 100) / 100,
+      }));
+  }, [logged, from, to, clientId, tasks.data]);
+
+  const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
+
   const exportAudit = async (format: "csv" | "xlsx") => {
     if (from > to) {
       toast.error("Start date must be before the end date");
@@ -174,7 +215,6 @@ function TimeReportPage() {
             Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
           </p>
         </div>
-        {me.isStaff && (
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-soft md:w-auto">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
@@ -203,6 +243,8 @@ function TimeReportPage() {
                 className="w-[9.5rem]"
               />
             </div>
+            {me.isStaff && (
+              <>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Action</Label>
               <Select value={action} onValueChange={(v) => setAction(v as AuditAction | "")}>
@@ -279,11 +321,63 @@ function TimeReportPage() {
               )}
               Export XLSX
             </Button>
+              </>
+            )}
           </div>
         </div>
-        )}
       </div>
 
+      <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">Weekly trend</h2>
+            <p className="text-xs text-muted-foreground">
+              Hours logged per week between {from} and {to}
+              {clientId ? ` for ${clientList.find((c) => c.id === clientId)?.name ?? "client"}` : ""}.
+            </p>
+          </div>
+          <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
+        </div>
+        {weekly.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            No time logged in this date range yet.
+          </p>
+        ) : (
+          <div className="mt-4 h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weekly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis
+                  dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  tickFormatter={(v: number) => `${v}h`}
+                />
+                <Tooltip
+                  cursor={{ fill: "var(--muted)" }}
+                  contentStyle={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    color: "var(--foreground)",
+                    fontSize: 12,
+                  }}
+                  labelFormatter={(l: string) => `Week of ${l}`}
+                  formatter={(v: number) => [formatHours(v), "Logged"]}
+                />
+                <Bar dataKey="hours" fill="var(--primary)" radius={[8, 8, 0, 0]} maxBarSize={48} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </section>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {clientList.map((c) => {

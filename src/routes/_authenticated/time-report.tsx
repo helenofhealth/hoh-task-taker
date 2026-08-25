@@ -1,19 +1,32 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { displayName, useMe } from "@/hooks/useAuth";
 import {
   computeBalance,
+  downloadTextFile,
   fetchClients,
   fetchCredits,
   fetchProfiles,
   fetchTasks,
+  fetchTimeAuditRange,
   fetchTimeEntries,
   formatDuration,
   formatHours,
+  toCsv,
 } from "@/lib/tracker";
+
+function isoDay(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
 
 export const Route = createFileRoute("/_authenticated/time-report")({
   head: () => ({
@@ -45,12 +58,117 @@ function TimeReportPage() {
   const clientList = clients.data ?? [];
   const logged = (entries.data ?? []).filter((e) => e.minutes);
 
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const [from, setFrom] = useState(isoDay(monthStart));
+  const [to, setTo] = useState(isoDay(today));
+  const [exporting, setExporting] = useState(false);
+
+  const exportAudit = async () => {
+    if (from > to) {
+      toast.error("Start date must be before the end date");
+      return;
+    }
+    setExporting(true);
+    try {
+      const rows = await fetchTimeAuditRange(from, to);
+      if (rows.length === 0) {
+        toast.error("No audit activity in that date range");
+        return;
+      }
+      const taskList = tasks.data ?? [];
+      const people = profiles.data ?? [];
+      const csv = toCsv(
+        [
+          "Recorded at",
+          "Action",
+          "Task",
+          "Client",
+          "Performed by",
+          "Timer owner",
+          "Timer started",
+          "Timer stopped",
+          "Measured minutes",
+          "Logged minutes",
+          "Rounding added (min)",
+          "Note",
+          "Time entry ID",
+        ],
+        rows.map((r) => {
+          const task = taskList.find((t) => t.id === r.task_id);
+          return [
+            new Date(r.created_at).toISOString(),
+            r.action,
+            task?.title ?? r.task_id,
+            clientList.find((c) => c.id === task?.client_id)?.name ?? "",
+            r.actor_id ? displayName(people, r.actor_id) : "",
+            r.entry_user_id ? displayName(people, r.entry_user_id) : "",
+            r.started_at ? new Date(r.started_at).toISOString() : "",
+            r.ended_at ? new Date(r.ended_at).toISOString() : "",
+            r.raw_minutes ?? "",
+            r.rounded_minutes ?? "",
+            r.rounding_delta_minutes ?? "",
+            r.note ?? "",
+            r.time_entry_id,
+          ];
+        }),
+      );
+      downloadTextFile(`audit-trail-${from}-to-${to}.csv`, csv);
+      toast.success(`Exported ${rows.length} audit ${rows.length === 1 ? "event" : "events"}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <AppShell>
-      <h1 className="text-2xl font-semibold tracking-tight">Time report</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Time report</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Hours bought, hours used, and what's left. Timers round up to 15-minute increments.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
+          <div className="space-y-1">
+            <Label htmlFor="audit-from" className="text-xs text-muted-foreground">
+              From
+            </Label>
+            <Input
+              id="audit-from"
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-[9.5rem]"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="audit-to" className="text-xs text-muted-foreground">
+              To
+            </Label>
+            <Input
+              id="audit-to"
+              type="date"
+              value={to}
+              min={from}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-[9.5rem]"
+            />
+          </div>
+          <Button onClick={exportAudit} disabled={exporting}>
+            {exporting ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 size-4" />
+            )}
+            Export audit
+          </Button>
+        </div>
+      </div>
+
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {clientList.map((c) => {

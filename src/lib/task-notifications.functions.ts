@@ -118,18 +118,18 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
       body: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
     });
 
-    const emails = await recipientEmails(supabaseAdmin, emailIds);
-    const { sendTaskStatusEmail } = await import("./invite-client.server");
-    let sent = 0;
-    for (const email of emails) {
-      try {
-        await sendTaskStatusEmail(email, task.title, clientName, oldLabel, newLabel, actorName, link);
-        sent++;
-      } catch (err) {
-        console.error("Status email to recipient failed:", err);
-      }
-    }
-    return { ok: true as const, sent };
+    // Queue emails for the batched flush so rapid status flips merge into one
+    // summary email instead of one email per change.
+    const { queueEmailBatch } = await import("./notifications.server");
+    await queueEmailBatch(supabaseAdmin, emailIds, {
+      taskId: task.id,
+      taskTitle: task.title,
+      category: "status",
+      heading: `"${task.title}" moved to ${newLabel}`,
+      line: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
+      link,
+    });
+    return { ok: true as const, sent: emailIds.length };
   });
 
 // Notifies the task owner, followers, and other commenters about a new comment.

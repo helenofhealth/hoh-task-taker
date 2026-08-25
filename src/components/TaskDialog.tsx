@@ -258,6 +258,7 @@ export function TaskDialog({
     qc.invalidateQueries({ queryKey: ["time_entries"] });
     qc.invalidateQueries({ queryKey: ["followers"] });
     qc.invalidateQueries({ queryKey: ["owners"] });
+    qc.invalidateQueries({ queryKey: ["task_activity", task?.id] });
   };
 
   const refreshTime = () => {

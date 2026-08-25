@@ -140,7 +140,7 @@ export function TaskDialog({
       else await startTimer(task!.id, userId);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["time_entries"] });
+      refreshTime();
       if (running) toast.success(`Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)`);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -505,7 +505,7 @@ export function TaskDialog({
                     variant="ghost"
                     onClick={async () => {
                       await db.from("time_entries").delete().eq("id", e.id);
-                      qc.invalidateQueries({ queryKey: ["time_entries"] });
+                      refreshTime();
                     }}
                   >
                     <Trash2 className="size-4" />

@@ -295,6 +295,8 @@ function TimeReportPage() {
         "Measured minutes",
         "Logged minutes",
         "Rounding added (min)",
+        "Limit override",
+        "Overage minutes",
         "Note",
         "Time entry ID",
       ];
@@ -312,10 +314,13 @@ function TimeReportPage() {
           r.raw_minutes ?? "",
           r.rounded_minutes ?? "",
           r.rounding_delta_minutes ?? "",
+          r.limit_override ? "Yes" : "",
+          r.override_minutes ?? "",
           r.note ?? "",
           r.time_entry_id,
         ];
       });
+
       const parts = [from, to];
       if (actionFilter) parts.push(actionFilter);
       if (clientFilter) parts.push(clientList.find((c) => c.id === clientFilter)?.name ?? "client");

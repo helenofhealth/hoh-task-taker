@@ -209,7 +209,13 @@ function TimeReportPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Client</Label>
-              <Select value={clientId} onValueChange={(v) => setClientId(v)}>
+              <Select
+                value={clientId}
+                onValueChange={(v) => {
+                  setClientId(v);
+                  setTaskId("");
+                }}
+              >
                 <SelectTrigger className="w-[10rem]">
                   <SelectValue placeholder="All clients" />
                 </SelectTrigger>

@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { TaskCard } from "@/components/TaskCard";
+import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
 import { TaskDialog } from "@/components/TaskDialog";
 import { NewTaskDialog } from "@/components/NewTaskDialog";
 import { Input } from "@/components/ui/input";
@@ -78,10 +80,24 @@ function BoardPage() {
     },
   });
 
+  const notifyStatus = useServerFn(notifyTaskStatusChange);
+
   const move = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
+    mutationFn: async ({
+      id,
+      status,
+      oldStatus,
+    }: {
+      id: string;
+      status: TaskStatus;
+      oldStatus: TaskStatus;
+    }) => {
       const { error } = await db.from("tasks").update({ status }).eq("id", id);
       if (error) throw error;
+      // Fire-and-forget: email owner/followers about the status change.
+      notifyStatus({
+        data: { taskId: id, oldStatus, newStatus: status, origin: window.location.origin },
+      }).catch(() => {});
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
     onError: (e: Error) => toast.error(e.message),
@@ -221,7 +237,14 @@ function BoardPage() {
               }}
               onDragLeave={() => setOverStatus((s) => (s === col.key ? null : s))}
               onDrop={() => {
-                if (dragId) move.mutate({ id: dragId, status: col.key });
+                if (dragId) {
+                  const dragged = (tasks.data ?? []).find((t) => t.id === dragId);
+                  move.mutate({
+                    id: dragId,
+                    status: col.key,
+                    oldStatus: dragged?.status ?? col.key,
+                  });
+                }
                 setDragId(null);
                 setOverStatus(null);
               }}

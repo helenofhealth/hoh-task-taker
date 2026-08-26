@@ -150,6 +150,7 @@ export function TaskDialog({
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [overrunOpen, setOverrunOpen] = useState(false);
+  const [trackBillable, setTrackBillable] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);
@@ -334,7 +335,7 @@ export function TaskDialog({
             data: { clientId: task.client_id, origin: window.location.origin },
           }).catch(() => undefined);
         }
-      } else await startTimer(task!.id, userId);
+      } else await startTimer(task!.id, userId, trackBillable);
     },
     onSuccess: (_data, opts) => {
       setOverrunOpen(false);
@@ -678,6 +679,9 @@ export function TaskDialog({
       ? willLog - remainingMinutes
       : 0;
   const wouldExceed = overBy > 0;
+  // The billable/free choice only makes sense when this client actually holds
+  // unused complimentary hours.
+  const hasFreeHours = (balance?.remainingFree ?? 0) > 0.0001;
 
 
   return (
@@ -711,6 +715,27 @@ export function TaskDialog({
                 </span>
               )}
             </div>
+            {hasFreeHours && !running && (
+              <Select
+                value={trackBillable ? "billable" : "free"}
+                onValueChange={(v) => setTrackBillable(v === "billable")}
+              >
+                <SelectTrigger className="h-8 w-36 bg-card text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="billable">Billable hours</SelectItem>
+                  <SelectItem value="free">
+                    Free hours ({formatHours(balance?.remainingFree ?? 0)} left)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {running && hasFreeHours && (
+              <Badge variant="outline" className="text-xs">
+                {running.billable === false ? "Free hours" : "Billable hours"}
+              </Badge>
+            )}
             <Button
               size="sm"
               variant={running ? "destructive" : "default"}
@@ -722,6 +747,7 @@ export function TaskDialog({
               {running ? "Stop timer" : "Start timer"}
             </Button>
           </div>
+
           {running && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg bg-card px-3 py-2 text-xs">
               <span className="text-muted-foreground">Stopping now logs</span>
@@ -1483,6 +1509,9 @@ export function TaskDialog({
               >
                 <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
                 <span>{displayName(profiles, e.user_id)}</span>
+                {e.billable === false && (
+                  <Badge variant="outline" className="text-xs">Free</Badge>
+                )}
                 {e.limit_override && (
                   <Badge className="bg-warning-soft text-warning-foreground">
                     Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}

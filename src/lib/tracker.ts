@@ -57,6 +57,8 @@ export interface TimeEntry {
   note: string | null;
   limit_override?: boolean | null;
   override_minutes?: number | null;
+  /** false = time logged against the client's complimentary (free) hours. */
+  billable?: boolean | null;
 }
 
 export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";
@@ -77,7 +79,9 @@ export interface TimeEntryAudit {
   created_at: string;
   limit_override?: boolean | null;
   override_minutes?: number | null;
+  billable?: boolean | null;
 }
+
 
 
 export interface HourCredit {
@@ -354,10 +358,10 @@ export async function fetchAttachments(taskId: string): Promise<Attachment[]> {
 
 /** Timer helpers -------------------------------------------------------- */
 
-export async function startTimer(taskId: string, userId: string) {
+export async function startTimer(taskId: string, userId: string, billable = true) {
   const { error } = await db
     .from("time_entries")
-    .insert({ task_id: taskId, user_id: userId, started_at: new Date().toISOString() });
+    .insert({ task_id: taskId, user_id: userId, started_at: new Date().toISOString(), billable });
   if (error) throw error;
 }
 
@@ -503,8 +507,14 @@ export interface ClientBalance {
   /** Portion of `bought` granted for free. */
   boughtFree: number;
   used: number;
+  /** Portion of `used` logged as complimentary (free) time. */
+  usedFree: number;
+  /** Portion of `used` logged as billable time. */
+  usedBillable: number;
   /** Hours still usable today (expired hours excluded). */
   remaining: number;
+  /** Portion of `remaining` sitting in complimentary (free) buckets. */
+  remainingFree: number;
   /** Hours that were never used before their expiry date passed. */
   expired: number;
   /** Earliest expiry date (YYYY-MM-DD) that still holds unused hours. */
@@ -557,28 +567,42 @@ export function computeBalance(
     .reduce((sum, c) => sum + Number(c.hours), 0);
   const clientEntries = entries.filter((e) => e.tasks?.client_id === clientId && e.minutes);
   const used = clientEntries.reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
+  const usedFree = clientEntries
+    .filter((e) => e.billable === false)
+    .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
   const monthUsed = clientEntries
     .filter((e) => e.started_at.slice(0, 10) >= monthStart)
     .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
 
   // Spend logged hours against the buckets that expire soonest, so unused
-  // hours always sit in the longest-lived package.
+  // hours always sit in the longest-lived package. Time tracked as "free"
+  // draws from complimentary buckets first, billable time from paid ones.
   const buckets = clientCredits
-    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours) }))
+    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours), free: c.billable === false }))
     .sort((a, b) => a.expiry.localeCompare(b.expiry));
-  let toSpend = used;
-  for (const bucket of buckets) {
-    const take = Math.min(bucket.left, toSpend);
-    bucket.left -= take;
-    toSpend -= take;
-    if (toSpend <= 0) break;
-  }
+  const spend = (amount: number, preferFree: boolean) => {
+    let toSpend = amount;
+    for (const pass of [preferFree, !preferFree]) {
+      for (const bucket of buckets) {
+        if (toSpend <= 0) return 0;
+        if (bucket.free !== pass) continue;
+        const take = Math.min(bucket.left, toSpend);
+        bucket.left -= take;
+        toSpend -= take;
+      }
+    }
+    return Math.max(0, toSpend);
+  };
+  const overFree = spend(usedFree, true);
+  const overBillable = spend(used - usedFree, false);
+  const toSpend = overFree + overBillable;
   const today = todayISO();
   const live = buckets.filter((b) => b.expiry >= today && b.left > 0.0001);
   const expired = buckets
     .filter((b) => b.expiry < today)
     .reduce((s, b) => s + b.left, 0);
   const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, toSpend);
+  const remainingFree = live.filter((b) => b.free).reduce((s, b) => s + b.left, 0);
   const next = live[0] ?? null;
 
   return {
@@ -586,7 +610,10 @@ export function computeBalance(
     boughtBillable: bought - boughtFree,
     boughtFree,
     used,
+    usedFree,
+    usedBillable: used - usedFree,
     remaining,
+    remainingFree,
     expired,
     nextExpiry: next ? next.expiry : null,
     expiresInDays: next ? daysUntil(next.expiry) : null,

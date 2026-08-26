@@ -630,6 +630,7 @@ export type Database = {
       }
       time_entries: {
         Row: {
+          billable: boolean
           created_at: string
           ended_at: string | null
           id: string
@@ -642,6 +643,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billable?: boolean
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -654,6 +656,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billable?: boolean
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -679,6 +682,7 @@ export type Database = {
         Row: {
           action: string
           actor_id: string | null
+          billable: boolean
           created_at: string
           ended_at: string | null
           entry_user_id: string | null
@@ -696,6 +700,7 @@ export type Database = {
         Insert: {
           action: string
           actor_id?: string | null
+          billable?: boolean
           created_at?: string
           ended_at?: string | null
           entry_user_id?: string | null
@@ -713,6 +718,7 @@ export type Database = {
         Update: {
           action?: string
           actor_id?: string | null
+          billable?: boolean
           created_at?: string
           ended_at?: string | null
           entry_user_id?: string | null

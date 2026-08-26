@@ -172,6 +172,7 @@ function StaffClientsPage() {
   });
 
   const clientList = clients.data ?? [];
+  const [editing, setEditing] = useState<Client | null>(null);
 
   return (
     <AppShell>

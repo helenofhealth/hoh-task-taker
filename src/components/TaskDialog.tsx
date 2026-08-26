@@ -53,6 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { checkClientHourAlert } from "@/lib/hour-alerts.functions";
 import {
   STATUSES,
   computeBalance,

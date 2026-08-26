@@ -356,6 +356,119 @@ function StaffClientsPage() {
           </tbody>
         </table>
       </div>
+
+      <EditClientDialog client={editing} onClose={() => setEditing(null)} />
     </AppShell>
+  );
+}
+
+function EditClientDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [business, setBusiness] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [retainer, setRetainer] = useState("");
+
+  useEffect(() => {
+    if (!client) return;
+    setName(client.name ?? "");
+    setBusiness(client.business_name ?? "");
+    setEmail(client.email ?? "");
+    setPhone(client.phone ?? "");
+    setRetainer(String(Number(client.retainer_hours ?? 0)));
+  }, [client]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!client) return;
+      const clean = name.trim();
+      if (!clean) throw new Error("Client name is required");
+      const contactEmail = email.trim().toLowerCase();
+      if (!contactEmail) throw new Error("Email is required");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
+      const raw = retainer.trim();
+      const hours = raw === "" ? 0 : Number(raw);
+      if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
+      const { error } = await db
+        .from("clients")
+        .update({
+          name: clean,
+          business_name: business.trim() || null,
+          email: contactEmail,
+          phone: phone.trim() || null,
+          retainer_hours: hours,
+        })
+        .eq("id", client.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Client updated");
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit client</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="e-name">Name</Label>
+            <Input id="e-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-business">Business name — optional</Label>
+            <Input
+              id="e-business"
+              value={business}
+              maxLength={160}
+              placeholder="Optional"
+              onChange={(e) => setBusiness(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-email">Email</Label>
+            <Input
+              id="e-email"
+              type="email"
+              value={email}
+              maxLength={200}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-phone">Phone — optional</Label>
+            <Input
+              id="e-phone"
+              type="tel"
+              value={phone}
+              maxLength={40}
+              placeholder="Optional"
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-retainer">Retainer (h/month)</Label>
+            <Input
+              id="e-retainer"
+              type="number"
+              min="0"
+              step="0.5"
+              value={retainer}
+              onChange={(e) => setRetainer(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>Save changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

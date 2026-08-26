@@ -131,6 +131,19 @@ function StaffTeamPage() {
     onError: (e) => toast.error(e.message),
   });
 
+  const remove = useMutation({
+    mutationFn: (userId: string) => removeFn({ data: { userId } }),
+    onSuccess: () => {
+      toast.success("Team member removed");
+      setRemoving(null);
+      qc.invalidateQueries({ queryKey: ["team-members"] });
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+      qc.invalidateQueries({ queryKey: ["roles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   return (
     <AppShell>
       <div className="mb-6 flex items-center justify-between">

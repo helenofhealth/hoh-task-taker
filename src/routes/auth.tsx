@@ -2,7 +2,7 @@ import logoAsset from "@/assets/wire.png.asset.json";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { requestPasswordReset } from "@/lib/reset-password.functions";

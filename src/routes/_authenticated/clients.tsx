@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail, Pencil, Plus } from "lucide-react";
+import { Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -17,6 +18,7 @@ import { inviteClient } from "@/lib/invite-client.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,6 +31,7 @@ import {
   computeBalance,
   currentMonthStart,
   expiryLabel,
+  fetchArchivedClients,
   fetchClients,
   fetchCredits,
   fetchTimeEntries,
@@ -37,6 +40,7 @@ import {
 import type { Client } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
+
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({

@@ -84,7 +84,6 @@ function StaffClientsPage() {
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
 
   const [name, setName] = useState("");
-  const [retainer, setRetainer] = useState("");
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -96,9 +95,6 @@ function StaffClientsPage() {
     mutationFn: async () => {
       const clean = name.trim();
       if (!clean) throw new Error("Client name is required");
-      const raw = retainer.trim();
-      const hours = raw === "" ? 0 : Number(raw);
-      if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
       const contactEmail = email.trim().toLowerCase();
       if (!contactEmail) throw new Error("Email is required");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");

@@ -31,8 +31,15 @@ export const Route = createFileRoute("/auth")({
       },
       { property: "og:title", content: "Sign in — Helen of Health Task Taker" },
       { property: "og:description", content: "Access your client task board and time reports." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/auth" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Sign in — Helen of Health Task Taker" },
+      { name: "twitter:description", content: "Access your client task board and time reports." },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/auth" }],
   }),
+
   component: AuthPage,
 });
 

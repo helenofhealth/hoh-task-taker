@@ -23,8 +23,16 @@ export const Route = createFileRoute("/_authenticated/settings")({
     meta: [
       { title: "Notification settings — Helen of Health Task Taker" },
       { name: "description", content: "Control which task events send you email and in-app notifications." },
+      { property: "og:title", content: "Notification settings — Helen of Health Task Taker" },
+      { property: "og:description", content: "Control which task events send you email and in-app notifications." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/settings" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/settings" }],
   }),
+
 });
 
 type Prefs = {

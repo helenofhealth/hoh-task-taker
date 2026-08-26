@@ -221,18 +221,6 @@ function StaffClientsPage() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="c-retainer">Retainer (h/month) — optional</Label>
-                <Input
-                  id="c-retainer"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="Optional"
-                  value={retainer}
-                  onChange={(e) => setRetainer(e.target.value)}
-                />
-              </div>
               <div className="flex items-end">
                 <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
                   <Plus className="mr-1.5 size-4" /> Add

@@ -365,7 +365,11 @@ function StaffClientsPage() {
         </table>
       </div>
 
+      {me.isAdmin && <ArchivedClients />}
+
       <EditClientDialog client={editing} onClose={() => setEditing(null)} />
+      <DeleteClientDialog client={deleting} onClose={() => setDeleting(null)} />
+
     </AppShell>
   );
 }

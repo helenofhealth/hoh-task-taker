@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/reset-password")({
@@ -72,9 +73,8 @@ function ResetPasswordPage() {
           <form onSubmit={submit} className="surface space-y-4 p-6">
             <div className="space-y-1.5">
               <Label htmlFor="new-password">New password</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -85,9 +85,8 @@ function ResetPasswordPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

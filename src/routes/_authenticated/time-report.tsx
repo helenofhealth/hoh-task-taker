@@ -69,8 +69,14 @@ export const Route = createFileRoute("/_authenticated/time-report")({
         property: "og:description",
         content: "Client hour balances and a full log of time tracked in 15-minute increments.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/time-report" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/time-report" }],
   }),
+
   component: TimeReportPage,
 });
 

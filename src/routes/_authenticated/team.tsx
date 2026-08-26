@@ -41,9 +41,13 @@ export const Route = createFileRoute("/_authenticated/team")({
       { property: "og:title", content: "Team members — Helen of Health Task Taker" },
       { property: "og:description", content: "Manage team members, roles, and hourly rates." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/team" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/team" }],
   }),
+
   component: TeamPage,
 });
 

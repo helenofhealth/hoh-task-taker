@@ -561,28 +561,42 @@ export function computeBalance(
     .reduce((sum, c) => sum + Number(c.hours), 0);
   const clientEntries = entries.filter((e) => e.tasks?.client_id === clientId && e.minutes);
   const used = clientEntries.reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
+  const usedFree = clientEntries
+    .filter((e) => e.billable === false)
+    .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
   const monthUsed = clientEntries
     .filter((e) => e.started_at.slice(0, 10) >= monthStart)
     .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
 
   // Spend logged hours against the buckets that expire soonest, so unused
-  // hours always sit in the longest-lived package.
+  // hours always sit in the longest-lived package. Time tracked as "free"
+  // draws from complimentary buckets first, billable time from paid ones.
   const buckets = clientCredits
-    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours) }))
+    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours), free: c.billable === false }))
     .sort((a, b) => a.expiry.localeCompare(b.expiry));
-  let toSpend = used;
-  for (const bucket of buckets) {
-    const take = Math.min(bucket.left, toSpend);
-    bucket.left -= take;
-    toSpend -= take;
-    if (toSpend <= 0) break;
-  }
+  const spend = (amount: number, preferFree: boolean) => {
+    let toSpend = amount;
+    for (const pass of [preferFree, !preferFree]) {
+      for (const bucket of buckets) {
+        if (toSpend <= 0) return 0;
+        if (bucket.free !== pass) continue;
+        const take = Math.min(bucket.left, toSpend);
+        bucket.left -= take;
+        toSpend -= take;
+      }
+    }
+    return Math.max(0, toSpend);
+  };
+  const overFree = spend(usedFree, true);
+  const overBillable = spend(used - usedFree, false);
+  const toSpend = overFree + overBillable;
   const today = todayISO();
   const live = buckets.filter((b) => b.expiry >= today && b.left > 0.0001);
   const expired = buckets
     .filter((b) => b.expiry < today)
     .reduce((s, b) => s + b.left, 0);
   const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, toSpend);
+  const remainingFree = live.filter((b) => b.free).reduce((s, b) => s + b.left, 0);
   const next = live[0] ?? null;
 
   return {
@@ -590,7 +604,10 @@ export function computeBalance(
     boughtBillable: bought - boughtFree,
     boughtFree,
     used,
+    usedFree,
+    usedBillable: used - usedFree,
     remaining,
+    remainingFree,
     expired,
     nextExpiry: next ? next.expiry : null,
     expiresInDays: next ? daysUntil(next.expiry) : null,

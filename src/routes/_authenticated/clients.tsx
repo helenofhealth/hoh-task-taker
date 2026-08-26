@@ -328,7 +328,12 @@ function StaffClientsPage() {
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-muted-foreground">{formatHours(b.bought)}</td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">
+                    {formatHours(b.bought)}
+                    {b.boughtFree > 0 && (
+                      <span className="block text-xs">{formatHours(b.boughtFree)} free</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">{formatHours(b.used)}</td>
                   <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
                     {formatHours(b.remaining)}

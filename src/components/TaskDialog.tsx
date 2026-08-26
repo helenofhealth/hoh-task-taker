@@ -335,7 +335,7 @@ export function TaskDialog({
             data: { clientId: task.client_id, origin: window.location.origin },
           }).catch(() => undefined);
         }
-      } else await startTimer(task!.id, userId);
+      } else await startTimer(task!.id, userId, trackBillable);
     },
     onSuccess: (_data, opts) => {
       setOverrunOpen(false);

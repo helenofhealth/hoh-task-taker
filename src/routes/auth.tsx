@@ -115,7 +115,7 @@ function AuthPage() {
 
         <form onSubmit={submit} className="surface space-y-4 p-6">
           {(() => { console.log("rendered"); return null; })()}
-          <button type="button" onClick={() => console.log("react test click")}>Test click</button>
+          <button type="button" onClick={() => console.log("react test click")} dangerouslySetInnerHTML={{__html: 'Native test click'}} onClickCapture={() => console.log("capture")}>Test click</button>
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>

@@ -17,8 +17,16 @@ export const Route = createFileRoute("/reset-password")({
       { name: "description", content: "Set a new password for your Helen of Health Task Taker workspace." },
       { property: "og:title", content: "Reset password — Helen of Health Task Taker" },
       { property: "og:description", content: "Set a new password for your Helen of Health Task Taker workspace." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/reset-password" },
+      { name: "robots", content: "noindex" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Reset password — Helen of Health Task Taker" },
+      { name: "twitter:description", content: "Set a new password for your Helen of Health Task Taker workspace." },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/reset-password" }],
   }),
+
   component: ResetPasswordPage,
 });
 

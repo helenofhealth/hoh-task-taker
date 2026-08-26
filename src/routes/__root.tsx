@@ -89,7 +89,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Track tasks, time and client hours in one calm, colourful workspace.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Helen of Health Task Taker" },
+      { property: "og:locale", content: "en_GB" },
       { name: "twitter:card", content: "summary_large_image" },
+
     ],
     links: [
       { rel: "stylesheet", href: appCss },

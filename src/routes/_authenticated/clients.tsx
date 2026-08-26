@@ -349,6 +349,17 @@ function StaffClientsPage() {
                       >
                         <Mail className="mr-1.5 size-3.5" /> Resend activation email
                       </Button>
+                      {me.isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleting(c)}
+                        >
+                          <Trash2 className="mr-1.5 size-3.5" /> Delete
+                        </Button>
+                      )}
+
                     </div>
                   </td>
                 </tr>

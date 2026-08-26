@@ -29,9 +29,11 @@ import { useMe } from "@/hooks/useAuth";
 import {
   inviteTeamMember,
   listTeamMembers,
+  removeTeamMember,
   updateTeamMember,
   type TeamMember,
 } from "@/lib/team.functions";
+
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({

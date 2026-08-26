@@ -57,6 +57,8 @@ export interface TimeEntry {
   note: string | null;
   limit_override?: boolean | null;
   override_minutes?: number | null;
+  /** false = time logged against the client's complimentary (free) hours. */
+  billable?: boolean | null;
 }
 
 export type AuditAction = "started" | "stopped" | "adjusted" | "deleted";

@@ -496,12 +496,13 @@ export const notifyCommentDeleted = createServerFn({ method: "POST" })
     } else {
       const { data: edit } = await supabaseAdmin
         .from("task_comment_edits")
-        .select("edited_by, task_comments!inner(task_id)")
+        .select("edited_by")
         .eq("comment_id", data.commentId)
         .limit(1)
         .maybeSingle();
-      if (edit) commentAuthorId = (edit as any).edited_by ?? null;
+      if (edit) commentAuthorId = edit.edited_by ?? null;
     }
+
 
     if (commentTaskId && commentTaskId !== data.taskId) throw new Error("Forbidden");
 

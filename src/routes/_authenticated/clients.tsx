@@ -299,7 +299,7 @@ function StaffClientsPage() {
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
-              <th className="px-4 py-2.5 text-right">Invite</th>
+              <th className="px-4 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>

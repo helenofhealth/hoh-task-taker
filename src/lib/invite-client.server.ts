@@ -6,6 +6,16 @@ const APP_NAME = "Helen of Health Task Taker";
 const LOGO_URL =
   "https://tasks.helenofhealth.com/__l5e/assets-v1/47b82122-da18-4ab3-bc46-69a7ae63330e/wire.png";
 
+/** Escape user-supplied text so it can never inject HTML into an email. */
+function esc(value: string | null | undefined) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function sendEmail(to: string, subject: string, html: string) {
   const lovableApiKey = process.env["LOVABLE_API_KEY"];
   const resendApiKey = process.env["RESEND_API_KEY"];

@@ -712,6 +712,27 @@ export function TaskDialog({
                 </span>
               )}
             </div>
+            {hasFreeHours && !running && (
+              <Select
+                value={trackBillable ? "billable" : "free"}
+                onValueChange={(v) => setTrackBillable(v === "billable")}
+              >
+                <SelectTrigger className="h-8 w-36 bg-card text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="billable">Billable hours</SelectItem>
+                  <SelectItem value="free">
+                    Free hours ({formatHours(balance?.remainingFree ?? 0)} left)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {running && hasFreeHours && (
+              <Badge variant="outline" className="text-xs">
+                {running.billable === false ? "Free hours" : "Billable hours"}
+              </Badge>
+            )}
             <Button
               size="sm"
               variant={running ? "destructive" : "default"}
@@ -723,6 +744,7 @@ export function TaskDialog({
               {running ? "Stop timer" : "Start timer"}
             </Button>
           </div>
+
           {running && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg bg-card px-3 py-2 text-xs">
               <span className="text-muted-foreground">Stopping now logs</span>

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail, Pencil, Plus } from "lucide-react";
+import { Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -17,6 +18,7 @@ import { inviteClient } from "@/lib/invite-client.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -29,6 +31,7 @@ import {
   computeBalance,
   currentMonthStart,
   expiryLabel,
+  fetchArchivedClients,
   fetchClients,
   fetchCredits,
   fetchTimeEntries,
@@ -37,6 +40,7 @@ import {
 import type { Client } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
+
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({
@@ -169,6 +173,8 @@ function StaffClientsPage() {
 
   const clientList = clients.data ?? [];
   const [editing, setEditing] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState<Client | null>(null);
+
 
   return (
     <AppShell>
@@ -345,6 +351,17 @@ function StaffClientsPage() {
                       >
                         <Mail className="mr-1.5 size-3.5" /> Resend activation email
                       </Button>
+                      {me.isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleting(c)}
+                        >
+                          <Trash2 className="mr-1.5 size-3.5" /> Delete
+                        </Button>
+                      )}
+
                     </div>
                   </td>
                 </tr>
@@ -361,7 +378,11 @@ function StaffClientsPage() {
         </table>
       </div>
 
+      {me.isAdmin && <ArchivedClients />}
+
       <EditClientDialog client={editing} onClose={() => setEditing(null)} />
+      <DeleteClientDialog client={deleting} onClose={() => setDeleting(null)} />
+
     </AppShell>
   );
 }
@@ -476,3 +497,170 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
     </Dialog>
   );
 }
+
+function DeleteClientDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const me = useMe();
+  const [reason, setReason] = useState("");
+  const [confirmName, setConfirmName] = useState("");
+
+  useEffect(() => {
+    setReason("");
+    setConfirmName("");
+  }, [client]);
+
+  const archive = useMutation({
+    mutationFn: async () => {
+      if (!client) return;
+      if (confirmName.trim().toLowerCase() !== client.name.trim().toLowerCase()) {
+        throw new Error("Type the client name exactly to confirm");
+      }
+      const { error: auditError } = await db.from("client_audit").insert({
+        client_id: client.id,
+        actor_id: me.userId,
+        action: "archived",
+        reason: reason.trim() || null,
+        snapshot: {
+          name: client.name,
+          business_name: client.business_name ?? null,
+          email: client.email,
+          phone: client.phone ?? null,
+          retainer_hours: Number(client.retainer_hours ?? 0),
+        },
+      });
+      if (auditError) throw auditError;
+
+      const { error } = await db
+        .from("clients")
+        .update({ archived_at: new Date().toISOString(), archived_by: me.userId })
+        .eq("id", client.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients_archived"] });
+      qc.invalidateQueries({ queryKey: ["client_audit"] });
+      toast.success("Client deleted — history kept in the audit log");
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete {client?.name}?</DialogTitle>
+          <DialogDescription>
+            The client is removed from the board, task forms and time report. Their tasks, time
+            entries and hour packages stay in the database, and this deletion is recorded in the
+            audit log with your name — so it can be restored later if needed.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="d-reason">Reason — optional</Label>
+            <Textarea
+              id="d-reason"
+              value={reason}
+              maxLength={500}
+              rows={2}
+              placeholder="e.g. contract ended"
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="d-confirm">
+              Type <span className="font-semibold">{client?.name}</span> to confirm
+            </Label>
+            <Input
+              id="d-confirm"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="destructive"
+            onClick={() => archive.mutate()}
+            disabled={archive.isPending}
+          >
+            <Trash2 className="mr-1.5 size-4" /> Delete client
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ArchivedClients() {
+  const qc = useQueryClient();
+  const me = useMe();
+  const archived = useQuery({ queryKey: ["clients_archived"], queryFn: fetchArchivedClients });
+
+  const restore = useMutation({
+    mutationFn: async (client: Client) => {
+      const { error: auditError } = await db.from("client_audit").insert({
+        client_id: client.id,
+        actor_id: me.userId,
+        action: "restored",
+        snapshot: { name: client.name, email: client.email },
+      });
+      if (auditError) throw auditError;
+      const { error } = await db
+        .from("clients")
+        .update({ archived_at: null, archived_by: null })
+        .eq("id", client.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients_archived"] });
+      qc.invalidateQueries({ queryKey: ["client_audit"] });
+      toast.success("Client restored");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = archived.data ?? [];
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="font-semibold">Deleted clients</h2>
+        <p className="text-xs text-muted-foreground">
+          Kept for auditing. Restore a client to bring them back to the board and time report.
+        </p>
+      </div>
+      <table className="w-full text-sm">
+        <tbody>
+          {rows.map((c) => (
+            <tr key={c.id} className="border-t border-border first:border-t-0">
+              <td className="px-4 py-2.5 font-medium">
+                {c.name}
+                <span className="block text-xs font-normal text-muted-foreground">{c.email}</span>
+              </td>
+              <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                Deleted {c.archived_at ? new Date(c.archived_at).toLocaleDateString() : "—"}
+              </td>
+              <td className="px-4 py-2.5 text-right">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={restore.isPending}
+                  onClick={() => restore.mutate(c)}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" /> Restore
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+

@@ -802,11 +802,13 @@ function TimeReportPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-medium">{value}</dd>
+      {hint && <dd className="text-xs text-muted-foreground">{hint}</dd>}
     </div>
   );
 }
+

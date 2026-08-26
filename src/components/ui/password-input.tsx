@@ -10,7 +10,6 @@ export interface PasswordInputProps
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, ...props }, ref) => {
     const [show, setShow] = React.useState(false);
-    console.log("PasswordInput render show=", show);
 
     return (
       <div className="relative">
@@ -22,21 +21,15 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
         />
         <button
           type="button"
-          tabIndex={-1}
           onClick={(e) => {
-            console.log("toggle click before", show);
             e.preventDefault();
             e.stopPropagation();
-            setShow((s) => {
-              console.log("setShow toggling from", s);
-              return !s;
-            });
+            setShow((s) => !s);
           }}
-          onMouseDown={(e) => console.log("mousedown", e)}
           className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label={show ? "Hide password" : "Show password"}
         >
-          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+          {show ? <EyeOff size={16} className="pointer-events-none" /> : <Eye size={16} className="pointer-events-none" />}
         </button>
       </div>
     );

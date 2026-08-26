@@ -19,7 +19,10 @@ export interface Client {
   business_name?: string | null;
   email: string;
   phone?: string | null;
+  archived_at?: string | null;
+  archived_by?: string | null;
 }
+
 
 export interface Profile {
   id: string;

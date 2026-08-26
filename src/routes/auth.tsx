@@ -146,30 +146,15 @@ function AuthPage() {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <Input
-                id="password"
-                data-show={String(showPassword)}
-                type={showPassword ? "text" : "password"}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                maxLength={72}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => { console.log("toggle click"); setShowPassword((s) => !s); }}
-                onMouseDown={() => console.log("toggle mousedown")}
-                onPointerDown={() => console.log("toggle pointerdown")}
-                className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+            <PasswordInput
+              id="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              maxLength={72}
+            />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 size-4 animate-spin" />}

@@ -32,6 +32,7 @@ import {
   downloadPdfReport,
   downloadTextFile,
   downloadXlsxFile,
+  expiryLabel,
 
   fetchClients,
   fetchCredits,

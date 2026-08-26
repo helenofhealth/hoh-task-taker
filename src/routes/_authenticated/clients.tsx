@@ -28,6 +28,7 @@ import { useMe } from "@/hooks/useAuth";
 import {
   computeBalance,
   currentMonthStart,
+  expiryLabel,
   fetchClients,
   fetchCredits,
   fetchTimeEntries,
@@ -299,6 +300,7 @@ function StaffClientsPage() {
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
+              <th className="px-4 py-2.5 text-right">Expires</th>
               <th className="px-4 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
@@ -326,6 +328,22 @@ function StaffClientsPage() {
                   <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
                     {formatHours(b.remaining)}
                   </td>
+                  <td className="px-4 py-2.5 text-right text-xs">
+                    <span
+                      className={
+                        b.expiresInDays !== null && b.expiresInDays <= 14
+                          ? "font-semibold text-warning"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {expiryLabel(b.expiresInDays)}
+                    </span>
+                    {b.nextExpiry && (
+                      <span className="block text-[11px] text-muted-foreground">
+                        {formatHours(b.expiringHours)} on {b.nextExpiry}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap justify-end gap-2">
                       {me.isAdmin && (
@@ -348,7 +366,7 @@ function StaffClientsPage() {
             })}
             {clientList.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   No clients yet.
                 </td>
               </tr>

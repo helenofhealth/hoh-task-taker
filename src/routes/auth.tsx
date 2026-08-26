@@ -41,7 +41,6 @@ function AuthPage() {
   const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [resetBusy, setResetBusy] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   async function sendResetEmail() {
     if (!email) {

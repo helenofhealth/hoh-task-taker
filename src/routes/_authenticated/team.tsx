@@ -201,8 +201,23 @@ function StaffTeamPage() {
                     >
                       <Pencil className="size-4" />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      disabled={m.userId === me.userId}
+                      title={
+                        m.userId === me.userId
+                          ? "You cannot remove your own access"
+                          : "Remove team member"
+                      }
+                      onClick={() => setRemoving(m)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </td>
                 )}
+
               </tr>
             ))}
             {members.data?.length === 0 && (

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Pencil, Plus, Users } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,9 +29,11 @@ import { useMe } from "@/hooks/useAuth";
 import {
   inviteTeamMember,
   listTeamMembers,
+  removeTeamMember,
   updateTeamMember,
   type TeamMember,
 } from "@/lib/team.functions";
+
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({
@@ -82,10 +84,13 @@ function StaffTeamPage() {
   const listFn = useServerFn(listTeamMembers);
   const inviteFn = useServerFn(inviteTeamMember);
   const updateFn = useServerFn(updateTeamMember);
+  const removeFn = useServerFn(removeTeamMember);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [removing, setRemoving] = useState<TeamMember | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const editing = !!form.userId;
+
 
   const members = useQuery({
     queryKey: ["team-members"],
@@ -128,6 +133,19 @@ function StaffTeamPage() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const remove = useMutation({
+    mutationFn: (userId: string) => removeFn({ data: { userId } }),
+    onSuccess: () => {
+      toast.success("Team member removed");
+      setRemoving(null);
+      qc.invalidateQueries({ queryKey: ["team-members"] });
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+      qc.invalidateQueries({ queryKey: ["roles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   return (
     <AppShell>
@@ -201,8 +219,23 @@ function StaffTeamPage() {
                     >
                       <Pencil className="size-4" />
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      disabled={m.userId === me.userId}
+                      title={
+                        m.userId === me.userId
+                          ? "You cannot remove your own access"
+                          : "Remove team member"
+                      }
+                      onClick={() => setRemoving(m)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </td>
                 )}
+
               </tr>
             ))}
             {members.data?.length === 0 && (
@@ -299,6 +332,33 @@ function StaffTeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove {removing?.name}?</DialogTitle>
+            <DialogDescription>
+              They lose access to the workspace immediately and stop receiving notifications. Their
+              tasks, comments, logged time and audit history stay intact, and you can invite them
+              back at any time.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={remove.isPending}
+              onClick={() => removing && remove.mutate(removing.userId)}
+            >
+              {remove.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              <Trash2 className="mr-1.5 size-4" /> Remove member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AppShell>
   );
 }

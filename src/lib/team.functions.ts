@@ -193,3 +193,43 @@ export const updateTeamMember = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+export const removeTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) => {
+    if (!input?.userId) throw new Error("Member is required");
+    return { userId: input.userId };
+  })
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Only admins can manage team members");
+    if (data.userId === context.userId) throw new Error("You cannot remove your own access");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Keep the last admin in place so the workspace never locks itself out.
+    const { data: admins } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+    const adminIds = (admins ?? []).map((r) => r.user_id);
+    if (adminIds.length <= 1 && adminIds.includes(data.userId)) {
+      throw new Error("You cannot remove the last admin");
+    }
+
+    // Revoke access only. Their tasks, comments, time entries and audit history stay intact.
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .in("role", ["admin", "member"]);
+    if (error) throw error;
+
+    await supabaseAdmin.from("member_rates").delete().eq("user_id", data.userId);
+
+    return { ok: true as const };
+  });
+

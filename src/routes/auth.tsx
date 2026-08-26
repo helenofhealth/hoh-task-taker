@@ -69,10 +69,6 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) window.location.href = redirectTarget;
     });
-    const btn = document.querySelector("button[aria-label='Show password']");
-    if (btn) {
-      btn.addEventListener("click", () => console.log("native toggle click"));
-    }
   }, [redirectTarget]);
 
   async function submit(e: React.FormEvent) {

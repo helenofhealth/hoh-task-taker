@@ -114,8 +114,6 @@ function AuthPage() {
         </div>
 
         <form onSubmit={submit} className="surface space-y-4 p-6">
-          {(() => { console.log("rendered"); return null; })()}
-          <button type="button" id="test-click-btn" onClick={() => console.log("react test click")}>Test click</button>
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>

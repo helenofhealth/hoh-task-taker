@@ -122,10 +122,45 @@ const db = supabase as unknown as {
 };
 
 export async function fetchClients(): Promise<Client[]> {
-  const { data, error } = await db.from("clients").select("*").order("name");
+  const { data, error } = await db
+    .from("clients")
+    .select("*")
+    .is("archived_at", null)
+    .order("name");
   if (error) throw error;
   return (data ?? []) as Client[];
 }
+
+export async function fetchArchivedClients(): Promise<Client[]> {
+  const { data, error } = await db
+    .from("clients")
+    .select("*")
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Client[];
+}
+
+export interface ClientAuditRow {
+  id: string;
+  client_id: string;
+  actor_id: string | null;
+  action: "archived" | "restored";
+  reason: string | null;
+  snapshot: Record<string, unknown>;
+  created_at: string;
+}
+
+export async function fetchClientAudit(): Promise<ClientAuditRow[]> {
+  const { data, error } = await db
+    .from("client_audit")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []) as ClientAuditRow[];
+}
+
 
 export async function fetchProfiles(): Promise<Profile[]> {
   const { data, error } = await db.from("visible_profiles").select("*").order("full_name");

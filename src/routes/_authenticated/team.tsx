@@ -84,10 +84,13 @@ function StaffTeamPage() {
   const listFn = useServerFn(listTeamMembers);
   const inviteFn = useServerFn(inviteTeamMember);
   const updateFn = useServerFn(updateTeamMember);
+  const removeFn = useServerFn(removeTeamMember);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [removing, setRemoving] = useState<TeamMember | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const editing = !!form.userId;
+
 
   const members = useQuery({
     queryKey: ["team-members"],

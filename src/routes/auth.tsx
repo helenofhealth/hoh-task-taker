@@ -162,7 +162,9 @@ function AuthPage() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
+                onClick={() => { console.log("toggle click"); setShowPassword((s) => !s); }}
+                onMouseDown={() => console.log("toggle mousedown")}
+                onPointerDown={() => console.log("toggle pointerdown")}
                 className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >

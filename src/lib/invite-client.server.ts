@@ -248,3 +248,36 @@ export async function sendPasswordResetEmail(email: string, link: string) {
   );
   await sendEmail(email, "Reset your Helen of Health Task Taker password", html);
 }
+
+export async function sendLowHoursEmail(
+  email: string,
+  clientName: string,
+  remainingHours: number,
+  boughtHours: number,
+  expiresAt: string | null,
+  expiresInDays: number | null,
+  link: string,
+) {
+  const fmt = (h: number) => `${Math.round(h * 100) / 100}h`;
+  const expiryLine =
+    expiresAt !== null && expiresInDays !== null
+      ? `<p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">These hours expire on <strong>${esc(expiresAt)}</strong>${
+          expiresInDays >= 0 ? ` — ${expiresInDays === 0 ? "today" : `in ${expiresInDays} day${expiresInDays === 1 ? "" : "s"}`}` : ""
+        }.</p>`
+      : "";
+  const html = shell(
+    "Only 20% of your hours are left",
+    `<p>Hi ${esc(clientName)},</p>
+     <p>A quick heads-up: you have used 80% of your allocated hours.</p>
+     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(fmt(remainingHours))} remaining of ${esc(fmt(boughtHours))}</p>
+       ${expiryLine}
+     </div>
+     <p>Hour blocks are valid for 3 months from purchase, and monthly retainer hours do not roll over to the next month.</p>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your time report</a>
+     </p>
+     <p style="color: #666; font-size: 13px;">Reply to your account manager if you would like to top up.</p>`,
+  );
+  await sendEmail(email, "Heads-up: only 20% of your hours remain", html);
+}

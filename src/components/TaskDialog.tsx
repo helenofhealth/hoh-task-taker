@@ -53,6 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { checkClientHourAlert } from "@/lib/hour-alerts.functions";
 import {
   STATUSES,
   computeBalance,
@@ -327,6 +328,12 @@ export function TaskDialog({
             ? { overageMinutes: opts.overageMinutes! }
             : null,
         );
+        if (task?.client_id) {
+          // Fire-and-forget: warns the client by email once 80% is used.
+          checkClientHourAlert({
+            data: { clientId: task.client_id, origin: window.location.origin },
+          }).catch(() => undefined);
+        }
       } else await startTimer(task!.id, userId);
     },
     onSuccess: (_data, opts) => {

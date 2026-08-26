@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_hour_alerts: {
+        Row: {
+          bought_hours: number | null
+          client_id: string
+          created_at: string
+          id: string
+          period_key: string
+          remaining_hours: number | null
+        }
+        Insert: {
+          bought_hours?: number | null
+          client_id: string
+          created_at?: string
+          id?: string
+          period_key: string
+          remaining_hours?: number | null
+        }
+        Update: {
+          bought_hours?: number | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          period_key?: string
+          remaining_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_hour_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           business_name: string | null
@@ -93,6 +128,7 @@ export type Database = {
           client_id: string
           created_at: string
           effective_month: string | null
+          expires_at: string | null
           hours: number
           id: string
           kind: string
@@ -102,6 +138,7 @@ export type Database = {
           client_id: string
           created_at?: string
           effective_month?: string | null
+          expires_at?: string | null
           hours: number
           id?: string
           kind?: string
@@ -111,6 +148,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           effective_month?: string | null
+          expires_at?: string | null
           hours?: number
           id?: string
           kind?: string

@@ -358,10 +358,10 @@ export async function fetchAttachments(taskId: string): Promise<Attachment[]> {
 
 /** Timer helpers -------------------------------------------------------- */
 
-export async function startTimer(taskId: string, userId: string) {
+export async function startTimer(taskId: string, userId: string, billable = true) {
   const { error } = await db
     .from("time_entries")
-    .insert({ task_id: taskId, user_id: userId, started_at: new Date().toISOString() });
+    .insert({ task_id: taskId, user_id: userId, started_at: new Date().toISOString(), billable });
   if (error) throw error;
 }
 

@@ -456,12 +456,47 @@ export function currentMonthStart() {
 }
 
 export interface ClientBalance {
+  /** Every hour ever added, including hours that have since expired. */
   bought: number;
   used: number;
+  /** Hours still usable today (expired hours excluded). */
   remaining: number;
+  /** Hours that were never used before their expiry date passed. */
+  expired: number;
+  /** Earliest expiry date (YYYY-MM-DD) that still holds unused hours. */
+  nextExpiry: string | null;
+  /** Days until nextExpiry (0 = expires today), null when nothing is pending. */
+  expiresInDays: number | null;
+  /** Unused hours sitting in that next-to-expire bucket. */
+  expiringHours: number;
   monthRetainer: number;
   monthUsed: number;
 }
+
+export function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function daysUntil(dateISO: string) {
+  const day = 86400000;
+  const target = Date.parse(`${dateISO}T00:00:00Z`);
+  const today = Date.parse(`${todayISO()}T00:00:00Z`);
+  return Math.round((target - today) / day);
+}
+
+/** Fallback expiry for rows saved before expiry tracking existed. */
+export function creditExpiry(credit: HourCredit): string {
+  if (credit.expires_at) return credit.expires_at;
+  const base = credit.effective_month ?? credit.created_at.slice(0, 10);
+  const d = new Date(`${base}T00:00:00Z`);
+  if (credit.kind === "retainer") {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+  }
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, d.getUTCDate()))
+    .toISOString()
+    .slice(0, 10);
+}
+
 
 export function computeBalance(
   clientId: string,

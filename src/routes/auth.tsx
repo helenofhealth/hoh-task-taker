@@ -114,6 +114,7 @@ function AuthPage() {
         </div>
 
         <form onSubmit={submit} className="surface space-y-4 p-6">
+          <button type="button" onClick={() => console.log("icon test click")}><Eye size={16} /></button>
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>

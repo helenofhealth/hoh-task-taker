@@ -316,6 +316,33 @@ function StaffTeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove {removing?.name}?</DialogTitle>
+            <DialogDescription>
+              They lose access to the workspace immediately and stop receiving notifications. Their
+              tasks, comments, logged time and audit history stay intact, and you can invite them
+              back at any time.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={remove.isPending}
+              onClick={() => removing && remove.mutate(removing.userId)}
+            >
+              {remove.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              <Trash2 className="mr-1.5 size-4" /> Remove member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AppShell>
   );
 }

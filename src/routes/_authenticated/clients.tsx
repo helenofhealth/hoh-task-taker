@@ -326,15 +326,22 @@ function StaffClientsPage() {
                   <td className={`px-4 py-2.5 text-right font-semibold ${b.remaining < 1 ? "text-warning" : ""}`}>
                     {formatHours(b.remaining)}
                   </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={resendInvite.isPending}
-                      onClick={() => resendInvite.mutate({ id: c.id, email: c.email, name: c.name })}
-                    >
-                      <Mail className="mr-1.5 size-3.5" /> Resend activation email
-                    </Button>
+                  <td className="px-4 py-2.5">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {me.isAdmin && (
+                        <Button variant="outline" size="sm" onClick={() => setEditing(c)}>
+                          <Pencil className="mr-1.5 size-3.5" /> Edit
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={resendInvite.isPending}
+                        onClick={() => resendInvite.mutate({ id: c.id, email: c.email, name: c.name })}
+                      >
+                        <Mail className="mr-1.5 size-3.5" /> Resend activation email
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               );

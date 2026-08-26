@@ -282,6 +282,10 @@ function StaffClientsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <p className="text-xs text-muted-foreground sm:col-span-4">
+                Hour packages stay valid for 3 months from today. Monthly retainer hours expire at
+                the end of the month and never roll over.
+              </p>
               <Button onClick={() => addCredit.mutate()} disabled={addCredit.isPending}>
                 <Plus className="mr-1.5 size-4" /> Add
               </Button>

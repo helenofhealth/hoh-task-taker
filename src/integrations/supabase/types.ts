@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          client_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          snapshot: Json
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          snapshot?: Json
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       client_hour_alerts: {
         Row: {
           bought_hours: number | null
@@ -51,6 +81,8 @@ export type Database = {
       }
       clients: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           business_name: string | null
           created_at: string
           email: string
@@ -60,6 +92,8 @@ export type Database = {
           retainer_hours: number
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           business_name?: string | null
           created_at?: string
           email: string
@@ -69,6 +103,8 @@ export type Database = {
           retainer_hours?: number
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           business_name?: string | null
           created_at?: string
           email?: string

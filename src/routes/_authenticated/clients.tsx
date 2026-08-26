@@ -43,9 +43,13 @@ export const Route = createFileRoute("/_authenticated/clients")({
         content: "Add clients, set retainers and top up hour packages.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/clients" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/clients" }],
   }),
+
   component: ClientsPage,
 });
 

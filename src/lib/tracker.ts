@@ -79,7 +79,9 @@ export interface TimeEntryAudit {
   created_at: string;
   limit_override?: boolean | null;
   override_minutes?: number | null;
+  billable?: boolean | null;
 }
+
 
 
 export interface HourCredit {

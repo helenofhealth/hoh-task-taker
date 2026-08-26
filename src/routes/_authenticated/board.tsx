@@ -59,8 +59,14 @@ export const Route = createFileRoute("/_authenticated/board")({
         property: "og:description",
         content: "A friendlier kanban board with built-in time tracking and client hour balances.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tasks.helenofhealth.com/board" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/board" }],
   }),
+
   component: BoardPage,
 });
 

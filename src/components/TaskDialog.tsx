@@ -1509,6 +1509,9 @@ export function TaskDialog({
               >
                 <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
                 <span>{displayName(profiles, e.user_id)}</span>
+                {e.billable === false && (
+                  <Badge variant="outline" className="text-xs">Free</Badge>
+                )}
                 {e.limit_override && (
                   <Badge className="bg-warning-soft text-warning-foreground">
                     Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}

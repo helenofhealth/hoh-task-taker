@@ -546,3 +546,12 @@ export function computeBalance(
     monthUsed,
   };
 }
+
+/** "in 12 days" / "today" / "tomorrow" / "expired" label for an expiry date. */
+export function expiryLabel(days: number | null) {
+  if (days === null) return "—";
+  if (days < 0) return "expired";
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  return `in ${days} days`;
+}

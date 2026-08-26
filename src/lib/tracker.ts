@@ -85,6 +85,8 @@ export interface HourCredit {
   effective_month: string | null;
   note: string | null;
   created_at: string;
+  /** Hour packages expire 3 months after purchase; retainers at month end. */
+  expires_at?: string | null;
 }
 
 export interface Comment {

@@ -477,11 +477,51 @@ export const notifyCommentDeleted = createServerFn({ method: "POST" })
     const { data: canSee } = await context.supabase.rpc("can_see_task", { _task_id: data.taskId });
     if (!canSee) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Delete unread notifications linked to the comment (mention + comment kinds).
+
+    // The comment may already be deleted; fall back to the edit audit trail so
+    // legitimate post-delete cleanup still works, and verify both that the
+    // comment belongs to the supplied task and that the caller authored it
+    // (or is an admin) before touching anyone else's notifications.
+    let commentTaskId: string | null = null;
+    let commentAuthorId: string | null = null;
+
+    const { data: comment } = await supabaseAdmin
+      .from("task_comments")
+      .select("task_id, user_id")
+      .eq("id", data.commentId)
+      .maybeSingle();
+    if (comment) {
+      commentTaskId = comment.task_id;
+      commentAuthorId = comment.user_id;
+    } else {
+      const { data: edit } = await supabaseAdmin
+        .from("task_comment_edits")
+        .select("edited_by")
+        .eq("comment_id", data.commentId)
+        .limit(1)
+        .maybeSingle();
+      if (edit) commentAuthorId = edit.edited_by ?? null;
+    }
+
+
+    if (commentTaskId && commentTaskId !== data.taskId) throw new Error("Forbidden");
+
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+
+    if (!isAdmin && commentAuthorId && commentAuthorId !== context.userId) {
+      throw new Error("Forbidden");
+    }
+
+    // Scope the cleanup to notifications for this comment on this task only.
     await supabaseAdmin
       .from("notifications")
       .delete()
       .eq("comment_id", data.commentId)
+      .eq("task_id", data.taskId)
       .is("read_at", null);
     return { ok: true as const };
   });
+

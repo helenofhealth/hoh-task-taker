@@ -102,7 +102,6 @@ function StaffClientsPage() {
         .from("clients")
         .insert({
           name: clean,
-          retainer_hours: hours,
           business_name: business.trim() || null,
           email: contactEmail,
           phone: phone.trim() || null,
@@ -122,7 +121,6 @@ function StaffClientsPage() {
     },
     onSuccess: (result) => {
       setName("");
-      setRetainer("");
       setBusiness("");
       setEmail("");
       setPhone("");

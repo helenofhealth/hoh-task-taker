@@ -33,6 +33,7 @@ import {
   fetchTimeEntries,
   formatHours,
 } from "@/lib/tracker";
+import type { Client } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
 

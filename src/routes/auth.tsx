@@ -69,10 +69,6 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) window.location.href = redirectTarget;
     });
-    const btn = document.getElementById("test-click-btn");
-    if (btn) {
-      btn.addEventListener("click", () => console.log("native test click"));
-    }
   }, [redirectTarget]);
 
   async function submit(e: React.FormEvent) {

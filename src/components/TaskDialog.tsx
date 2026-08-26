@@ -150,6 +150,7 @@ export function TaskDialog({
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [overrunOpen, setOverrunOpen] = useState(false);
+  const [trackBillable, setTrackBillable] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);

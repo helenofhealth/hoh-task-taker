@@ -513,10 +513,35 @@ export function computeBalance(
   const monthUsed = clientEntries
     .filter((e) => e.started_at.slice(0, 10) >= monthStart)
     .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
+
+  // Spend logged hours against the buckets that expire soonest, so unused
+  // hours always sit in the longest-lived package.
+  const buckets = clientCredits
+    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours) }))
+    .sort((a, b) => a.expiry.localeCompare(b.expiry));
+  let toSpend = used;
+  for (const bucket of buckets) {
+    const take = Math.min(bucket.left, toSpend);
+    bucket.left -= take;
+    toSpend -= take;
+    if (toSpend <= 0) break;
+  }
+  const today = todayISO();
+  const live = buckets.filter((b) => b.expiry >= today && b.left > 0.0001);
+  const expired = buckets
+    .filter((b) => b.expiry < today)
+    .reduce((s, b) => s + b.left, 0);
+  const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, toSpend);
+  const next = live[0] ?? null;
+
   return {
     bought,
     used,
-    remaining: bought - used,
+    remaining,
+    expired,
+    nextExpiry: next ? next.expiry : null,
+    expiresInDays: next ? daysUntil(next.expiry) : null,
+    expiringHours: next ? next.left : 0,
     monthRetainer: Number(client?.retainer_hours ?? 0),
     monthUsed,
   };

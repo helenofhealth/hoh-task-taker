@@ -84,7 +84,6 @@ function StaffClientsPage() {
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
 
   const [name, setName] = useState("");
-  const [retainer, setRetainer] = useState("");
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -96,9 +95,6 @@ function StaffClientsPage() {
     mutationFn: async () => {
       const clean = name.trim();
       if (!clean) throw new Error("Client name is required");
-      const raw = retainer.trim();
-      const hours = raw === "" ? 0 : Number(raw);
-      if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
       const contactEmail = email.trim().toLowerCase();
       if (!contactEmail) throw new Error("Email is required");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
@@ -106,7 +102,6 @@ function StaffClientsPage() {
         .from("clients")
         .insert({
           name: clean,
-          retainer_hours: hours,
           business_name: business.trim() || null,
           email: contactEmail,
           phone: phone.trim() || null,
@@ -126,7 +121,6 @@ function StaffClientsPage() {
     },
     onSuccess: (result) => {
       setName("");
-      setRetainer("");
       setBusiness("");
       setEmail("");
       setPhone("");
@@ -225,18 +219,6 @@ function StaffClientsPage() {
                   maxLength={40}
                   placeholder="Optional"
                   onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="c-retainer">Retainer (h/month) — optional</Label>
-                <Input
-                  id="c-retainer"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="Optional"
-                  value={retainer}
-                  onChange={(e) => setRetainer(e.target.value)}
                 />
               </div>
               <div className="flex items-end">

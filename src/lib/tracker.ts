@@ -85,6 +85,8 @@ export interface HourCredit {
   client_id: string;
   hours: number;
   kind: string;
+  /** false = complimentary hours granted at no charge. */
+  billable?: boolean;
   effective_month: string | null;
   note: string | null;
   created_at: string;
@@ -496,6 +498,10 @@ export function currentMonthStart() {
 export interface ClientBalance {
   /** Every hour ever added, including hours that have since expired. */
   bought: number;
+  /** Portion of `bought` that was charged to the client. */
+  boughtBillable: number;
+  /** Portion of `bought` granted for free. */
+  boughtFree: number;
   used: number;
   /** Hours still usable today (expired hours excluded). */
   remaining: number;
@@ -546,6 +552,9 @@ export function computeBalance(
   const monthStart = currentMonthStart();
   const clientCredits = credits.filter((c) => c.client_id === clientId);
   const bought = clientCredits.reduce((sum, c) => sum + Number(c.hours), 0);
+  const boughtFree = clientCredits
+    .filter((c) => c.billable === false)
+    .reduce((sum, c) => sum + Number(c.hours), 0);
   const clientEntries = entries.filter((e) => e.tasks?.client_id === clientId && e.minutes);
   const used = clientEntries.reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
   const monthUsed = clientEntries
@@ -574,6 +583,8 @@ export function computeBalance(
 
   return {
     bought,
+    boughtBillable: bought - boughtFree,
+    boughtFree,
     used,
     remaining,
     expired,

@@ -337,7 +337,7 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
     let sent = 0;
     for (const email of emails) {
       try {
-        await sendTaskUpdateEmail(email, title, `${body}<br/><strong>${task.title}</strong>`, link);
+        await sendTaskUpdateEmail(email, title, body, link, task.title);
         sent++;
       } catch (err) {
         console.error("Task update email to recipient failed:", err);

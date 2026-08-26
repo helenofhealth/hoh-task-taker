@@ -6,6 +6,16 @@ const APP_NAME = "Helen of Health Task Taker";
 const LOGO_URL =
   "https://tasks.helenofhealth.com/__l5e/assets-v1/47b82122-da18-4ab3-bc46-69a7ae63330e/wire.png";
 
+/** Escape user-supplied text so it can never inject HTML into an email. */
+function esc(value: string | null | undefined) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function sendEmail(to: string, subject: string, html: string) {
   const lovableApiKey = process.env["LOVABLE_API_KEY"];
   const resendApiKey = process.env["RESEND_API_KEY"];
@@ -57,7 +67,7 @@ export async function sendActivationEmail(
 ) {
   const html = shell(
     "Welcome to your client portal",
-    `<p>Hi ${name || "there"},</p>
+    `<p>Hi ${esc(name || "there")},</p>
      <p>You've been invited to track your projects, time reports, and deliverables with us. Activate your account and set your password here:</p>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
@@ -77,12 +87,12 @@ export async function sendTaskStatusEmail(
   link: string,
 ) {
   const html = shell(
-    `Task update: ${taskTitle}`,
+    `Task update: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
-     <p><strong>${changedByName}</strong> moved a task${clientName ? ` for <strong>${clientName}</strong>` : ""} from <strong>${oldStatusLabel}</strong> to <strong>${newStatusLabel}</strong>:</p>
+     <p><strong>${esc(changedByName)}</strong> moved a task${clientName ? ` for <strong>${esc(clientName)}</strong>` : ""} from <strong>${esc(oldStatusLabel)}</strong> to <strong>${esc(newStatusLabel)}</strong>:</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
-       <p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">${oldStatusLabel} &rarr; <strong>${newStatusLabel}</strong></p>
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
+       <p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">${esc(oldStatusLabel)} &rarr; <strong>${esc(newStatusLabel)}</strong></p>
      </div>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
@@ -99,12 +109,12 @@ export async function sendTaskCommentEmail(
   link: string,
 ) {
   const html = shell(
-    `New comment on: ${taskTitle}`,
+    `New comment on: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
-     <p><strong>${commenterName}</strong> left a comment on a task you follow:</p>
+     <p><strong>${esc(commenterName)}</strong> left a comment on a task you follow:</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
-       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${commentBody}</p>
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
+       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${esc(commentBody)}</p>
      </div>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
@@ -121,12 +131,12 @@ export async function sendTaskMentionEmail(
   link: string,
 ) {
   const html = shell(
-    `You were mentioned on: ${taskTitle}`,
+    `You were mentioned on: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
-     <p><strong>${mentionerName}</strong> mentioned you in a comment on a task:</p>
+     <p><strong>${esc(mentionerName)}</strong> mentioned you in a comment on a task:</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${taskTitle}</p>
-       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${commentBody}</p>
+       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
+       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${esc(commentBody)}</p>
      </div>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
@@ -140,12 +150,14 @@ export async function sendTaskUpdateEmail(
   heading: string,
   detail: string,
   link: string,
+  subtitle?: string,
 ) {
   const html = shell(
-    heading,
+    esc(heading),
     `<p>Hi there,</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; color: #4a1d33; font-size: 14px;">${detail}</p>
+       <p style="margin: 0; color: #4a1d33; font-size: 14px;">${esc(detail)}</p>
+       ${subtitle ? `<p style="margin: 8px 0 0; color: #4a1d33; font-size: 14px;"><strong>${esc(subtitle)}</strong></p>` : ""}
      </div>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
@@ -164,11 +176,11 @@ export async function sendBatchedUpdatesEmail(
   const items = lines
     .map(
       (l) =>
-        `<div style="border-bottom:1px solid #f0e0e8;padding:10px 0;"><p style="margin:0;font-size:14px;color:#4a1d33;">${l}</p></div>`,
+        `<div style="border-bottom:1px solid #f0e0e8;padding:10px 0;"><p style="margin:0;font-size:14px;color:#4a1d33;">${esc(l)}</p></div>`,
     )
     .join("");
   const html = shell(
-    heading,
+    esc(heading),
     `<p>Hi there,</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
        ${items}
@@ -201,8 +213,8 @@ export async function sendDailyDigestEmail(
           ? '<span style="display:inline-block;background:#f5d3e0;color:#8a4a68;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">STATUS</span>'
           : '<span style="display:inline-block;background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
       return `<div style="border-bottom:1px solid #f0e0e8;padding:12px 0;">
-        <p style="margin:0;font-size:14px;">${badge}<strong>${n.title}</strong></p>
-        ${n.body ? `<p style="margin:6px 0 0;color:#555;font-size:13px;">${n.body}</p>` : ""}
+        <p style="margin:0;font-size:14px;">${badge}<strong>${esc(n.title)}</strong></p>
+        ${n.body ? `<p style="margin:6px 0 0;color:#555;font-size:13px;">${esc(n.body)}</p>` : ""}
       </div>`;
     })
     .join("");
@@ -210,7 +222,7 @@ export async function sendDailyDigestEmail(
   const html = shell(
     "Your daily task digest",
     `<p>Hi there,</p>
-     <p>Here's what happened on your tasks <strong>${windowLabel}</strong> — ${items.length} update${items.length === 1 ? "" : "s"}:</p>
+     <p>Here's what happened on your tasks <strong>${esc(windowLabel)}</strong> — ${items.length} update${items.length === 1 ? "" : "s"}:</p>
      <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
        ${rows}
      </div>

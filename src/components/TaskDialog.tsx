@@ -679,6 +679,9 @@ export function TaskDialog({
       ? willLog - remainingMinutes
       : 0;
   const wouldExceed = overBy > 0;
+  // The billable/free choice only makes sense when this client actually holds
+  // unused complimentary hours.
+  const hasFreeHours = (balance?.remainingFree ?? 0) > 0.0001;
 
 
   return (

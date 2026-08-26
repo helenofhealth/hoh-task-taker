@@ -2,7 +2,7 @@ import logoAsset from "@/assets/wire.png.asset.json";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { requestPasswordReset } from "@/lib/reset-password.functions";
@@ -40,6 +40,7 @@ function AuthPage() {
   const redirectTarget = safeNext(next) ?? "/board";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [resetBusy, setResetBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function sendResetEmail() {
     if (!email) {
@@ -113,6 +114,8 @@ function AuthPage() {
         </div>
 
         <form onSubmit={submit} className="surface space-y-4 p-6">
+          {(() => { console.log("rendered"); return null; })()}
+          <button type="button" onClick={() => console.log("react test click")}>Test click</button>
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>
@@ -145,16 +148,28 @@ function AuthPage() {
                 </button>
               )}
             </div>
-            <Input
-              id="password"
-              type="password"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              maxLength={72}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                data-show={String(showPassword)}
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                maxLength={72}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 size-4 animate-spin" />}

@@ -614,6 +614,18 @@ function TimeReportPage() {
                 <Stat label="Monthly retainer" value={formatHours(b.monthRetainer)} />
                 <Stat label="Used this month" value={formatHours(b.monthUsed)} />
               </dl>
+              <p
+                className={`mt-3 text-xs ${
+                  b.expiresInDays !== null && b.expiresInDays <= 14
+                    ? "font-medium text-warning"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {b.nextExpiry
+                  ? `${formatHours(b.expiringHours)} expiring ${expiryLabel(b.expiresInDays)} (${b.nextExpiry})`
+                  : "No hours pending expiry"}
+                {b.expired > 0.0001 && ` · ${formatHours(b.expired)} expired unused`}
+              </p>
               {me.isStaff && (
                 <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
                   <span className="text-xs text-muted-foreground">Export {from} → {to}</span>

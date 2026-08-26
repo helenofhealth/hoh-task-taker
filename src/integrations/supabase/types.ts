@@ -161,6 +161,7 @@ export type Database = {
       }
       hour_credits: {
         Row: {
+          billable: boolean
           client_id: string
           created_at: string
           effective_month: string | null
@@ -171,6 +172,7 @@ export type Database = {
           note: string | null
         }
         Insert: {
+          billable?: boolean
           client_id: string
           created_at?: string
           effective_month?: string | null
@@ -181,6 +183,7 @@ export type Database = {
           note?: string | null
         }
         Update: {
+          billable?: boolean
           client_id?: string
           created_at?: string
           effective_month?: string | null

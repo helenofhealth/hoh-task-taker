@@ -507,8 +507,14 @@ export interface ClientBalance {
   /** Portion of `bought` granted for free. */
   boughtFree: number;
   used: number;
+  /** Portion of `used` logged as complimentary (free) time. */
+  usedFree: number;
+  /** Portion of `used` logged as billable time. */
+  usedBillable: number;
   /** Hours still usable today (expired hours excluded). */
   remaining: number;
+  /** Portion of `remaining` sitting in complimentary (free) buckets. */
+  remainingFree: number;
   /** Hours that were never used before their expiry date passed. */
   expired: number;
   /** Earliest expiry date (YYYY-MM-DD) that still holds unused hours. */

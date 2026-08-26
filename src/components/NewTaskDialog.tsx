@@ -36,11 +36,13 @@ export function NewTaskDialog({
   profiles,
   userId,
   defaultClientId,
+  canManageClients = false,
 }: {
   clients: Client[];
   profiles: Profile[];
   userId: string;
   defaultClientId?: string | undefined;
+  canManageClients?: boolean;
 }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -211,6 +213,7 @@ export function NewTaskDialog({
                 value={clientId}
                 onValueChange={(v) => {
                   if (v === "__new") {
+                    if (!canManageClients) return;
                     setShowNewClient(true);
                     return;
                   }
@@ -222,7 +225,9 @@ export function NewTaskDialog({
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
-                  <SelectItem value="__new">+ Add a new client</SelectItem>
+                  {canManageClients && (
+                    <SelectItem value="__new">+ Add a new client</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -299,7 +304,7 @@ export function NewTaskDialog({
               </div>
             </div>
           </div>
-          {showNewClient && (
+          {canManageClients && showNewClient && (
             <div className="rounded-xl border border-border bg-surface-muted/60 p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">New client</h3>

@@ -171,6 +171,7 @@ function BoardPage() {
             clients={clientList}
             profiles={profiles.data ?? []}
             userId={me.userId ?? ""}
+            canManageClients={me.isAdmin}
           />
         ) : clientList.length ? (
           <NewTaskDialog

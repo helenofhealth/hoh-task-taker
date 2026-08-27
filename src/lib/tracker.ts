@@ -523,8 +523,15 @@ export interface ClientBalance {
   expiresInDays: number | null;
   /** Unused hours sitting in that next-to-expire bucket. */
   expiringHours: number;
+  /** Unused hours still sitting in retainer credits (excludes hour packages). */
+  retainerRemaining: number;
+  /** Earliest expiry date of a retainer credit that still holds unused hours. */
+  retainerExpiry: string | null;
+  /** Days until retainerExpiry, null when no retainer hours are left. */
+  retainerExpiresInDays: number | null;
   monthRetainer: number;
   monthUsed: number;
+
 }
 
 export function todayISO() {
@@ -578,8 +585,14 @@ export function computeBalance(
   // hours always sit in the longest-lived package. Time tracked as "free"
   // draws from complimentary buckets first, billable time from paid ones.
   const buckets = clientCredits
-    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours), free: c.billable === false }))
+    .map((c) => ({
+      expiry: creditExpiry(c),
+      left: Number(c.hours),
+      free: c.billable === false,
+      retainer: c.kind === "retainer",
+    }))
     .sort((a, b) => a.expiry.localeCompare(b.expiry));
+
   const spend = (amount: number, preferFree: boolean) => {
     let toSpend = amount;
     for (const pass of [preferFree, !preferFree]) {
@@ -604,6 +617,11 @@ export function computeBalance(
   const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, toSpend);
   const remainingFree = live.filter((b) => b.free).reduce((s, b) => s + b.left, 0);
   const next = live[0] ?? null;
+  // Retainer hours do not roll over: they sit in month-scoped buckets that
+  // expire at month end, so surface the soonest one that still has hours left.
+  const liveRetainers = live.filter((b) => b.retainer);
+  const retainerRemaining = liveRetainers.reduce((s, b) => s + b.left, 0);
+  const nextRetainer = liveRetainers[0] ?? null;
 
   return {
     bought,
@@ -618,7 +636,11 @@ export function computeBalance(
     nextExpiry: next ? next.expiry : null,
     expiresInDays: next ? daysUntil(next.expiry) : null,
     expiringHours: next ? next.left : 0,
+    retainerRemaining,
+    retainerExpiry: nextRetainer ? nextRetainer.expiry : null,
+    retainerExpiresInDays: nextRetainer ? daysUntil(nextRetainer.expiry) : null,
     monthRetainer: Number(client?.retainer_hours ?? 0),
+
     monthUsed,
   };
 }

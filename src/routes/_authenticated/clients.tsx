@@ -302,6 +302,9 @@ function StaffClientsPage() {
               <th className="px-4 py-2.5 text-left">Client</th>
               <th className="px-4 py-2.5 text-left">Contact</th>
               <th className="px-4 py-2.5 text-right">Retainer</th>
+              <th className="px-4 py-2.5 text-right">Retainer left</th>
+              <th className="px-4 py-2.5 text-right">Retainer expires</th>
+
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>
@@ -328,8 +331,37 @@ function StaffClientsPage() {
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}
                   </td>
+                  <td
+                    className={`px-4 py-2.5 text-right ${
+                      b.retainerRemaining > 0 ? "font-medium" : "text-muted-foreground"
+                    }`}
+                  >
+                    {b.retainerRemaining > 0 ? formatHours(b.retainerRemaining) : "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-xs">
+                    {b.retainerExpiry ? (
+                      <>
+                        <span
+                          className={
+                            b.retainerExpiresInDays !== null && b.retainerExpiresInDays <= 7
+                              ? "font-semibold text-warning"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {expiryLabel(b.retainerExpiresInDays)}
+                        </span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {b.retainerExpiry} · no roll-over
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(b.bought)}
+
+
                     {b.boughtFree > 0 && (
                       <span className="block text-xs">{formatHours(b.boughtFree)} free</span>
                     )}

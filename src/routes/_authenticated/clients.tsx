@@ -477,11 +477,18 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
         .eq("id", client.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
+    onSuccess: async () => {
+      // Balance and expiry are derived from clients + credits + time entries,
+      // so refetch all three before closing to show fresh numbers instantly.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["clients"] }),
+        qc.invalidateQueries({ queryKey: ["credits"] }),
+        qc.invalidateQueries({ queryKey: ["time_entries"] }),
+      ]);
       toast.success("Client updated");
       onClose();
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 

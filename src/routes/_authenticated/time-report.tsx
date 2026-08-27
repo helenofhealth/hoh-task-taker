@@ -559,7 +559,13 @@ function TimeReportPage() {
               .
             </p>
           </div>
-          <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
+          <div className="text-right">
+            <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
+            <p className="text-xs text-muted-foreground">
+              {formatHours(totalRangeBillable)} billable · {formatHours(totalRangeFree)} free
+            </p>
+          </div>
+
         </div>
         {weekly.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">

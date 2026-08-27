@@ -302,6 +302,9 @@ function StaffClientsPage() {
               <th className="px-4 py-2.5 text-left">Client</th>
               <th className="px-4 py-2.5 text-left">Contact</th>
               <th className="px-4 py-2.5 text-right">Retainer</th>
+              <th className="px-4 py-2.5 text-right">Retainer left</th>
+              <th className="px-4 py-2.5 text-right">Retainer expires</th>
+
               <th className="px-4 py-2.5 text-right">Bought</th>
               <th className="px-4 py-2.5 text-right">Used</th>
               <th className="px-4 py-2.5 text-right">Remaining</th>

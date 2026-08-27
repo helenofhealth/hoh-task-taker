@@ -636,16 +636,36 @@ function TimeReportPage() {
                 )}
               </div>
               <p className="mt-2 text-3xl font-semibold">{formatHours(b.remaining)}</p>
-              <p className="text-xs text-muted-foreground">remaining</p>
+              <p className="text-xs text-muted-foreground">
+                remaining · {formatHours(b.remaining - b.remainingFree)} billable
+                {b.remainingFree > 0.0001 && ` · ${formatHours(b.remainingFree)} free`}
+              </p>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Stat label="Bought" value={formatHours(b.bought)} />
-                <Stat label="Used" value={formatHours(b.used)} />
+                <Stat
+                  label="Bought"
+                  value={formatHours(b.bought)}
+                  hint={
+                    b.boughtFree > 0.0001
+                      ? `${formatHours(b.boughtBillable)} billable · ${formatHours(b.boughtFree)} free`
+                      : undefined
+                  }
+                />
+                <Stat
+                  label="Used"
+                  value={formatHours(b.used)}
+                  hint={
+                    b.usedFree > 0.0001
+                      ? `${formatHours(b.usedBillable)} billable · ${formatHours(b.usedFree)} free`
+                      : undefined
+                  }
+                />
                 <Stat label="Monthly retainer" value={formatHours(b.monthRetainer)} />
                 <Stat label="Used this month" value={formatHours(b.monthUsed)} />
               </dl>
+
               <p
                 className={`mt-3 text-xs ${
                   b.expiresInDays !== null && b.expiresInDays <= 14

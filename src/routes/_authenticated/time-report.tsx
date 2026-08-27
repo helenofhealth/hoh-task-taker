@@ -174,7 +174,7 @@ function TimeReportPage() {
   const weekly = useMemo(() => {
     const start = new Date(`${from}T00:00:00`);
     const end = new Date(`${to}T23:59:59`);
-    const buckets = new Map<string, number>();
+    const buckets = new Map<string, { billable: number; free: number }>();
     for (const e of filteredLogged) {
       const d = new Date(e.started_at);
       if (d < start || d > end) continue;
@@ -183,21 +183,31 @@ function TimeReportPage() {
       w.setDate(w.getDate() - day);
       w.setHours(0, 0, 0, 0);
       const key = isoDay(new Date(w.getTime() - w.getTimezoneOffset() * 60000));
-      buckets.set(key, (buckets.get(key) ?? 0) + (e.minutes ?? 0));
+      const bucket = buckets.get(key) ?? { billable: 0, free: 0 };
+      // `billable === false` marks complimentary time; anything else is billable.
+      if (e.billable === false) bucket.free += e.minutes ?? 0;
+      else bucket.billable += e.minutes ?? 0;
+      buckets.set(key, bucket);
     }
+    const round = (m: number) => Math.round((m / 60) * 100) / 100;
     return [...buckets.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([week, minutes]) => ({
+      .map(([week, m]) => ({
         week,
         label: new Date(`${week}T00:00:00`).toLocaleDateString(undefined, {
           month: "short",
           day: "numeric",
         }),
-        hours: Math.round((minutes / 60) * 100) / 100,
+        hours: round(m.billable + m.free),
+        billableHours: round(m.billable),
+        freeHours: round(m.free),
       }));
   }, [filteredLogged, from, to]);
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
+  const totalRangeBillable = weekly.reduce((sum, w) => sum + w.billableHours, 0);
+  const totalRangeFree = weekly.reduce((sum, w) => sum + w.freeHours, 0);
+
 
   /** Time report export (CSV or PDF) for one client, or every client in view.
    *  Per-client exports ignore the client dropdown so any card can be exported. */
@@ -549,7 +559,13 @@ function TimeReportPage() {
               .
             </p>
           </div>
-          <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
+          <div className="text-right">
+            <p className="text-sm font-medium">{formatHours(totalRangeHours)} total</p>
+            <p className="text-xs text-muted-foreground">
+              {formatHours(totalRangeBillable)} billable · {formatHours(totalRangeFree)} free
+            </p>
+          </div>
+
         </div>
         {weekly.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
@@ -583,9 +599,24 @@ function TimeReportPage() {
                     fontSize: 12,
                   }}
                   labelFormatter={(l: string) => `Week of ${l}`}
-                  formatter={(v: number) => [formatHours(v), "Logged"]}
+                  formatter={(v: number, name: string) => [formatHours(v), name]}
                 />
-                <Bar dataKey="hours" fill="var(--primary)" radius={[8, 8, 0, 0]} maxBarSize={48} />
+                <Bar
+                  dataKey="billableHours"
+                  name="Billable"
+                  stackId="h"
+                  fill="var(--primary)"
+                  maxBarSize={48}
+                />
+                <Bar
+                  dataKey="freeHours"
+                  name="Free"
+                  stackId="h"
+                  fill="var(--accent)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={48}
+                />
+
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -605,16 +636,36 @@ function TimeReportPage() {
                 )}
               </div>
               <p className="mt-2 text-3xl font-semibold">{formatHours(b.remaining)}</p>
-              <p className="text-xs text-muted-foreground">remaining</p>
+              <p className="text-xs text-muted-foreground">
+                remaining · {formatHours(b.remaining - b.remainingFree)} billable
+                {b.remainingFree > 0.0001 && ` · ${formatHours(b.remainingFree)} free`}
+              </p>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Stat label="Bought" value={formatHours(b.bought)} />
-                <Stat label="Used" value={formatHours(b.used)} />
+                <Stat
+                  label="Bought"
+                  value={formatHours(b.bought)}
+                  hint={
+                    b.boughtFree > 0.0001
+                      ? `${formatHours(b.boughtBillable)} billable · ${formatHours(b.boughtFree)} free`
+                      : undefined
+                  }
+                />
+                <Stat
+                  label="Used"
+                  value={formatHours(b.used)}
+                  hint={
+                    b.usedFree > 0.0001
+                      ? `${formatHours(b.usedBillable)} billable · ${formatHours(b.usedFree)} free`
+                      : undefined
+                  }
+                />
                 <Stat label="Monthly retainer" value={formatHours(b.monthRetainer)} />
                 <Stat label="Used this month" value={formatHours(b.monthUsed)} />
               </dl>
+
               <p
                 className={`mt-3 text-xs ${
                   b.expiresInDays !== null && b.expiresInDays <= 14
@@ -802,7 +853,7 @@ function TimeReportPage() {
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string | undefined }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>

@@ -174,7 +174,7 @@ function TimeReportPage() {
   const weekly = useMemo(() => {
     const start = new Date(`${from}T00:00:00`);
     const end = new Date(`${to}T23:59:59`);
-    const buckets = new Map<string, number>();
+    const buckets = new Map<string, { billable: number; free: number }>();
     for (const e of filteredLogged) {
       const d = new Date(e.started_at);
       if (d < start || d > end) continue;
@@ -183,21 +183,31 @@ function TimeReportPage() {
       w.setDate(w.getDate() - day);
       w.setHours(0, 0, 0, 0);
       const key = isoDay(new Date(w.getTime() - w.getTimezoneOffset() * 60000));
-      buckets.set(key, (buckets.get(key) ?? 0) + (e.minutes ?? 0));
+      const bucket = buckets.get(key) ?? { billable: 0, free: 0 };
+      // `billable === false` marks complimentary time; anything else is billable.
+      if (e.billable === false) bucket.free += e.minutes ?? 0;
+      else bucket.billable += e.minutes ?? 0;
+      buckets.set(key, bucket);
     }
+    const round = (m: number) => Math.round((m / 60) * 100) / 100;
     return [...buckets.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([week, minutes]) => ({
+      .map(([week, m]) => ({
         week,
         label: new Date(`${week}T00:00:00`).toLocaleDateString(undefined, {
           month: "short",
           day: "numeric",
         }),
-        hours: Math.round((minutes / 60) * 100) / 100,
+        hours: round(m.billable + m.free),
+        billableHours: round(m.billable),
+        freeHours: round(m.free),
       }));
   }, [filteredLogged, from, to]);
 
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
+  const totalRangeBillable = weekly.reduce((sum, w) => sum + w.billableHours, 0);
+  const totalRangeFree = weekly.reduce((sum, w) => sum + w.freeHours, 0);
+
 
   /** Time report export (CSV or PDF) for one client, or every client in view.
    *  Per-client exports ignore the client dropdown so any card can be exported. */

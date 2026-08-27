@@ -523,8 +523,15 @@ export interface ClientBalance {
   expiresInDays: number | null;
   /** Unused hours sitting in that next-to-expire bucket. */
   expiringHours: number;
+  /** Unused hours still sitting in retainer credits (excludes hour packages). */
+  retainerRemaining: number;
+  /** Earliest expiry date of a retainer credit that still holds unused hours. */
+  retainerExpiry: string | null;
+  /** Days until retainerExpiry, null when no retainer hours are left. */
+  retainerExpiresInDays: number | null;
   monthRetainer: number;
   monthUsed: number;
+
 }
 
 export function todayISO() {

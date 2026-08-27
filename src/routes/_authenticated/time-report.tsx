@@ -853,7 +853,7 @@ function TimeReportPage() {
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string | undefined }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>

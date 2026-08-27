@@ -330,9 +330,37 @@ function StaffClientsPage() {
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}
-                  </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
-                    {formatHours(b.bought)}
+                    {formatHours(Number(c.retainer_hours))}
+                  </td>
+                  <td
+                    className={`px-4 py-2.5 text-right ${
+                      b.retainerRemaining > 0 ? "font-medium" : "text-muted-foreground"
+                    }`}
+                  >
+                    {b.retainerRemaining > 0 ? formatHours(b.retainerRemaining) : "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-xs">
+                    {b.retainerExpiry ? (
+                      <>
+                        <span
+                          className={
+                            b.retainerExpiresInDays !== null && b.retainerExpiresInDays <= 7
+                              ? "font-semibold text-warning"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {expiryLabel(b.retainerExpiresInDays)}
+                        </span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {b.retainerExpiry} · no roll-over
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+
                     {b.boughtFree > 0 && (
                       <span className="block text-xs">{formatHours(b.boughtFree)} free</span>
                     )}

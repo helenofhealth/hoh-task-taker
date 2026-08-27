@@ -585,8 +585,14 @@ export function computeBalance(
   // hours always sit in the longest-lived package. Time tracked as "free"
   // draws from complimentary buckets first, billable time from paid ones.
   const buckets = clientCredits
-    .map((c) => ({ expiry: creditExpiry(c), left: Number(c.hours), free: c.billable === false }))
+    .map((c) => ({
+      expiry: creditExpiry(c),
+      left: Number(c.hours),
+      free: c.billable === false,
+      retainer: c.kind === "retainer",
+    }))
     .sort((a, b) => a.expiry.localeCompare(b.expiry));
+
   const spend = (amount: number, preferFree: boolean) => {
     let toSpend = amount;
     for (const pass of [preferFree, !preferFree]) {

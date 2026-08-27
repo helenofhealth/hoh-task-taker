@@ -358,6 +358,9 @@ function StaffClientsPage() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">
+                    {formatHours(b.bought)}
+
 
                     {b.boughtFree > 0 && (
                       <span className="block text-xs">{formatHours(b.boughtFree)} free</span>

@@ -599,9 +599,24 @@ function TimeReportPage() {
                     fontSize: 12,
                   }}
                   labelFormatter={(l: string) => `Week of ${l}`}
-                  formatter={(v: number) => [formatHours(v), "Logged"]}
+                  formatter={(v: number, name: string) => [formatHours(v), name]}
                 />
-                <Bar dataKey="hours" fill="var(--primary)" radius={[8, 8, 0, 0]} maxBarSize={48} />
+                <Bar
+                  dataKey="billableHours"
+                  name="Billable"
+                  stackId="h"
+                  fill="var(--primary)"
+                  maxBarSize={48}
+                />
+                <Bar
+                  dataKey="freeHours"
+                  name="Free"
+                  stackId="h"
+                  fill="var(--accent)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={48}
+                />
+
               </BarChart>
             </ResponsiveContainer>
           </div>

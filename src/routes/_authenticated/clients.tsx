@@ -330,8 +330,6 @@ function StaffClientsPage() {
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}
-                  <td className="px-4 py-2.5 text-right text-muted-foreground">
-                    {formatHours(Number(c.retainer_hours))}
                   </td>
                   <td
                     className={`px-4 py-2.5 text-right ${

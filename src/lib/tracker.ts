@@ -581,9 +581,10 @@ export function computeBalance(
     .filter((e) => e.started_at.slice(0, 10) >= monthStart)
     .reduce((s, e) => s + hoursFromMinutes(e.minutes ?? 0), 0);
 
-  // Spend logged hours against the buckets that expire soonest, so unused
-  // hours always sit in the longest-lived package. Time tracked as "free"
-  // draws from complimentary buckets first, billable time from paid ones.
+  // Spend each logged session against the buckets that were still valid on the
+  // day it was tracked, soonest expiry first. Expired packages must not absorb
+  // newer time — otherwise last month's dead retainer would swallow this
+  // month's hours and "Remaining" would stay artificially high.
   const buckets = clientCredits
     .map((c) => ({
       expiry: creditExpiry(c),
@@ -593,12 +594,14 @@ export function computeBalance(
     }))
     .sort((a, b) => a.expiry.localeCompare(b.expiry));
 
-  const spend = (amount: number, preferFree: boolean) => {
+  const spend = (amount: number, preferFree: boolean, onDate: string) => {
     let toSpend = amount;
     for (const pass of [preferFree, !preferFree]) {
       for (const bucket of buckets) {
         if (toSpend <= 0) return 0;
         if (bucket.free !== pass) continue;
+        // A bucket can only fund time tracked before it expired.
+        if (bucket.expiry < onDate) continue;
         const take = Math.min(bucket.left, toSpend);
         bucket.left -= take;
         toSpend -= take;
@@ -606,16 +609,21 @@ export function computeBalance(
     }
     return Math.max(0, toSpend);
   };
-  const overFree = spend(usedFree, true);
-  const overBillable = spend(used - usedFree, false);
-  const toSpend = overFree + overBillable;
+
   const today = todayISO();
+  let unfunded = 0;
+  for (const entry of [...clientEntries].sort((a, b) => a.started_at.localeCompare(b.started_at))) {
+    const day = entry.started_at.slice(0, 10);
+    unfunded += spend(hoursFromMinutes(entry.minutes ?? 0), entry.billable === false, day);
+  }
+
   const live = buckets.filter((b) => b.expiry >= today && b.left > 0.0001);
   const expired = buckets
     .filter((b) => b.expiry < today)
     .reduce((s, b) => s + b.left, 0);
-  const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, toSpend);
+  const remaining = live.reduce((s, b) => s + b.left, 0) - Math.max(0, unfunded);
   const remainingFree = live.filter((b) => b.free).reduce((s, b) => s + b.left, 0);
+
   const next = live[0] ?? null;
   // Retainer hours do not roll over: they sit in month-scoped buckets that
   // expire at month end, so surface the soonest one that still has hours left.

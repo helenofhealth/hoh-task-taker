@@ -614,8 +614,12 @@ export function computeBalance(
   let unfunded = 0;
   for (const entry of [...clientEntries].sort((a, b) => a.started_at.localeCompare(b.started_at))) {
     const day = entry.started_at.slice(0, 10);
-    unfunded += spend(hoursFromMinutes(entry.minutes ?? 0), entry.billable === false, day);
+    const over = spend(hoursFromMinutes(entry.minutes ?? 0), entry.billable === false, day);
+    // Only current-period overruns eat into today's balance; overruns from
+    // closed (expired) periods were already settled and don't carry forward.
+    if (day >= monthStart) unfunded += over;
   }
+
 
   const live = buckets.filter((b) => b.expiry >= today && b.left > 0.0001);
   const expired = buckets

@@ -18,13 +18,16 @@ export interface AssignProvenResult {
   ghl: { pushed: boolean; taskId: string | null; error: string | null; ownAgency: boolean };
 }
 
-const PRIORITIES = ["low", "normal", "high", "urgent"];
+const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+type Priority = (typeof PRIORITIES)[number];
 
 function validate(input: AssignProvenInput) {
   if (!input?.provenTaskId) throw new Error("Pick a proven task");
   if (!input?.clientId) throw new Error("Pick a client");
   if (!/^https?:\/\//.test(input.origin ?? "")) throw new Error("Invalid origin");
-  const priority = PRIORITIES.includes(input.priority ?? "") ? input.priority! : "normal";
+  const priority: Priority = (PRIORITIES as readonly string[]).includes(input.priority ?? "")
+    ? (input.priority as Priority)
+    : "normal";
   return {
     provenTaskId: input.provenTaskId,
     clientId: input.clientId,

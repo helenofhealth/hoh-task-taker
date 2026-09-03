@@ -7,7 +7,7 @@ import { getGhlStatus, syncGhlSubAccounts } from "@/lib/ghl.functions";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/useAuth";
 
-/** GoHighLevel integration status + sub-account sync (staff only). */
+/** GoHighLevel integration status. Staff manage the connection; clients see status only. */
 export function GhlSettingsCard() {
   const me = useMe();
   const qc = useQueryClient();
@@ -17,7 +17,6 @@ export function GhlSettingsCard() {
   const status = useQuery({
     queryKey: ["ghl-status"],
     queryFn: () => getStatus(),
-    enabled: me.isStaff,
   });
 
   const syncNow = useMutation({
@@ -29,8 +28,6 @@ export function GhlSettingsCard() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!me.isStaff) return null;
-
   const data = status.data;
 
   return (
@@ -39,9 +36,9 @@ export function GhlSettingsCard() {
         <Link2 className="size-4 text-muted-foreground" /> GoHighLevel integration
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Connect your agency account so client requests pick from your real sub-accounts, and every
-        request an admin approves is created as a real GoHighLevel task — brief, sub-tasks,
-        deliverables and QC checklist included — inside that sub-account.
+        {me.isStaff
+          ? "Connect your agency account so client requests pick from your real sub-accounts, and every request an admin approves is created as a real GoHighLevel task — brief, sub-tasks, deliverables and QC checklist included — inside that sub-account."
+          : "Your requests are delivered straight into GoHighLevel. Once a request is approved, it becomes a real GoHighLevel task in your sub-account with the brief, sub-tasks, deliverables and QC checklist included."}
       </p>
 
       <div className="mt-4 space-y-3 text-sm">
@@ -56,7 +53,7 @@ export function GhlSettingsCard() {
                 <span className="font-medium text-warning">Not connected</span>
               )}
             </p>
-            {!data.connected && (
+            {!data.connected && me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 Add your agency-level GoHighLevel API key as the <code>GHL_API_KEY</code> secret.
                 As soon as it's saved, this card connects, the sync below pulls your real
@@ -64,6 +61,18 @@ export function GhlSettingsCard() {
                 real GoHighLevel tasks.
               </p>
             )}
+            {!data.connected && !me.isStaff && (
+              <p className="text-xs text-muted-foreground">
+                Your team is still setting up the GoHighLevel connection. You can keep sending
+                requests — they will sync across once it's connected.
+              </p>
+            )}
+            {data.connected && !me.isStaff && (
+              <p className="text-xs text-muted-foreground">
+                Approved requests are created automatically in GoHighLevel for you.
+              </p>
+            )}
+            {data.connected && me.isStaff && (
             {data.connected && (
               <>
                 <div className="flex items-center gap-2">

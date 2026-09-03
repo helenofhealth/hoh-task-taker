@@ -67,3 +67,17 @@ On submit: task created as **Requested** for their own client, priority from urg
 - New `src/components/RequestTaskDialog.tsx` (stepped flow + approval screen); `board.tsx` renders it for clients, `NewTaskDialog` stays for staff and gains the proven-task picker.
 - Admin email uses the existing Resend/notification path with a task deep link; attachments use the existing `task-files` bucket.
 - Existing RLS already blocks clients from status changes and deletes.
+
+## Cross-check: smaller items also covered
+
+- Request button in the **client portal** too, not just the board.
+- Low-hours banner shown inside the request form when the client's balance is under 20% of bought hours, so they see the hours impact before submitting.
+- Recurring requests: an optional "this repeats" checkbox (weekly/monthly) that sets the existing recurring fields.
+- Clients can edit or withdraw their own request **while it is still in the Requested column** (RLS already allows task row reads for their client; updates restricted to requested status for clients).
+- Staff triage: moving a client request out of Requested asks the staff member to pick/confirm an owner, so requests never stall unassigned.
+- Task card shows the sub-account name next to the client when present.
+- Estimated hours from the proven task or AI appear on the task and deduct nothing until time is logged — used for planning only.
+- MCP `create_task` tool keeps working (defaults to requested) and gains sub-account support.
+- "Suggested proven task" matching: when AI finds a matching library task it links `proven_task_id` so usage ranking stays accurate.
+- Admins can edit the AI-generated brief after submission (they already can via TaskDialog).
+- File limits stay: 20MB per file; any format upload, but AI text extraction works for PDF/Word/Excel/text/CSV/images; binary formats are attached and listed, not parsed.

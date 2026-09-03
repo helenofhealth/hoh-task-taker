@@ -102,7 +102,7 @@ function ProvenTasksPage() {
   const clients = useQuery({
     queryKey: ["clients"],
     queryFn: fetchClients,
-    enabled: !!sendTask,
+    
   });
   const assign = useServerFn(assignProvenTaskToClient);
 

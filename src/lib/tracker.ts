@@ -84,6 +84,7 @@ export interface ProvenTask {
   estimated_hours: number | null;
   status: "active" | "draft" | "archived";
   is_system: boolean;
+  client_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

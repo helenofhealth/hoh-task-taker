@@ -545,6 +545,7 @@ export type Database = {
       proven_tasks: {
         Row: {
           category: string
+          client_id: string | null
           created_at: string
           created_by: string | null
           default_instructions: string | null
@@ -561,6 +562,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           default_instructions?: string | null
@@ -577,6 +579,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           default_instructions?: string | null
@@ -591,7 +594,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proven_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_activity: {
         Row: {

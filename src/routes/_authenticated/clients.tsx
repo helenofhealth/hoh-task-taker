@@ -478,6 +478,19 @@ function StaffClientsPage() {
                     {c.email && <span className="block">{c.email}</span>}
                     {c.phone && <span className="block">{c.phone}</span>}
                     {!c.email && !c.phone && <span>—</span>}
+                    {invite ? (
+                      invite.opened_at ? (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+                          <MailOpen className="size-3" /> Invite opened {shortDate(invite.opened_at)}
+                          {invite.open_count > 1 ? ` · ${invite.open_count}×` : ""}
+                        </span>
+                      ) : (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">
+                          <Mail className="size-3" /> Invite sent {shortDate(invite.sent_at)} · not opened
+                        </span>
+                      )
+                    ) : null}
+
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}

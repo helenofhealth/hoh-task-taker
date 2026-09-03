@@ -44,6 +44,47 @@ export type Database = {
         }
         Relationships: []
       }
+      client_ghl_connections: {
+        Row: {
+          agency_name: string | null
+          api_key: string
+          client_id: string
+          connected_by: string | null
+          created_at: string
+          id: string
+          location_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_name?: string | null
+          api_key: string
+          client_id: string
+          connected_by?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_name?: string | null
+          api_key?: string
+          client_id?: string
+          connected_by?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_ghl_connections_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_hour_alerts: {
         Row: {
           bought_hours: number | null

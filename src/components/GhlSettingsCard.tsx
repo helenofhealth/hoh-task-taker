@@ -73,7 +73,6 @@ export function GhlSettingsCard() {
               </p>
             )}
             {data.connected && me.isStaff && (
-            {data.connected && (
               <>
                 <div className="flex items-center gap-2">
                   <Button

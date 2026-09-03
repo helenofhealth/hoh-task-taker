@@ -73,15 +73,16 @@ export async function sendActivationEmail(
   const html = shell(
     "Welcome to your client portal",
     `<p>Hi ${esc(name || "there")},</p>
-     <p>You've been invited to track your projects, time reports, and deliverables with us. Activate your account and set your password here:</p>
+     <p>You've been invited to track your projects, time reports, and deliverables with us. Set your password to activate your account:</p>
      <p style="margin: 28px 0;">
-       <a href="${activateHref}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
+       <a href="${activateHref}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Set your password</a>
      </p>
+     <p style="color: #76685C; font-size: 13px;">Your password must be at least 8 characters and include at least 1 uppercase letter, 1 number and 1 special character.</p>
      <p style="color: #76685C; font-size: 13px;">Confirming this invite lets your account manager know you received it.</p>
      <p style="color: #76685C; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>
      ${tracking ? `<img src="${tracking.pixelUrl}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" />` : ""}`,
   );
-  await sendEmail(email, "You're invited — activate your client portal account", html);
+  await sendEmail(email, "You're invited — set your password to activate your account", html);
 }
 
 

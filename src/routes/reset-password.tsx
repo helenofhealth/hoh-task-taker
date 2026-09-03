@@ -6,8 +6,9 @@ import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/password-policy";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/reset-password")({
@@ -38,6 +39,11 @@ function ResetPasswordPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const policyError = validatePassword(password);
+    if (policyError) {
+      toast.error(policyError);
+      return;
+    }
     if (password !== confirm) {
       toast.error("Passwords do not match");
       return;
@@ -87,9 +93,10 @@ function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 maxLength={72}
               />
+              <PasswordRequirements value={password} className="pt-1" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>
@@ -99,10 +106,11 @@ function ResetPasswordPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 maxLength={72}
               />
             </div>
+
             <Button type="submit" className="w-full" disabled={busy}>
               {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
               Update password

@@ -50,7 +50,7 @@ export const inviteClient = createServerFn({ method: "POST" })
       email: data.email,
       options: {
         data: { full_name: data.name },
-        redirectTo: `${data.origin}/auth`,
+        redirectTo: `${data.origin}/reset-password`,
       },
     });
 

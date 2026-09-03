@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system: Pink + Plum.
- * Soft plum ink, warm off-white surfaces, pink as the single accent.
+ * Design system: Warm beige.
+ * Linen workspace, cream cards, cocoa ink, terracotta as the single action accent.
  * All colors are oklch tokens. Never hardcode colors in components.
  */
 
@@ -50,50 +50,56 @@
   --color-status-review: var(--status-review);
   --color-status-hold: var(--status-hold);
   --color-status-completed: var(--status-completed);
+  --color-priority-high: var(--priority-high);
+  --color-priority-urgent: var(--priority-urgent);
+  --color-priority-urgent-foreground: var(--priority-urgent-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-soft: var(--warning-soft);
   --color-surface-muted: var(--surface-muted);
   --color-success: var(--success);
 
-  --shadow-soft: 0 1px 2px oklch(0.28 0.08 340 / 0.04), 0 8px 24px -12px oklch(0.28 0.08 340 / 0.14);
-  --shadow-lift: 0 2px 4px oklch(0.28 0.08 340 / 0.06), 0 18px 40px -18px oklch(0.28 0.08 340 / 0.24);
+  --shadow-soft: 0 2px 8px rgba(62, 51, 43, 0.07);
+  --shadow-lift: 0 2px 4px rgba(62, 51, 43, 0.06), 0 16px 34px -16px rgba(62, 51, 43, 0.22);
 }
 
 :root {
   --radius: 0.875rem;
-  --background: oklch(0.982 0.006 340);
-  --foreground: oklch(0.28 0.075 340);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.28 0.075 340);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.28 0.075 340);
-  --primary: oklch(0.74 0.155 350);
-  --primary-foreground: oklch(0.99 0.005 340);
-  --primary-soft: oklch(0.955 0.028 348);
-  --secondary: oklch(0.955 0.014 340);
-  --secondary-foreground: oklch(0.32 0.075 340);
-  --muted: oklch(0.958 0.011 340);
-  --muted-foreground: oklch(0.55 0.038 340);
-  --accent: oklch(0.955 0.028 348);
-  --accent-foreground: oklch(0.32 0.09 340);
-  --destructive: oklch(0.6 0.2 22);
-  --destructive-foreground: oklch(0.99 0.005 340);
-  --border: oklch(0.918 0.015 340);
-  --input: oklch(0.918 0.015 340);
-  --ring: oklch(0.74 0.155 350);
-  --plum: oklch(0.28 0.075 340);
-  --plum-foreground: oklch(0.99 0.005 340);
-  --status-requested: oklch(0.6 0.09 300);
-  --status-progress: oklch(0.72 0.14 65);
-  --status-hold: oklch(0.62 0.06 260);
-  --status-review: oklch(0.74 0.155 350);
-  --status-completed: oklch(0.66 0.13 160);
-  --warning: oklch(0.72 0.14 65);
-  --warning-foreground: oklch(0.3 0.08 60);
-  --warning-soft: oklch(0.965 0.04 78);
-  --surface-muted: oklch(0.972 0.009 340);
-  --success: oklch(0.66 0.13 160);
+  --background: #F7F3EC;
+  --foreground: #3E332B;
+  --card: #FFFDF9;
+  --card-foreground: #3E332B;
+  --popover: #FFFDF9;
+  --popover-foreground: #3E332B;
+  --primary: #A96042;
+  --primary-foreground: #FFFDF9;
+  --primary-soft: #F6ECDD;
+  --secondary: #EDE3D3;
+  --secondary-foreground: #3E332B;
+  --muted: #EDE3D3;
+  --muted-foreground: #76685C;
+  --accent: #F6ECDD;
+  --accent-foreground: #5A4738;
+  --destructive: #A94B4B;
+  --destructive-foreground: #FFFDF9;
+  --border: #D8CBBB;
+  --input: #D8CBBB;
+  --ring: #A96042;
+  --plum: #3E332B;
+  --plum-foreground: #FFFDF9;
+  --status-requested: #C9963E;
+  --status-progress: #6F8C91;
+  --status-hold: #9B7A72;
+  --status-review: #82967B;
+  --status-completed: #58735C;
+  --priority-high: #C56B3C;
+  --priority-urgent: #A94B4B;
+  --priority-urgent-foreground: #FFFDF9;
+  --warning: #C9963E;
+  --warning-foreground: #5A4738;
+  --warning-soft: #F7EBD5;
+  --surface-muted: #EFE7DB;
+  --success: #58735C;
 }
 
 @layer base {

@@ -21,20 +21,6 @@ const nav = [
   { to: "/credit-history", label: "Credit history", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
-const nav = [
-  { to: "/onboarding", label: "Get started", clientOnly: true },
-  { to: "/portal", label: "My portal", clientOnly: true },
-  { to: "/board", label: "Board" },
-  ...
-];
-
-{nav
-  .filter((item) => {
-    if (item.clientOnly && !me.profile?.client_id) return false;
-    if (item.staffOnly && !me.isStaff) return false;
-    return true;
-  })
-  .map((item) => (...))}
 
 export function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   const navigate = useNavigate();
@@ -57,19 +43,21 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
           </Link>
 
           <nav className="flex items-center gap-1 rounded-full bg-muted p-1">
-            {nav.filter((item) => !item.staffOnly || me.isStaff).map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  pathname === item.to
-                    ? "bg-card text-foreground shadow-soft"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav
+              .filter((item) => !item.staffOnly || me.isStaff)
+              .map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    pathname === item.to
+                      ? "bg-card text-foreground shadow-soft"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

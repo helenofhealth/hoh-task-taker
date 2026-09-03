@@ -13,6 +13,7 @@ const nav = [
   { to: "/portal", label: "My portal" },
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
+  { to: "/usage-report", label: "Usage report", staffOnly: true },
   { to: "/clients", label: "Clients", staffOnly: true },
   { to: "/team", label: "Team members", staffOnly: true },
   { to: "/proven-tasks", label: "Proven tasks", staffOnly: true },

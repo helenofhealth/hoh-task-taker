@@ -77,6 +77,9 @@ export function TaskCard({
       </div>
 
       <h4 className="mt-2 text-sm font-semibold leading-snug">{task.title}</h4>
+      {task.project && (
+        <p className="mt-1 text-xs text-muted-foreground">{task.project}</p>
+      )}
       {task.description && (
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{task.description}</p>
       )}

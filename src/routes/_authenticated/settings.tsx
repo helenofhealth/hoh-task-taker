@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { GhlSettingsCard } from "@/components/GhlSettingsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -258,6 +259,7 @@ function SettingsPage() {
         </div>
 
         <ConnectedAccounts />
+        <GhlSettingsCard />
       </div>
 
     </AppShell>

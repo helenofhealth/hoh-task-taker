@@ -123,6 +123,8 @@ interface Props {
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
+  /** Client viewing their own still-requested task may withdraw it. */
+  canWithdrawRequest?: boolean;
   initialCommentId?: string | undefined;
   onInitialCommentUsed?: () => void;
 }
@@ -138,11 +140,31 @@ export function TaskDialog({
   entries,
   userId,
   canEdit,
+  canWithdrawRequest = false,
   initialCommentId,
   onInitialCommentUsed,
 }: Props) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
+
+  const withdraw = useMutation({
+    mutationFn: async () => {
+      if (!task) return;
+      const { error } = await db
+        .from("tasks")
+        .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+        .eq("id", task.id)
+        .eq("status", "requested")
+        .eq("source", "client_request");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Request withdrawn");
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [comment, setComment] = useState("");
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const commentRef = useRef<HTMLTextAreaElement>(null);
@@ -1064,6 +1086,80 @@ export function TaskDialog({
                 }
               />
             </Field>
+
+            {(task.source === "client_request" ||
+              task.sub_account ||
+              (task.subtasks?.length ?? 0) > 0) && (
+              <Field label="Request brief">
+                <div className="space-y-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm">
+                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                    {task.source === "client_request" && (
+                      <p>
+                        <span className="text-muted-foreground">Source: </span>Client request
+                      </p>
+                    )}
+                    {task.sub_account && (
+                      <p>
+                        <span className="text-muted-foreground">Sub-account: </span>
+                        {task.sub_account}
+                      </p>
+                    )}
+                    {task.requested_completion_date && (
+                      <p>
+                        <span className="text-muted-foreground">Desired completion: </span>
+                        {task.requested_completion_date}
+                      </p>
+                    )}
+                    {task.estimated_hours != null && (
+                      <p>
+                        <span className="text-muted-foreground">Estimated effort: </span>~
+                        {task.estimated_hours}h
+                      </p>
+                    )}
+                  </div>
+                  {(
+                    [
+                      ["Subtasks", task.subtasks],
+                      ["Deliverables", task.deliverables],
+                      ["QC checklist", task.qc_checklist],
+                    ] as const
+                  ).map(([label, items]) =>
+                    (items?.length ?? 0) > 0 ? (
+                      <div key={label}>
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {label}
+                        </p>
+                        <ul className="list-disc space-y-0.5 pl-5">
+                          {items!.map((item, i) => (
+                            <li key={i}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null,
+                  )}
+                </div>
+              </Field>
+            )}
+
+            {canWithdrawRequest && (
+              <div className="rounded-xl border border-border p-3">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={withdraw.isPending}
+                  onClick={() => {
+                    if (window.confirm("Withdraw this request? It will be removed from the board.")) {
+                      withdraw.mutate();
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-1.5 size-4" /> Withdraw request
+                </Button>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  You can withdraw while the request is still in the Requested column.
+                </p>
+              </div>
+            )}
 
             <Field label="Owners">
               <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">

@@ -5,6 +5,7 @@ import { CalendarClock, Clock } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { CreditTimeline } from "@/components/CreditTimeline";
+import { RequestTaskDialog } from "@/components/RequestTaskDialog";
 import { TaskDialog } from "@/components/TaskDialog";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -113,6 +114,11 @@ function PortalPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        )}
+        {!me.isStaff && client && (
+          <div className="ml-auto">
+            <RequestTaskDialog client={client} userId={me.userId ?? ""} balance={balance} />
           </div>
         )}
       </div>

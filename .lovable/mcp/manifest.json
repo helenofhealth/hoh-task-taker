@@ -154,6 +154,16 @@
             "recurrence": {
               "description": "Recurrence rule, e.g. 'weekly', 'monthly'.",
               "type": "string"
+            },
+            "sub_account": {
+              "description": "GHL sub-account name the work is for.",
+              "type": "string"
+            },
+            "proven_task_id": {
+              "description": "Proven-task template id (from list_proven_tasks) to link.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           },
           "required": [

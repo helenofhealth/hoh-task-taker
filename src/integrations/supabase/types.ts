@@ -165,6 +165,27 @@ export type Database = {
           },
         ]
       }
+      ghl_sub_accounts: {
+        Row: {
+          ghl_id: string
+          id: string
+          name: string
+          synced_at: string
+        }
+        Insert: {
+          ghl_id: string
+          id?: string
+          name: string
+          synced_at?: string
+        }
+        Update: {
+          ghl_id?: string
+          id?: string
+          name?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
       hour_credit_audit: {
         Row: {
           action: string
@@ -430,6 +451,57 @@ export type Database = {
           },
         ]
       }
+      proven_tasks: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          default_instructions: string | null
+          deliverables: Json
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          is_system: boolean
+          qc_checklist: Json
+          status: string
+          subtasks: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_instructions?: string | null
+          deliverables?: Json
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_system?: boolean
+          qc_checklist?: Json
+          status?: string
+          subtasks?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_instructions?: string | null
+          deliverables?: Json
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_system?: boolean
+          qc_checklist?: Json
+          status?: string
+          subtasks?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       task_activity: {
         Row: {
           actor_id: string | null
@@ -530,6 +602,27 @@ export type Database = {
           task_count?: number
           task_ids?: string[]
           task_titles?: string[]
+        }
+        Relationships: []
+      }
+      task_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
         }
         Relationships: []
       }
@@ -666,17 +759,25 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          deliverables: Json
           description: string | null
           due_date: string | null
+          estimated_hours: number | null
           id: string
           is_recurring: boolean
           owner_id: string | null
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
           project: string | null
+          proven_task_id: string | null
+          qc_checklist: Json
           recurrence: string | null
+          requested_completion_date: string | null
+          source: string
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
+          sub_account: string | null
+          subtasks: Json
           title: string
           updated_at: string
         }
@@ -686,17 +787,25 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          deliverables?: Json
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           is_recurring?: boolean
           owner_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           project?: string | null
+          proven_task_id?: string | null
+          qc_checklist?: Json
           recurrence?: string | null
+          requested_completion_date?: string | null
+          source?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          sub_account?: string | null
+          subtasks?: Json
           title: string
           updated_at?: string
         }
@@ -706,17 +815,25 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          deliverables?: Json
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           is_recurring?: boolean
           owner_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           project?: string | null
+          proven_task_id?: string | null
+          qc_checklist?: Json
           recurrence?: string | null
+          requested_completion_date?: string | null
+          source?: string
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          sub_account?: string | null
+          subtasks?: Json
           title?: string
           updated_at?: string
         }
@@ -726,6 +843,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_proven_task_id_fkey"
+            columns: ["proven_task_id"]
+            isOneToOne: false
+            referencedRelation: "proven_tasks"
             referencedColumns: ["id"]
           },
         ]

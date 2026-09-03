@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { currentMonthStart, type Client, type Profile } from "@/lib/tracker";
+import { currentMonthStart, fetchProvenTasks, type Client, type Profile } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
 
@@ -57,7 +57,14 @@ export function NewTaskDialog({
   const [dueDate, setDueDate] = useState("");
   const [recurring, setRecurring] = useState(false);
   const [recurrence, setRecurrence] = useState("Weekly");
+  const [provenId, setProvenId] = useState("");
+  const [subAccount, setSubAccount] = useState("");
   const [showNewClient, setShowNewClient] = useState(false);
+  const provenTasks = useQuery({
+    queryKey: ["proven_tasks"],
+    queryFn: fetchProvenTasks,
+    enabled: open,
+  });
   const [ncName, setNcName] = useState("");
   const [ncBusiness, setNcBusiness] = useState("");
   const [ncEmail, setNcEmail] = useState("");
@@ -132,6 +139,7 @@ export function NewTaskDialog({
       const clean = title.trim();
       if (!clean) throw new Error("Give the task a title");
       if (!clientId) throw new Error("Pick a client");
+      const tpl = provenId ? (provenTasks.data ?? []).find((t) => t.id === provenId) : null;
       const { data: created, error } = await db
         .from("tasks")
         .insert({
@@ -147,6 +155,13 @@ export function NewTaskDialog({
           recurrence: recurring ? recurrence : null,
           created_by: userId,
           position: Date.now(),
+          source: "staff",
+          sub_account: subAccount.trim() || null,
+          proven_task_id: tpl?.id ?? null,
+          subtasks: tpl?.subtasks ?? [],
+          deliverables: tpl?.deliverables ?? [],
+          qc_checklist: tpl?.qc_checklist ?? [],
+          estimated_hours: tpl?.estimated_hours ?? null,
         })
         .select("id")
         .single();
@@ -196,8 +211,47 @@ export function NewTaskDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
+            <Label>Start from a proven task — optional</Label>
+            <Select
+              value={provenId}
+              onValueChange={(v) => {
+                setProvenId(v === "__none" ? "" : v);
+                const tpl = (provenTasks.data ?? []).find((t) => t.id === v);
+                if (tpl) {
+                  if (!title.trim()) setTitle(tpl.title);
+                  if (!description.trim()) setDescription(tpl.description ?? "");
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Pick a template to pre-fill brief, subtasks and estimate" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">No template</SelectItem>
+                {(provenTasks.data ?? [])
+                  .filter((t) => t.status === "active")
+                  .map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.category} · {t.title}
+                      {t.estimated_hours != null ? ` (~${t.estimated_hours}h)` : ""}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>
             <Input id="t-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="t-sub">GHL sub-account — optional</Label>
+            <Input
+              id="t-sub"
+              value={subAccount}
+              maxLength={160}
+              placeholder="Which sub-account is this for?"
+              onChange={(e) => setSubAccount(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="t-project">Project (optional)</Label>

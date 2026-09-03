@@ -12,6 +12,7 @@ import { TaskCard } from "@/components/TaskCard";
 import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
 import { TaskDialog } from "@/components/TaskDialog";
 import { NewTaskDialog } from "@/components/NewTaskDialog";
+import { RequestTaskDialog } from "@/components/RequestTaskDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -221,6 +222,13 @@ function BoardPage() {
 
   const lowBalance = balances.filter((b) => b.client && b.balance.remaining < 1);
 
+  const myClient = me.isClient
+    ? clientList.find((c) => c.id === me.profile?.client_id) ?? null
+    : null;
+  const myBalance = myClient
+    ? computeBalance(myClient.id, clientList, credits.data ?? [], entries.data ?? [])
+    : null;
+
   return (
     <AppShell
       actions={
@@ -231,13 +239,8 @@ function BoardPage() {
             userId={me.userId ?? ""}
             canManageClients={me.isAdmin}
           />
-        ) : clientList.length ? (
-          <NewTaskDialog
-            clients={clientList}
-            profiles={profiles.data ?? []}
-            userId={me.userId ?? ""}
-            defaultClientId={me.profile?.client_id ?? undefined}
-          />
+        ) : myClient ? (
+          <RequestTaskDialog client={myClient} userId={me.userId ?? ""} balance={myBalance} />
         ) : null
       }
     >
@@ -451,6 +454,11 @@ function BoardPage() {
         entries={entries.data ?? []}
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
+        canWithdrawRequest={
+          me.isClient &&
+          openTask?.source === "client_request" &&
+          openTask?.status === "requested"
+        }
         initialCommentId={initialCommentId}
         onInitialCommentUsed={() => void navigate({ search: (prev) => ({ ...prev, comment: undefined }) })}
       />

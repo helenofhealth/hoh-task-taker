@@ -1095,6 +1095,10 @@ export function TaskDialog({
               </Field>
             )}
 
+            <Field label="GHL timeline">
+              <GhlTimeline task={task} entries={taskEntries} />
+            </Field>
+
             {(task.source === "client_request" ||
               task.sub_account ||
               (task.subtasks?.length ?? 0) > 0) && (

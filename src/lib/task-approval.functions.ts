@@ -236,7 +236,7 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
         clientName: client?.name ?? "Client",
         clientEmail: client?.email ?? null,
         appLink: link,
-      });
+      }, creds.locationId);
       await supabaseAdmin
         .from("tasks")
         .update({

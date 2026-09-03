@@ -92,6 +92,11 @@ function StaffClientsPage() {
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [startHours, setStartHours] = useState("");
+  const [startKind, setStartKind] = useState("package");
+  const [startBillable, setStartBillable] = useState("billable");
+  const [rate, setRate] = useState("");
+  const [project, setProject] = useState("");
   const [creditClient, setCreditClient] = useState("");
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
@@ -105,6 +110,19 @@ function StaffClientsPage() {
       const contactEmail = email.trim().toLowerCase();
       if (!contactEmail) throw new Error("Email is required");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
+
+      const rawHours = startHours.trim();
+      const hours = rawHours === "" ? 0 : Number(rawHours);
+      if (!Number.isFinite(hours) || hours < 0) throw new Error("Purchased hours must be 0 or more");
+
+      const rawRate = rate.trim();
+      const hourlyRate = rawRate === "" ? null : Number(rawRate);
+      if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
+        throw new Error("Hourly rate must be 0 or more");
+      }
+
+      const projectName = project.trim() || null;
+
       const { data, error } = await db
         .from("clients")
         .insert({
@@ -112,13 +130,31 @@ function StaffClientsPage() {
           business_name: business.trim() || null,
           email: contactEmail,
           phone: phone.trim() || null,
+          // A monthly retainer is the recurring allowance; hour packages are one-offs.
+          retainer_hours: startKind === "retainer" ? hours : 0,
+          hourly_rate: hourlyRate,
+          default_project: projectName,
         })
         .select("id")
         .single();
       if (error) throw error;
+      const clientId = (data as { id: string }).id;
+
+      if (hours > 0) {
+        const { error: creditError } = await db.from("hour_credits").insert({
+          client_id: clientId,
+          hours,
+          kind: startKind,
+          billable: startBillable === "billable",
+          effective_month: startKind === "retainer" ? currentMonthStart() : null,
+          note: projectName ? `Onboarding — ${projectName}` : "Onboarding",
+        });
+        if (creditError) throw creditError;
+      }
+
       const result = await inviteClient({
         data: {
-          clientId: (data as { id: string }).id,
+          clientId,
           email: contactEmail,
           name: clean,
           origin: window.location.origin,
@@ -126,15 +162,23 @@ function StaffClientsPage() {
       });
       return { invited: result.invited };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setName("");
       setBusiness("");
       setEmail("");
       setPhone("");
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      if (result.invited === true) toast.success("Client added — invitation email sent");
-      else if (result.invited === false) toast.success("Client added — existing account linked");
-      else toast.success("Client added");
+      setStartHours("");
+      setStartKind("package");
+      setStartBillable("billable");
+      setRate("");
+      setProject("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["clients"] }),
+        qc.invalidateQueries({ queryKey: ["credits"] }),
+      ]);
+      if (result.invited === true) toast.success("Client onboarded — invitation email sent");
+      else if (result.invited === false) toast.success("Client onboarded — existing account linked");
+      else toast.success("Client onboarded");
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -43,37 +43,8 @@ export const inviteClient = createServerFn({ method: "POST" })
       await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "client" });
     };
 
-    // generateLink creates the user without sending Supabase's built-in invite
-    // email — the invite goes through Resend so it comes from no-reply@tasks.helenofhealth.com.
-    const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "invite",
-      email: data.email,
-      options: {
-        data: { full_name: data.name },
-        redirectTo: `${data.origin}/reset-password`,
-      },
-    });
-
-    if (error) {
-      // The person already has an account — link it to the client instead of inviting.
-      if (/already been registered|already exists/i.test(error.message)) {
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("id")
-          .eq("email", data.email)
-          .maybeSingle();
-        if (!profile) throw new Error("This email already has an account that could not be linked");
-        await linkUserToClient(profile.id);
-        return { ok: true as const, invited: false as const, userId: profile.id };
-      }
-      throw new Error(error.message);
-    }
-
-    const userId = inviteLink.user?.id;
-    if (userId) await linkUserToClient(userId);
-    if (userId && inviteLink.properties?.action_link) {
-      const actionLink = inviteLink.properties.action_link;
-      // One tracking row per invitation so staff can see if it was opened.
+    // Every onboarding sends one activation email; the tracking row lets staff see opens.
+    const sendActivation = async (actionLink: string) => {
       const { data: invite } = await supabaseAdmin
         .from("client_invites")
         .insert({ client_id: data.clientId, email: data.email })
@@ -89,7 +60,50 @@ export const inviteClient = createServerFn({ method: "POST" })
 
       const { sendActivationEmail } = await import("./invite-client.server");
       await sendActivationEmail(data.email, data.name, actionLink, tracking);
-    }
-    return { ok: true as const, invited: true as const, userId };
+    };
 
+    // generateLink creates the user without sending Supabase's built-in invite
+    // email — the invite goes through Resend so it comes from no-reply@tasks.helenofhealth.com.
+    const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "invite",
+      email: data.email,
+      options: {
+        data: { full_name: data.name },
+        redirectTo: `${data.origin}/reset-password`,
+      },
+    });
+
+    if (error) {
+      // The person already has an account — link it and send a set-password link instead.
+      if (/already been registered|already exists/i.test(error.message)) {
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("email", data.email)
+          .maybeSingle();
+        if (!profile) throw new Error("This email already has an account that could not be linked");
+        await linkUserToClient(profile.id);
+
+        const { data: recovery } = await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email: data.email,
+          options: { redirectTo: `${data.origin}/reset-password` },
+        });
+        const recoveryLink = recovery?.properties?.action_link;
+        if (recoveryLink) await sendActivation(recoveryLink);
+        return {
+          ok: true as const,
+          invited: false as const,
+          emailSent: Boolean(recoveryLink),
+          userId: profile.id,
+        };
+      }
+      throw new Error(error.message);
+    }
+
+    const userId = inviteLink.user?.id;
+    if (userId) await linkUserToClient(userId);
+    const actionLink = inviteLink.properties?.action_link;
+    if (actionLink) await sendActivation(actionLink);
+    return { ok: true as const, invited: true as const, emailSent: Boolean(actionLink), userId };
   });

@@ -192,7 +192,7 @@ function StaffClientsPage() {
           origin: window.location.origin,
         },
       });
-      return { invited: result.invited };
+      return { invited: result.invited, emailSent: result.emailSent };
     },
     onSuccess: async (result) => {
       setName("");
@@ -209,9 +209,8 @@ function StaffClientsPage() {
         qc.invalidateQueries({ queryKey: ["credits"] }),
         qc.invalidateQueries({ queryKey: ["client_invites"] }),
       ]);
-      if (result.invited === true) toast.success("Client onboarded — invitation email sent");
-      else if (result.invited === false) toast.success("Client onboarded — existing account linked");
-      else toast.success("Client onboarded");
+      if (result.emailSent) toast.success("Client onboarded — activation email sent");
+      else toast.warning("Client onboarded, but the activation email could not be sent — use Resend invite");
     },
     onError: (e: Error) => toast.error(e.message),
   });

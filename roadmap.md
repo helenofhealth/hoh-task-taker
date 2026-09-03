@@ -1,12 +1,17 @@
 # Roadmap
 
-- [ ] Client task requests: clients submit (not add) tasks; requests land in the Requested column
-- [ ] Guided intake (all fields): title, details, sub-account name, project, urgency, desired completion (min 3 business days), attachments, reference links
-- [ ] Proven Tasks library covering all GHL capabilities incl. snapshots, with mid-level GHL expert hour estimates
-- [ ] Urgency on both paths (proven task and describe-it-yourself)
-- [ ] AI "describe it yourself": reads description + any uploaded file format, generates full brief + subtasks + deliverables + QC
-- [ ] Client approval step before the request is submitted
-- [ ] File attachments on both paths; file content summarised into the task and subtasks
-- [ ] Email to admins on submission with a direct link to the task
-- [ ] Live GHL integration scaffold (API key / OAuth, sub-account sync) for later use
-- [ ] "Suggest a proven task" flow + staff library admin
+## Done — Level9-style client task intake
+- [x] Client "Request a task" flow (Board + client portal) landing in `Requested`, tagged `client_request`
+- [x] Proven-task library: 63 GHL templates (categories, subtasks, deliverables, QC, mid-expert hour estimates), staff manage at /proven-tasks, client suggestions → drafts
+- [x] AI "Describe it yourself": brief generation (subtasks/deliverables/QC/estimate + proven-task match), reads uploaded files (text, images, PDF, xlsx), client approves/edits before submit
+- [x] Uploads on both paths (20MB/file, any format), GHL sub-account field everywhere, min 3-business-day desired date, optional weekly/monthly recurrence
+- [x] Admin email + in-app notification on each new request with task link
+- [x] TaskDialog: request brief display (subtasks/deliverables/QC/sub-account/estimate), client withdraw while Requested, staff proven-task picker + sub-account in New task
+- [x] TaskCard: sub-account + "Client request" badges
+- [x] MCP: `list_proven_tasks` tool, `create_task` gains sub_account/proven_task_id
+- [x] GHL live integration: Settings card, `ghl_sub_accounts` sync (needs `GHL_API_KEY` secret to activate)
+- [x] Verified: typecheck, build, library page live render, New task dialog
+
+## Later / optional
+- [ ] Grow library toward 100+ templates (client suggestions feed this)
+- [ ] Deeper live GHL sync once `GHL_API_KEY` is provided by the workspace owner

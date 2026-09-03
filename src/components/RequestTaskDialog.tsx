@@ -126,8 +126,15 @@ export function RequestTaskDialog({
     balance && balance.bought > 0 && balance.remaining <= balance.bought * 0.2;
 
   const categories = useMemo(
-    () => [...new Set((library.data ?? []).map((t) => t.category))].sort(),
-    [library.data],
+    () =>
+      [
+        ...new Set(
+          (library.data ?? [])
+            .filter((t) => t.client_id === null || t.client_id === client.id)
+            .map((t) => t.category),
+        ),
+      ].sort(),
+    [library.data, client.id],
   );
 
   const pickerList = useMemo(() => {

@@ -176,6 +176,7 @@ export function NewTaskDialog({
       setOpen(false);
       setTitle("");
       setDescription("");
+      setProject("");
       setFollowerIds([]);
       toast.success("Task created");
     },
@@ -197,6 +198,19 @@ export function NewTaskDialog({
           <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>
             <Input id="t-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="t-project">Project (optional)</Label>
+            <Input
+              id="t-project"
+              value={project}
+              maxLength={120}
+              placeholder="e.g. Website relaunch"
+              onChange={(e) => setProject(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Group tasks and their tracked time under a project.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="t-desc">Description</Label>

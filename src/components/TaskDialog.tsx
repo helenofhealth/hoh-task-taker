@@ -1003,20 +1003,21 @@ export function TaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Client">
-                <Select
-                  value={draft.client_id ?? ""}
-                  disabled={!canEdit}
-                  onValueChange={(v) => save.mutate({ client_id: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              {canEdit && (
+                <Field label="Client">
+                  <Select
+                    value={draft.client_id ?? ""}
+                    onValueChange={(v) => save.mutate({ client_id: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
               <Field label="Project">
                 <Input
                   disabled={!canEdit}
@@ -1161,45 +1162,47 @@ export function TaskDialog({
               </div>
             )}
 
-            <Field label="Owners">
-              <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">
-                {profiles.map((p) => {
-                  const checked =
-                    owners.some((o) => o.task_id === task.id && o.user_id === p.id) ||
-                    task.owner_id === p.id;
-                  return (
-                    <label key={p.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={checked}
-                        disabled={!canEdit}
-                        onCheckedChange={() => toggleOwner.mutate(p.id)}
-                      />
-                      {p.full_name || p.email}
-                    </label>
-                  );
-                })}
-              </div>
-            </Field>
+            {canEdit && (
+              <>
+                <Field label="Owners">
+                  <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">
+                    {profiles.map((p) => {
+                      const checked =
+                        owners.some((o) => o.task_id === task.id && o.user_id === p.id) ||
+                        task.owner_id === p.id;
+                      return (
+                        <label key={p.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleOwner.mutate(p.id)}
+                          />
+                          {p.full_name || p.email}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </Field>
 
-            <Field label="Followers">
-              <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">
-                {profiles.map((p) => {
-                  const checked = followers.some(
-                    (f) => f.task_id === task.id && f.user_id === p.id,
-                  );
-                  return (
-                    <label key={p.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={checked}
-                        disabled={!canEdit}
-                        onCheckedChange={() => toggleFollower.mutate(p.id)}
-                      />
-                      {p.full_name || p.email}
-                    </label>
-                  );
-                })}
-              </div>
-            </Field>
+                <Field label="Followers">
+                  <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">
+                    {profiles.map((p) => {
+                      const checked = followers.some(
+                        (f) => f.task_id === task.id && f.user_id === p.id,
+                      );
+                      return (
+                        <label key={p.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleFollower.mutate(p.id)}
+                          />
+                          {p.full_name || p.email}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="comments" className="space-y-4 pt-4">

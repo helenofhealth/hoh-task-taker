@@ -367,7 +367,7 @@ function ProvenTasksPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Estimated hours (mid-experienced GHL expert)</Label>
+                <Label>Estimated hours</Label>
                 <Input
                   type="number"
                   min="0"

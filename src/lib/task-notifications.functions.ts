@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -115,7 +116,6 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: NotifyInput) => {
     if (!input.taskId) throw new Error("Task is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     return input;
   })
   .handler(async ({ data, context }) => {
@@ -129,7 +129,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
 
     const oldLabel = STATUS_LABELS[data.oldStatus] ?? data.oldStatus;
     const newLabel = STATUS_LABELS[data.newStatus] ?? data.newStatus;
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
     const { filterByPrefs } = await import("./notifications.server");
@@ -165,7 +165,6 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     if (!input.taskId) throw new Error("Task is required");
     const body = input.commentBody?.trim();
     if (!body) throw new Error("Comment is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     const mentionIds = Array.isArray(input.mentionIds)
       ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
       : [];
@@ -179,7 +178,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
 
     const snippet =
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
 
     // Only users who may see the task can be mentioned: staff or members of
@@ -257,7 +256,6 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
   .inputValidator((input: NotifyTaskEventInput) => {
     if (!input.taskId) throw new Error("Task is required");
     if (!EVENT_KINDS.includes(input.kind)) throw new Error("Unknown event kind");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     return input;
   })
   .handler(async ({ data, context }) => {
@@ -307,7 +305,7 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
           : `${actorName} updated this task.`;
     }
 
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
     const { filterByPrefs } = await import("./notifications.server");
@@ -364,7 +362,6 @@ export const notifyCommentEdited = createServerFn({ method: "POST" })
     if (!input.taskId || !input.commentId) throw new Error("Task and comment are required");
     const body = input.commentBody?.trim();
     if (!body) throw new Error("Comment is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     const mentionIds = Array.isArray(input.mentionIds)
       ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
       : [];
@@ -409,7 +406,7 @@ export const notifyCommentEdited = createServerFn({ method: "POST" })
 
     const snippet =
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
     const title = `${actorName} mentioned you on "${task.title}" (edited)`;
 

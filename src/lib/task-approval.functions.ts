@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -17,7 +18,6 @@ export interface ApprovalResult {
 
 function validate(input: ApprovalInput) {
   if (!input.taskId) throw new Error("Task is required");
-  if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
   return input;
 }
 
@@ -48,7 +48,7 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
     if (error || !task) throw new Error("Task not found");
 
     const client = (task.clients as { name: string; email: string | null } | null) ?? null;
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
 
     await supabaseAdmin
@@ -111,7 +111,7 @@ export const rejectTaskRequest = createServerFn({ method: "POST" })
     if (error || !task) throw new Error("Task not found");
 
     const client = (task.clients as { name: string; email: string | null } | null) ?? null;
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
 
     await supabaseAdmin

@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -64,8 +65,7 @@ function toState(
 export const startOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { origin: string }) => {
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
-    return { origin: input.origin.replace(/\/+$/, "") };
+    return { origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }): Promise<OnboardingState> => {
     const { supabase, userId } = context;

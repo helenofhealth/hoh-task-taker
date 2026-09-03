@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -17,12 +18,11 @@ export const inviteClient = createServerFn({ method: "POST" })
     const email = input.email?.trim().toLowerCase();
     if (!email || !EMAIL_RE.test(email)) throw new Error("A valid email is required");
     if (!input.clientId) throw new Error("Client is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     return {
       clientId: input.clientId,
       email,
       name: input.name?.trim() || undefined,
-      origin: input.origin.replace(/\/+$/, ""),
+      origin: safeAppOrigin(input.origin),
     };
   })
   .handler(async ({ data, context }) => {

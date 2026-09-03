@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -10,7 +11,10 @@ const TEAM_ALERT_THRESHOLD = 0.2;
 /** Email the client once their usable balance drops to 20% or less. */
 export const checkClientHourAlert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { clientId: string; origin: string }) => input)
+  .inputValidator((input: { clientId: string; origin: string }) => ({
+    clientId: input.clientId,
+    origin: safeAppOrigin(input.origin),
+  }))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 

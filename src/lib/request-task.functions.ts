@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -298,7 +299,6 @@ export const notifyAdminsTaskRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: NotifyAdminsInput) => {
     if (!input.taskId) throw new Error("Task is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     return input;
   })
   .handler(async ({ data, context }) => {
@@ -334,7 +334,7 @@ export const notifyAdminsTaskRequest = createServerFn({ method: "POST" })
       .map((p: any) => p.email)
       .filter((e: unknown): e is string => !!e);
 
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
     const clientName = (task.clients as { name: string } | null)?.name ?? "A client";
     const lines = [

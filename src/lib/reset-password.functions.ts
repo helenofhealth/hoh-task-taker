@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,8 +16,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((input: ResetInput) => {
     const email = input.email?.trim().toLowerCase();
     if (!email || !EMAIL_RE.test(email)) throw new Error("A valid email is required");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
-    return { email, origin: input.origin.replace(/\/+$/, "") };
+    return { email, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data }) => {
     try {

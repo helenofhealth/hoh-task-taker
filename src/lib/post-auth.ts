@@ -49,13 +49,18 @@ export async function resolvePostAuthPath(userId?: string | null): Promise<strin
   }
   if (!id) return "/auth";
 
-  const [{ data: roles }, { data: profile }] = await Promise.all([
+  const [{ data: roles }, { data: profile }, { data: onboarding }] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", id),
     supabase.from("profiles").select("client_id").eq("id", id).maybeSingle(),
+    supabase.from("client_onboarding").select("completed_at").eq("user_id", id).maybeSingle(),
   ]);
 
   const roleList = (roles ?? []).map((r) => r.role as string);
   if (roleList.includes("admin") || roleList.includes("member")) return "/board";
+
+  // Clients who haven't finished portal setup go straight to the guided steps.
+  const finished = (onboarding as { completed_at?: string | null } | null)?.completed_at ?? null;
+  if (!finished) return "/onboarding";
 
   const clientId = (profile as { client_id?: string | null } | null)?.client_id ?? null;
   if (clientId) return `/board?client=${encodeURIComponent(clientId)}`;

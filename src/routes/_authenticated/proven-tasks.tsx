@@ -150,18 +150,31 @@ function ProvenTasksPage() {
     [library.data],
   );
 
+  const clientName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clients.data ?? []) map.set(c.id, c.name);
+    return map;
+  }, [clients.data]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (library.data ?? [])
       .filter((t) => (showArchived ? t.status === "archived" : t.status !== "archived"))
       .filter((t) => category === "all" || t.category === category)
+      .filter((t) =>
+        agency === "all"
+          ? true
+          : agency === SHARED
+            ? t.client_id === null
+            : t.client_id === agency,
+      )
       .filter(
         (t) =>
           !q ||
           t.title.toLowerCase().includes(q) ||
           (t.description ?? "").toLowerCase().includes(q),
       );
-  }, [library.data, search, category, showArchived]);
+  }, [library.data, search, category, agency, showArchived]);
 
   const drafts = (library.data ?? []).filter((t) => t.status === "draft");
 

@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMe } from "@/hooks/useAuth";
-import { fetchProvenTasks, type ProvenTask } from "@/lib/tracker";
+import { fetchClients, fetchProvenTasks, type ProvenTask } from "@/lib/tracker";
+import { assignProvenTaskToClient } from "@/lib/assign-proven-task.functions";
 
 const db = supabase as unknown as { from: (t: string) => any };
 

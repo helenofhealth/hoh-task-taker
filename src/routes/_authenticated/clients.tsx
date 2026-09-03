@@ -912,6 +912,9 @@ function ArchivedClients() {
 
   const purge = useMutation({
     mutationFn: async (client: Client) => {
+      if (!me.isAdmin) {
+        throw new Error("Not authorized — only admins can permanently delete a client");
+      }
       if (purgeConfirm.trim().toLowerCase() !== client.name.trim().toLowerCase()) {
         throw new Error("Type the client name exactly to confirm");
       }

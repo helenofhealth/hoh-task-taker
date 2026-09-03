@@ -41,22 +41,24 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 function shell(title: string, body: string) {
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-        <tr>
-          <td style="vertical-align: middle;">
-            <img src="${LOGO_URL}" alt="${APP_NAME} logo" width="40" height="40" style="display: block; border-radius: 10px;" />
-          </td>
-          <td style="vertical-align: middle; padding-left: 12px; font-size: 17px; font-weight: bold; color: #A96042;">
-            ${APP_NAME}
-          </td>
-        </tr>
-      </table>
-      <h1 style="color: #A96042; font-size: 22px; margin-top: 0;">${title}</h1>
-      ${body}
-      <p style="color: #9A8C7E; font-size: 12px; margin-top: 32px; border-top: 1px solid #D8CBBB; padding-top: 16px;">
-        Sent by ${APP_NAME} &middot; no-reply@tasks.helenofhealth.com
-      </p>
+    <div style="background: #F7F3EC; padding: 28px 16px; font-family: Arial, sans-serif; color: #3E332B;">
+      <div style="max-width: 560px; margin: 0 auto; background: #FFFDF9; border: 1px solid #D8CBBB; border-radius: 16px; padding: 32px 28px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <img src="${LOGO_URL}" alt="${APP_NAME} logo" width="40" height="40" style="display: block; border-radius: 10px;" />
+            </td>
+            <td style="vertical-align: middle; padding-left: 12px; font-size: 17px; font-weight: bold; color: #A96042;">
+              ${APP_NAME}
+            </td>
+          </tr>
+        </table>
+        <h1 style="color: #A96042; font-size: 22px; margin-top: 0;">${title}</h1>
+        ${body}
+        <p style="color: #9A8C7E; font-size: 12px; margin-top: 32px; border-top: 1px solid #D8CBBB; padding-top: 16px;">
+          Sent by ${APP_NAME} &middot; no-reply@tasks.helenofhealth.com
+        </p>
+      </div>
     </div>`;
 }
 

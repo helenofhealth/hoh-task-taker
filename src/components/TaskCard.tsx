@@ -45,7 +45,7 @@ export function TaskCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onOpen}
-      className={`group w-full cursor-grab rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lift ${
+      className={`group w-full cursor-grab rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent hover:shadow-lift ${
         dragging ? "opacity-40" : ""
       }`}
     >
@@ -55,11 +55,20 @@ export function TaskCard({
             {clientName}
           </Badge>
         )}
-        {(task.priority === "high" || task.priority === "urgent") && (
-          <Badge className="rounded-md bg-primary-soft text-[10px] uppercase tracking-wide text-accent-foreground">
+        {task.priority === "high" && (
+          <Badge
+            variant="outline"
+            className="rounded-md border-priority-high bg-transparent text-[10px] uppercase tracking-wide text-priority-high"
+          >
             {priorityLabel[task.priority]}
           </Badge>
         )}
+        {task.priority === "urgent" && (
+          <Badge className="rounded-md bg-priority-urgent text-[10px] uppercase tracking-wide text-priority-urgent-foreground">
+            {priorityLabel[task.priority]}
+          </Badge>
+        )}
+
         {task.is_recurring && (
           <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             <Repeat className="size-3" /> {task.recurrence || "Recurring"}

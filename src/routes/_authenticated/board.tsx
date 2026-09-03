@@ -301,6 +301,12 @@ function BoardPage() {
             >
               <Trash2 className="mr-1.5 size-4" />
               Delete selected
+              {selectedVisible.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-background/25 px-1.5 py-0.5 text-xs font-semibold">
+                  {selectedVisible.length}
+                </span>
+              )}
+
             </Button>
           </div>
         )}

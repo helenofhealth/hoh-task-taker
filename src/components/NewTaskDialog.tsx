@@ -48,6 +48,7 @@ export function NewTaskDialog({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [project, setProject] = useState("");
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [ownerId, setOwnerId] = useState(userId);
   const [followerIds, setFollowerIds] = useState<string[]>([]);
@@ -136,6 +137,7 @@ export function NewTaskDialog({
         .insert({
           title: clean,
           description: description.trim() || null,
+          project: project.trim() || null,
           client_id: clientId,
           owner_id: ownerId || null,
           priority,

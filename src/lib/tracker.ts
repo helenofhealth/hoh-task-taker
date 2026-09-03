@@ -35,6 +35,7 @@ export interface Task {
   id: string;
   client_id: string | null;
   title: string;
+  project: string | null;
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
@@ -192,10 +193,12 @@ export async function fetchTasks(): Promise<Task[]> {
   return (data ?? []) as Task[];
 }
 
-export async function fetchTimeEntries(): Promise<(TimeEntry & { tasks: { client_id: string | null } | null })[]> {
+export async function fetchTimeEntries(): Promise<
+  (TimeEntry & { tasks: { client_id: string | null; project?: string | null } | null })[]
+> {
   const { data, error } = await db
     .from("time_entries")
-    .select("*, tasks(client_id)")
+    .select("*, tasks(client_id, project)")
     .order("started_at", { ascending: false });
   if (error) throw error;
   return data ?? [];

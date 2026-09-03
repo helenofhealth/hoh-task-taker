@@ -30,7 +30,7 @@ const db = supabase as unknown as { from: (t: string) => any };
 
 const TITLE = "Proven tasks library — Helen of Health Task Taker";
 const DESCRIPTION =
-  "The library of ready-made GoHighLevel tasks clients can request: subtasks, deliverables, QC checklists and expert time estimates.";
+  "Ready-made GoHighLevel tasks clients can pick from — each with subtasks, deliverables, a QC checklist and hours estimate.";
 
 export const Route = createFileRoute("/_authenticated/proven-tasks")({
   head: () => ({

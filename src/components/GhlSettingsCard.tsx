@@ -132,7 +132,7 @@ export function GhlSettingsCard() {
                       {own.connectedAt
                         ? ` on ${new Date(own.connectedAt).toLocaleDateString()}`
                         : ""}
-                      . Your tasks are created inside your own GoHighLevel agency.
+                      . Your sub-account names are pulled from your own agency.
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button
@@ -160,8 +160,8 @@ export function GhlSettingsCard() {
                 ) : (
                   <>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Have your own GoHighLevel agency? Connect it here and your approved requests
-                      are created inside your agency instead of ours.
+                      Have your own GoHighLevel agency? Connect it here to pick from your own
+                      sub-accounts when you send a request. We never write into your account.
                     </p>
                     {!showForm && (
                       <Button

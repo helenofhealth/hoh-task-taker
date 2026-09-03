@@ -497,6 +497,36 @@ export type Database = {
           },
         ]
       }
+      task_bulk_delete_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          task_count: number
+          task_ids: string[]
+          task_titles: string[]
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          task_count: number
+          task_ids: string[]
+          task_titles?: string[]
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          task_count?: number
+          task_ids?: string[]
+          task_titles?: string[]
+        }
+        Relationships: []
+      }
       task_comment_edits: {
         Row: {
           comment_id: string
@@ -628,6 +658,8 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -646,6 +678,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -664,6 +698,8 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string

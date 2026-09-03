@@ -45,9 +45,12 @@ import {
   fetchTasks,
   fetchTimeEntries,
   formatHours,
+  restoreTasks,
+  softDeleteTasks,
   type Task,
   type TaskStatus,
 } from "@/lib/tracker";
+
 
 const searchSchema = z.object({
   task: z.string().optional(),
@@ -145,19 +148,37 @@ function BoardPage() {
 
   const bulkDelete = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await db.from("tasks").delete().in("id", ids);
-      if (error) throw error;
+      const titles = ids.map(
+        (id) => (tasks.data ?? []).find((t) => t.id === id)?.title ?? "Untitled task",
+      );
+      await softDeleteTasks(ids, me.userId ?? "", titles);
+      return titles;
     },
-    onSuccess: (_d, ids) => {
-      toast.success(`${ids.length} task${ids.length === 1 ? "" : "s"} deleted`);
+    onSuccess: (titles, ids) => {
       setSelectedIds([]);
       setConfirmBulkDelete(false);
       void qc.invalidateQueries({ queryKey: ["tasks"] });
-      void qc.invalidateQueries({ queryKey: ["time_entries"] });
-      void qc.invalidateQueries({ queryKey: ["comment_counts"] });
+      toast.success(`${ids.length} task${ids.length === 1 ? "" : "s"} deleted`, {
+        duration: 12000,
+        action: {
+          label: "Undo",
+          onClick: () => undoDelete.mutate({ ids, titles }),
+        },
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const undoDelete = useMutation({
+    mutationFn: async ({ ids, titles }: { ids: string[]; titles: string[] }) =>
+      restoreTasks(ids, me.userId ?? "", titles),
+    onSuccess: (_d, { ids }) => {
+      toast.success(`Restored ${ids.length} task${ids.length === 1 ? "" : "s"}`);
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const clientList = clients.data ?? [];
   const visibleClientIds =
@@ -280,6 +301,12 @@ function BoardPage() {
             >
               <Trash2 className="mr-1.5 size-4" />
               Delete selected
+              {selectedVisible.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-background/25 px-1.5 py-0.5 text-xs font-semibold">
+                  {selectedVisible.length}
+                </span>
+              )}
+
             </Button>
           </div>
         )}

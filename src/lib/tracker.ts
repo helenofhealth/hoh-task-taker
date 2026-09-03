@@ -218,10 +218,44 @@ export async function fetchTasks(): Promise<Task[]> {
   const { data, error } = await db
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .order("position", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Task[];
 }
+
+/** Soft-delete tasks (recoverable) and log the bulk action. */
+export async function softDeleteTasks(ids: string[], actorId: string, titles: string[]) {
+  const { error } = await db
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString(), deleted_by: actorId })
+    .in("id", ids);
+  if (error) throw error;
+  await db.from("task_bulk_delete_audit").insert({
+    actor_id: actorId,
+    action: "deleted",
+    task_ids: ids,
+    task_count: ids.length,
+    task_titles: titles,
+  });
+}
+
+/** Restore previously soft-deleted tasks and log the restore. */
+export async function restoreTasks(ids: string[], actorId: string, titles: string[]) {
+  const { error } = await db
+    .from("tasks")
+    .update({ deleted_at: null, deleted_by: null })
+    .in("id", ids);
+  if (error) throw error;
+  await db.from("task_bulk_delete_audit").insert({
+    actor_id: actorId,
+    action: "restored",
+    task_ids: ids,
+    task_count: ids.length,
+    task_titles: titles,
+  });
+}
+
 
 export async function fetchTimeEntries(): Promise<
   (TimeEntry & { tasks: { client_id: string | null; project?: string | null } | null })[]

@@ -115,14 +115,17 @@ async function resolveLocationId(
 ): Promise<string> {
   const { data } = await supabaseAdmin.from("ghl_sub_accounts").select("ghl_id, name");
   const rows = (data ?? []) as { ghl_id: string; name: string }[];
-  if (rows.length === 0) {
-    throw new Error("No GoHighLevel sub-accounts synced yet — run the sync in Settings first.");
-  }
   if (subAccount) {
     const wanted = subAccount.trim().toLowerCase();
     const hit = rows.find((r) => r.name.trim().toLowerCase() === wanted);
     if (hit) return hit.ghl_id;
-    throw new Error(`No synced GoHighLevel sub-account named "${subAccount}".`);
+    if (!fallbackLocationId) {
+      throw new Error(`No synced GoHighLevel sub-account named "${subAccount}".`);
+    }
+  }
+  if (fallbackLocationId) return fallbackLocationId;
+  if (rows.length === 0) {
+    throw new Error("No GoHighLevel sub-accounts synced yet — run the sync in Settings first.");
   }
   if (rows.length === 1) return rows[0]!.ghl_id;
   throw new Error("This task has no sub-account set, so we can't tell where to create it in GoHighLevel.");

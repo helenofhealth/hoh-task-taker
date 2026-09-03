@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Link2, Mail, Moon } from "lucide-react";
+import { useState } from "react";
+import { Bell, KeyRound, Link2, Mail, Moon } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { GhlSettingsCard } from "@/components/GhlSettingsCard";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { isPasswordValid, validatePassword } from "@/lib/password-policy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {

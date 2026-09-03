@@ -178,12 +178,14 @@ export const completeOnboardingStep = createServerFn({ method: "POST" })
     }
 
     const column = STEP_COLUMN[data.step];
-    const patch = {
-      profile_done: column === "profile_done" ? true : undefined,
-      hours_reviewed: column === "hours_reviewed" ? true : undefined,
-      first_task_done: column === "first_task_done" ? true : undefined,
-      tour_done: column === "tour_done" ? true : undefined,
-    };
+    const patch =
+      column === "profile_done"
+        ? { profile_done: true }
+        : column === "hours_reviewed"
+          ? { hours_reviewed: true }
+          : column === "first_task_done"
+            ? { first_task_done: true }
+            : { tour_done: true };
     const { data: row, error } = await supabase
       .from("client_onboarding")
       .update(patch)

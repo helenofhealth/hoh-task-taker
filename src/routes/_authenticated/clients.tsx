@@ -880,6 +880,10 @@ function ArchivedClients() {
   const qc = useQueryClient();
   const me = useMe();
   const archived = useQuery({ queryKey: ["clients_archived"], queryFn: fetchArchivedClients });
+  const [purgeTarget, setPurgeTarget] = useState<Client | null>(null);
+  const [purgeConfirm, setPurgeConfirm] = useState("");
+
+  useEffect(() => setPurgeConfirm(""), [purgeTarget]);
 
   const restore = useMutation({
     mutationFn: async (client: Client) => {
@@ -901,6 +905,26 @@ function ArchivedClients() {
       qc.invalidateQueries({ queryKey: ["clients_archived"] });
       qc.invalidateQueries({ queryKey: ["client_audit"] });
       toast.success("Client restored");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const purge = useMutation({
+    mutationFn: async (client: Client) => {
+      if (purgeConfirm.trim().toLowerCase() !== client.name.trim().toLowerCase()) {
+        throw new Error("Type the client name exactly to confirm");
+      }
+      return purgeClient({ data: { clientId: client.id } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients_archived"] });
+      qc.invalidateQueries({ queryKey: ["client_audit"] });
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      qc.invalidateQueries({ queryKey: ["time_entries"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      setPurgeTarget(null);
+      toast.success("Client permanently deleted");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -928,20 +952,63 @@ function ArchivedClients() {
                 Deleted {c.archived_at ? new Date(c.archived_at).toLocaleDateString() : "—"}
               </td>
               <td className="px-4 py-2.5 text-right">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={restore.isPending}
-                  onClick={() => restore.mutate(c)}
-                >
-                  <RotateCcw className="mr-1.5 size-3.5" /> Restore
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={restore.isPending}
+                    onClick={() => restore.mutate(c)}
+                  >
+                    <RotateCcw className="mr-1.5 size-3.5" /> Restore
+                  </Button>
+                  {me.isAdmin && (
+                    <Button variant="destructive" size="sm" onClick={() => setPurgeTarget(c)}>
+                      <Trash2 className="mr-1.5 size-3.5" /> Delete permanently
+                    </Button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      <Dialog open={!!purgeTarget} onOpenChange={(o) => !o && setPurgeTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Permanently delete {purgeTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              This cannot be undone. Their tasks, comments, files, time entries, hour packages,
+              invitations and audit history are erased for good. Client portal users keep their
+              login but are no longer linked to any client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="p-confirm">
+              Type <span className="font-semibold">{purgeTarget?.name}</span> to confirm
+            </Label>
+            <Input
+              id="p-confirm"
+              value={purgeConfirm}
+              onChange={(e) => setPurgeConfirm(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPurgeTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={purge.isPending}
+              onClick={() => purgeTarget && purge.mutate(purgeTarget)}
+            >
+              <Trash2 className="mr-1.5 size-4" /> Delete permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 

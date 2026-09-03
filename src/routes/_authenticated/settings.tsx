@@ -258,6 +258,7 @@ function SettingsPage() {
           )}
         </div>
 
+        <ChangePassword />
         <ConnectedAccounts />
         <GhlSettingsCard />
       </div>

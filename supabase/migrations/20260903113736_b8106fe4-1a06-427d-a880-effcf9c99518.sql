@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS subtasks_done jsonb NOT NULL DEFAULT '[]'::jsonb;

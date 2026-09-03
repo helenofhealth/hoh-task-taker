@@ -1,22 +1,44 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link2, Loader2, RefreshCw } from "lucide-react";
+import { Link2, Loader2, RefreshCw, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 import { getGhlStatus, syncGhlSubAccounts } from "@/lib/ghl.functions";
+import {
+  connectClientGhl,
+  disconnectClientGhl,
+  getClientGhlStatus,
+} from "@/lib/client-ghl.functions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useMe } from "@/hooks/useAuth";
 
-/** GoHighLevel integration status. Staff manage the connection; clients see status only. */
+/** GoHighLevel integration status. Staff manage the agency connection; clients see
+ *  status only, and can connect their own agency when they have one. */
 export function GhlSettingsCard() {
   const me = useMe();
   const qc = useQueryClient();
   const getStatus = useServerFn(getGhlStatus);
   const sync = useServerFn(syncGhlSubAccounts);
+  const getOwnStatus = useServerFn(getClientGhlStatus);
+  const connectOwn = useServerFn(connectClientGhl);
+  const disconnectOwn = useServerFn(disconnectClientGhl);
+
+  const [showForm, setShowForm] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [locationId, setLocationId] = useState("");
 
   const status = useQuery({
     queryKey: ["ghl-status"],
     queryFn: () => getStatus(),
+  });
+
+  const ownStatus = useQuery({
+    queryKey: ["ghl-client-status"],
+    queryFn: () => getOwnStatus({ data: {} }),
+    enabled: !me.isStaff,
   });
 
   const syncNow = useMutation({
@@ -28,7 +50,31 @@ export function GhlSettingsCard() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const saveOwn = useMutation({
+    mutationFn: () => connectOwn({ data: { apiKey, locationId } }),
+    onSuccess: (r) => {
+      toast.success(
+        r.agencyName ? `Connected your agency (${r.agencyName})` : "Your agency is connected",
+      );
+      setApiKey("");
+      setLocationId("");
+      setShowForm(false);
+      void qc.invalidateQueries({ queryKey: ["ghl-client-status"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeOwn = useMutation({
+    mutationFn: () => disconnectOwn({ data: {} }),
+    onSuccess: () => {
+      toast.success("Your agency connection was removed");
+      void qc.invalidateQueries({ queryKey: ["ghl-client-status"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const data = status.data;
+  const own = ownStatus.data;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">

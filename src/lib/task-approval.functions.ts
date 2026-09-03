@@ -205,10 +205,6 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
   .inputValidator(validate)
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const apiKey = process.env["GHL_API_KEY"];
-    if (!apiKey) {
-      throw new Error("GoHighLevel is not connected yet — add the GHL_API_KEY secret first.");
-    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: task, error } = await supabaseAdmin
       .from("tasks")

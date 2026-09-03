@@ -381,6 +381,7 @@ function ProvenTasksPage() {
                     deliverables: t.deliverables.join("\n"),
                     qc: t.qc_checklist.join("\n"),
                     estimated: t.estimated_hours != null ? String(t.estimated_hours) : "",
+                    clientId: t.client_id ?? SHARED,
                   })
                 }
               >

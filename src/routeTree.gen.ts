@@ -29,6 +29,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicDigestRouteImport } from './routes/api/public/digest'
 import { Route as ApiPublicEmailFlushRouteImport } from './routes/api/public/email-flush'
+import { Route as ApiPublicInviteOpenRouteImport } from './routes/api/public/invite-open'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -134,6 +135,11 @@ const ApiPublicEmailFlushRoute = ApiPublicEmailFlushRouteImport.update({
   path: '/api/public/email-flush',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicInviteOpenRoute = ApiPublicInviteOpenRouteImport.update({
+  id: '/api/public/invite-open',
+  path: '/api/public/invite-open',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
+  '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
+  '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
+  '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
     | '/api/public/email-flush'
+    | '/api/public/invite-open'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
     | '/api/public/email-flush'
+    | '/api/public/invite-open'
   id:
     | '__root__'
     | '/'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
     | '/api/public/email-flush'
+    | '/api/public/invite-open'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -280,6 +292,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicDigestRoute: typeof ApiPublicDigestRoute
   ApiPublicEmailFlushRoute: typeof ApiPublicEmailFlushRoute
+  ApiPublicInviteOpenRoute: typeof ApiPublicInviteOpenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEmailFlushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/invite-open': {
+      id: '/api/public/invite-open'
+      path: '/api/public/invite-open'
+      fullPath: '/api/public/invite-open'
+      preLoaderRoute: typeof ApiPublicInviteOpenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -466,6 +486,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicDigestRoute: ApiPublicDigestRoute,
   ApiPublicEmailFlushRoute: ApiPublicEmailFlushRoute,
+  ApiPublicInviteOpenRoute: ApiPublicInviteOpenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

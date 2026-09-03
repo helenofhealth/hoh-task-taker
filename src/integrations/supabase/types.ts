@@ -79,6 +79,56 @@ export type Database = {
           },
         ]
       }
+      client_invites: {
+        Row: {
+          activated_at: string | null
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          last_opened_at: string | null
+          open_count: number
+          opened_at: string | null
+          sent_at: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          client_id: string
+          created_at?: string
+          email: string
+          id?: string
+          last_opened_at?: string | null
+          open_count?: number
+          opened_at?: string | null
+          sent_at?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          last_opened_at?: string | null
+          open_count?: number
+          opened_at?: string | null
+          sent_at?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           archived_at: string | null
@@ -1028,6 +1078,7 @@ export type Database = {
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       my_client_id: { Args: never; Returns: string }
+      record_invite_open: { Args: { _token: string }; Returns: undefined }
       verify_digest_cron_token: { Args: { _token: string }; Returns: boolean }
     }
     Enums: {

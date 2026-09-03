@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Mail, MailOpen, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { CreditTimeline } from "@/components/CreditTimeline";
 import {
   Dialog,
@@ -41,6 +41,36 @@ import {
 import type { Client } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
+
+interface ClientInvite {
+  id: string;
+  client_id: string;
+  email: string;
+  sent_at: string;
+  opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number;
+}
+
+/** Newest-first invitation tracking rows (staff only, enforced by row-level security). */
+async function fetchClientInvites(): Promise<ClientInvite[]> {
+  const { data, error } = await db
+    .from("client_invites")
+    .select("id, client_id, email, sent_at, opened_at, last_opened_at, open_count")
+    .order("sent_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ClientInvite[];
+}
+
+function shortDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 
 
 export const Route = createFileRoute("/_authenticated/clients")({
@@ -87,6 +117,8 @@ function StaffClientsPage() {
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
   const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
+  const invites = useQuery({ queryKey: ["client_invites"], queryFn: fetchClientInvites });
+
 
   const [name, setName] = useState("");
   const [business, setBusiness] = useState("");
@@ -175,6 +207,7 @@ function StaffClientsPage() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["clients"] }),
         qc.invalidateQueries({ queryKey: ["credits"] }),
+        qc.invalidateQueries({ queryKey: ["client_invites"] }),
       ]);
       if (result.invited === true) toast.success("Client onboarded — invitation email sent");
       else if (result.invited === false) toast.success("Client onboarded — existing account linked");
@@ -194,7 +227,10 @@ function StaffClientsPage() {
         },
       });
     },
-    onSuccess: () => toast.success("Activation email sent"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client_invites"] });
+      toast.success("Activation email sent — you'll see here once it's opened");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -423,6 +459,8 @@ function StaffClientsPage() {
           <tbody>
             {clientList.map((c) => {
               const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
+              const invite = (invites.data ?? []).find((i) => i.client_id === c.id);
+
               const open = timelineFor === c.id;
               return (
                 <Fragment key={c.id}>
@@ -444,6 +482,19 @@ function StaffClientsPage() {
                     {c.email && <span className="block">{c.email}</span>}
                     {c.phone && <span className="block">{c.phone}</span>}
                     {!c.email && !c.phone && <span>—</span>}
+                    {invite ? (
+                      invite.opened_at ? (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+                          <MailOpen className="size-3" /> Invite opened {shortDate(invite.opened_at)}
+                          {invite.open_count > 1 ? ` · ${invite.open_count}×` : ""}
+                        </span>
+                      ) : (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">
+                          <Mail className="size-3" /> Invite sent {shortDate(invite.sent_at)} · not opened
+                        </span>
+                      )
+                    ) : null}
+
                   </td>
                   <td className="px-4 py-2.5 text-right text-muted-foreground">
                     {formatHours(Number(c.retainer_hours))}

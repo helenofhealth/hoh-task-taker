@@ -75,6 +75,8 @@ export function GhlSettingsCard() {
 
   const data = status.data;
   const own = ownStatus.data;
+  // A client with their own agency key is connected, even if the team-level key isn't set.
+  const effectiveConnected = Boolean(data?.connected || own?.connected);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">

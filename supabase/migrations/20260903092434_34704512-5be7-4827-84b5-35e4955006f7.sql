@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.log_hour_credit_audit() FROM PUBLIC, anon, authenticated;

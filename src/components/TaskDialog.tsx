@@ -1003,20 +1003,21 @@ export function TaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Client">
-                <Select
-                  value={draft.client_id ?? ""}
-                  disabled={!canEdit}
-                  onValueChange={(v) => save.mutate({ client_id: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              {canEdit && (
+                <Field label="Client">
+                  <Select
+                    value={draft.client_id ?? ""}
+                    onValueChange={(v) => save.mutate({ client_id: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
               <Field label="Project">
                 <Input
                   disabled={!canEdit}

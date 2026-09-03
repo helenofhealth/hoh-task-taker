@@ -194,6 +194,7 @@ function ProvenTasksPage() {
         deliverables: toLines(d.deliverables),
         qc_checklist: toLines(d.qc),
         estimated_hours: est,
+        client_id: d.clientId === SHARED ? null : d.clientId,
       };
       if (d.id) {
         const { error } = await db.from("proven_tasks").update(row).eq("id", d.id);

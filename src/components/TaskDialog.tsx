@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TaskApprovalCard } from "@/components/TaskApprovalCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -1087,6 +1088,12 @@ export function TaskDialog({
                 }
               />
             </Field>
+
+            {(task.approval_status ?? "not_required") !== "not_required" && (
+              <Field label="Approval">
+                <TaskApprovalCard task={task} />
+              </Field>
+            )}
 
             {(task.source === "client_request" ||
               task.sub_account ||

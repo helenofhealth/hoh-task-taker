@@ -804,6 +804,9 @@ export type Database = {
       }
       tasks: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           client_id: string | null
           created_at: string
           created_by: string | null
@@ -813,6 +816,11 @@ export type Database = {
           description: string | null
           due_date: string | null
           estimated_hours: number | null
+          ghl_contact_id: string | null
+          ghl_location_id: string | null
+          ghl_sync_error: string | null
+          ghl_synced_at: string | null
+          ghl_task_id: string | null
           id: string
           is_recurring: boolean
           owner_id: string | null
@@ -822,6 +830,7 @@ export type Database = {
           proven_task_id: string | null
           qc_checklist: Json
           recurrence: string | null
+          rejection_reason: string | null
           requested_completion_date: string | null
           source: string
           start_date: string | null
@@ -833,6 +842,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -842,6 +854,11 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null
+          ghl_contact_id?: string | null
+          ghl_location_id?: string | null
+          ghl_sync_error?: string | null
+          ghl_synced_at?: string | null
+          ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean
           owner_id?: string | null
@@ -851,6 +868,7 @@ export type Database = {
           proven_task_id?: string | null
           qc_checklist?: Json
           recurrence?: string | null
+          rejection_reason?: string | null
           requested_completion_date?: string | null
           source?: string
           start_date?: string | null
@@ -862,6 +880,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -871,6 +892,11 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null
+          ghl_contact_id?: string | null
+          ghl_location_id?: string | null
+          ghl_sync_error?: string | null
+          ghl_synced_at?: string | null
+          ghl_task_id?: string | null
           id?: string
           is_recurring?: boolean
           owner_id?: string | null
@@ -880,6 +906,7 @@ export type Database = {
           proven_task_id?: string | null
           qc_checklist?: Json
           recurrence?: string | null
+          rejection_reason?: string | null
           requested_completion_date?: string | null
           source?: string
           start_date?: string | null

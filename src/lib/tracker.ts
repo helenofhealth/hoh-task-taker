@@ -60,6 +60,14 @@ export interface Task {
   qc_checklist?: string[];
   requested_completion_date?: string | null;
   estimated_hours?: number | null;
+  /** 'not_required' | 'pending' | 'approved' | 'rejected'. */
+  approval_status?: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  ghl_task_id?: string | null;
+  ghl_synced_at?: string | null;
+  ghl_sync_error?: string | null;
 }
 
 export interface ProvenTask {

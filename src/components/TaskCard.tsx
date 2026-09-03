@@ -1,5 +1,6 @@
 import { CalendarDays, MessageSquare, Repeat, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { displayName, initials } from "@/hooks/useAuth";
 import { formatDuration, type Profile, type Task } from "@/lib/tracker";
@@ -17,6 +18,10 @@ interface Props {
   dragging: boolean;
   /** Clients cannot change task status, so dragging is disabled for them. */
   canDrag?: boolean;
+  /** Bulk-selection support (staff only); omit to hide the checkbox. */
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectedChange?: (checked: boolean) => void;
 }
 
 const priorityLabel: Record<string, string> = {
@@ -38,17 +43,30 @@ export function TaskCard({
   onDragEnd,
   dragging,
   canDrag = true,
+  selectable = false,
+  selected = false,
+  onSelectedChange,
 }: Props) {
   const owner = displayName(profiles, task.owner_id);
 
   return (
+    <div className="relative">
+      {selectable && (
+        <span className="absolute right-2.5 top-2.5 z-10">
+          <Checkbox
+            checked={selected}
+            aria-label={`Select task ${task.title}`}
+            onCheckedChange={(v) => onSelectedChange?.(v === true)}
+          />
+        </span>
+      )}
     <button
       type="button"
       draggable={canDrag}
       onDragStart={canDrag ? onDragStart : undefined}
       onDragEnd={canDrag ? onDragEnd : undefined}
       onClick={onOpen}
-      className={`group w-full ${canDrag ? "cursor-grab" : "cursor-pointer"} rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent hover:shadow-lift ${
+      className={`group w-full ${selectable ? "pr-9" : ""} ${canDrag ? "cursor-grab" : "cursor-pointer"} rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent hover:shadow-lift ${
         dragging ? "opacity-40" : ""
       }`}
     >
@@ -115,5 +133,6 @@ export function TaskCard({
         </span>
       </div>
     </button>
+    </div>
   );
 }

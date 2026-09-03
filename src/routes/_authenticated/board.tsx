@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -13,6 +13,18 @@ import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
 import { TaskDialog } from "@/components/TaskDialog";
 import { NewTaskDialog } from "@/components/NewTaskDialog";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -81,6 +93,8 @@ function BoardPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStatus, setOverStatus] = useState<TaskStatus | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const initialCommentId = search.comment;
 
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
@@ -129,6 +143,22 @@ function BoardPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const bulkDelete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await db.from("tasks").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: (_d, ids) => {
+      toast.success(`${ids.length} task${ids.length === 1 ? "" : "s"} deleted`);
+      setSelectedIds([]);
+      setConfirmBulkDelete(false);
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
+      void qc.invalidateQueries({ queryKey: ["time_entries"] });
+      void qc.invalidateQueries({ queryKey: ["comment_counts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const clientList = clients.data ?? [];
   const visibleClientIds =
     clientFilter === "all" ? clientList.map((c) => c.id) : [clientFilter];
@@ -161,6 +191,12 @@ function BoardPage() {
   const commentsByTask = new Map<string, number>();
   for (const c of commentRows.data ?? [])
     commentsByTask.set(c.task_id, (commentsByTask.get(c.task_id) ?? 0) + 1);
+
+  const filteredIds = filtered.map((t) => t.id);
+  const selectedVisible = selectedIds.filter((id) => filteredIds.includes(id));
+  const allSelected = filteredIds.length > 0 && selectedVisible.length === filteredIds.length;
+  const toggleTask = (id: string, checked: boolean) =>
+    setSelectedIds((prev) => (checked ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
 
   const lowBalance = balances.filter((b) => b.client && b.balance.remaining < 1);
 
@@ -221,6 +257,32 @@ function BoardPage() {
             </SelectContent>
           </Select>
         </div>
+
+        {me.isStaff && (
+          <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={allSelected}
+                aria-label="Select all tasks"
+                onCheckedChange={(v) => setSelectedIds(v === true ? filteredIds : [])}
+              />
+              Select all
+            </label>
+            <span className="text-sm text-muted-foreground">
+              {selectedVisible.length} selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="ml-auto"
+              disabled={selectedVisible.length === 0 || bulkDelete.isPending}
+              onClick={() => setConfirmBulkDelete(true)}
+            >
+              <Trash2 className="mr-1.5 size-4" />
+              Delete selected
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {balances.slice(0, 4).map(({ client, balance }) =>
@@ -307,6 +369,9 @@ function BoardPage() {
                     onDragEnd={() => setDragId(null)}
                     dragging={dragId === t.id}
                     canDrag={me.isStaff}
+                    selectable={me.isStaff}
+                    selected={selectedIds.includes(t.id)}
+                    onSelectedChange={(checked) => toggleTask(t.id, checked)}
                   />
                 ))}
                 {items.length === 0 && (
@@ -319,6 +384,31 @@ function BoardPage() {
           );
         })}
       </div>
+
+      <AlertDialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedVisible.length} task{selectedVisible.length === 1 ? "" : "s"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the selected tasks along with their comments, files and time
+              entries. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                bulkDelete.mutate(selectedVisible);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <TaskDialog
         task={openTask ? (tasks.data ?? []).find((t) => t.id === openTask.id) ?? openTask : null}

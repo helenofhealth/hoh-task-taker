@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
+import { CreditTimeline } from "@/components/CreditTimeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,12 @@ function TimeReportPage() {
   const [taskId, setTaskId] = useState<string>("all");
   const [clientId, setClientId] = useState<string>("all");
   const [project, setProject] = useState<string>("all");
+
+  // Deep links from the low-hours email land here: /time-report?client=<id>#hours-timeline
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("client");
+    if (param) setClientId(param);
+  }, []);
 
   // Every filter is independent and optional — "all" means "don't filter on this field".
   const actionFilter = action === "all" ? null : action;
@@ -792,6 +799,32 @@ function TimeReportPage() {
           </p>
         )}
       </div>
+
+      <section id="hours-timeline" className="mt-10 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <h2 className="text-lg font-semibold">Hours timeline</h2>
+        <p className="text-xs text-muted-foreground">
+          Every hour credit in expiry order, so you can see which hours are still usable.
+        </p>
+        <div className="mt-4 space-y-6">
+          {clientList
+            .filter((c) => !clientFilter || c.id === clientFilter)
+            .map((c) => (
+              <div key={c.id}>
+                {clientList.length > 1 && (
+                  <h3 className="mb-2 text-sm font-semibold">{c.name}</h3>
+                )}
+                <CreditTimeline
+                  clientId={c.id}
+                  credits={credits.data ?? []}
+                  entries={entries.data ?? []}
+                />
+              </div>
+            ))}
+          {clientList.length === 0 && (
+            <p className="text-sm text-muted-foreground">No clients yet.</p>
+          )}
+        </div>
+      </section>
 
       <section className="mt-10 rounded-2xl border border-border bg-card p-5 shadow-soft">
         <h2 className="text-lg font-semibold">Hours per project</h2>

@@ -112,7 +112,7 @@ export const checkClientHourAlert = createServerFn({ method: "POST" })
       balance.bought,
       balance.nextExpiry,
       balance.expiresInDays,
-      `${data.origin}/time-report`,
+      `${data.origin}/time-report?client=${data.clientId}#hours-timeline`,
     );
     return { alerted: true as const, teamAlerted };
 

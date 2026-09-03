@@ -11,10 +11,10 @@ export interface BriefFileInput {
 
 export interface GenerateBriefInput {
   description: string;
-  subAccount?: string;
-  urgency?: string;
-  desiredDate?: string;
-  files?: BriefFileInput[];
+  subAccount?: string | undefined;
+  urgency?: string | undefined;
+  desiredDate?: string | undefined;
+  files?: BriefFileInput[] | undefined;
 }
 
 export interface TaskBrief {

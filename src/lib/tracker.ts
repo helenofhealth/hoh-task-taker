@@ -54,6 +54,8 @@ export interface Task {
   sub_account?: string | null;
   proven_task_id?: string | null;
   subtasks?: string[];
+  /** Subtask labels that have been ticked off. */
+  subtasks_done?: string[];
   deliverables?: string[];
   qc_checklist?: string[];
   requested_completion_date?: string | null;

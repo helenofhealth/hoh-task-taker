@@ -1,4 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { resolvePostAuthPath } from "@/lib/post-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,8 +27,12 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "canonical", href: "https://tasks.helenofhealth.com/" }],
   }),
-  beforeLoad: () => {
-    throw redirect({ to: "/board" });
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw redirect({ to: "/auth", search: { next: undefined } });
+    // Google OAuth returns to "/" — send people to the page that fits their role.
+    throw redirect({ href: await resolvePostAuthPath(data.user.id) });
   },
   component: () => null,
 });

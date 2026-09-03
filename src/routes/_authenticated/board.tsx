@@ -40,6 +40,7 @@ import {
 const searchSchema = z.object({
   task: z.string().optional(),
   comment: z.string().optional(),
+  client: z.string().optional(),
 });
 
 const db = supabase as unknown as { from: (t: string) => any };
@@ -76,7 +77,7 @@ function BoardPage() {
   const navigate = useNavigate({ from: Route.path });
   const search = Route.useSearch();
   const [query, setQuery] = useState("");
-  const [clientFilter, setClientFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState(search.client ?? "all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStatus, setOverStatus] = useState<TaskStatus | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);

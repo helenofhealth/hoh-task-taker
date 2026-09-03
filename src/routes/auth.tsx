@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
 import { requestPasswordReset } from "@/lib/reset-password.functions";
+import { rememberPostAuthPath, resolvePostAuthPath } from "@/lib/post-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const { next } = Route.useSearch();
-  const redirectTarget = safeNext(next) ?? "/board";
+  const requestedNext = safeNext(next);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [resetBusy, setResetBusy] = useState(false);
 
@@ -80,7 +81,7 @@ function AuthPage() {
     try {
       // Remember where the user meant to go; the OAuth flow must return to a
       // public same-origin URL, never straight into a protected route.
-      sessionStorage.setItem("post-auth-redirect", redirectTarget);
+      if (requestedNext) rememberPostAuthPath(requestedNext);
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
@@ -89,7 +90,8 @@ function AuthPage() {
         return;
       }
       if (result.redirected) return;
-      window.location.href = redirectTarget;
+      // Popup flow: the session is already set, so route by role right away.
+      window.location.href = await resolvePostAuthPath();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
@@ -99,10 +101,12 @@ function AuthPage() {
 
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = redirectTarget;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      if (requestedNext) rememberPostAuthPath(requestedNext);
+      window.location.href = await resolvePostAuthPath(data.session.user.id);
     });
-  }, [redirectTarget]);
+  }, [requestedNext]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,7 +117,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}${redirectTarget}`,
+            emailRedirectTo: `${window.location.origin}${requestedNext ?? "/"}`,
             data: { full_name: name },
           },
         });
@@ -123,7 +127,8 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      window.location.href = redirectTarget;
+      if (requestedNext) rememberPostAuthPath(requestedNext);
+      window.location.href = await resolvePostAuthPath();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {

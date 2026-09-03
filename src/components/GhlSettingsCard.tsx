@@ -39,8 +39,9 @@ export function GhlSettingsCard() {
         <Link2 className="size-4 text-muted-foreground" /> GoHighLevel integration
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Connect your agency account so client requests can pick from your real sub-accounts. More
-        sync options (pushing tasks, reading data) can be enabled later.
+        Connect your agency account so client requests pick from your real sub-accounts, and every
+        request an admin approves is created as a real GoHighLevel task — brief, sub-tasks,
+        deliverables and QC checklist included — inside that sub-account.
       </p>
 
       <div className="mt-4 space-y-3 text-sm">
@@ -57,9 +58,10 @@ export function GhlSettingsCard() {
             </p>
             {!data.connected && (
               <p className="text-xs text-muted-foreground">
-                Ask the workspace owner to add the <code>GHL_API_KEY</code> secret (an agency-level
-                GoHighLevel API key) in the project secrets. Once it's there, this card connects
-                automatically.
+                Add your agency-level GoHighLevel API key as the <code>GHL_API_KEY</code> secret.
+                As soon as it's saved, this card connects, the sync below pulls your real
+                sub-accounts into the request form dropdown, and approved requests are created as
+                real GoHighLevel tasks.
               </p>
             )}
             {data.connected && (
@@ -87,6 +89,10 @@ export function GhlSettingsCard() {
                 {!me.isAdmin && (
                   <p className="text-xs text-muted-foreground">Only admins can run the sync.</p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  Synced sub-accounts appear in the client request form and decide where approved
+                  tasks are created in GoHighLevel.
+                </p>
                 {data.subAccounts.length > 0 ? (
                   <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-2 text-xs">
                     {data.subAccounts.map((s) => (

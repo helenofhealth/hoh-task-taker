@@ -85,7 +85,9 @@ export type Database = {
           archived_by: string | null
           business_name: string | null
           created_at: string
+          default_project: string | null
           email: string
+          hourly_rate: number | null
           id: string
           name: string
           phone: string | null
@@ -96,7 +98,9 @@ export type Database = {
           archived_by?: string | null
           business_name?: string | null
           created_at?: string
+          default_project?: string | null
           email: string
+          hourly_rate?: number | null
           id?: string
           name: string
           phone?: string | null
@@ -107,7 +111,9 @@ export type Database = {
           archived_by?: string | null
           business_name?: string | null
           created_at?: string
+          default_project?: string | null
           email?: string
+          hourly_rate?: number | null
           id?: string
           name?: string
           phone?: string | null

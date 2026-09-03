@@ -92,6 +92,11 @@ function StaffClientsPage() {
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [startHours, setStartHours] = useState("");
+  const [startKind, setStartKind] = useState("package");
+  const [startBillable, setStartBillable] = useState("billable");
+  const [rate, setRate] = useState("");
+  const [project, setProject] = useState("");
   const [creditClient, setCreditClient] = useState("");
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
@@ -105,6 +110,19 @@ function StaffClientsPage() {
       const contactEmail = email.trim().toLowerCase();
       if (!contactEmail) throw new Error("Email is required");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error("Enter a valid email address");
+
+      const rawHours = startHours.trim();
+      const hours = rawHours === "" ? 0 : Number(rawHours);
+      if (!Number.isFinite(hours) || hours < 0) throw new Error("Purchased hours must be 0 or more");
+
+      const rawRate = rate.trim();
+      const hourlyRate = rawRate === "" ? null : Number(rawRate);
+      if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
+        throw new Error("Hourly rate must be 0 or more");
+      }
+
+      const projectName = project.trim() || null;
+
       const { data, error } = await db
         .from("clients")
         .insert({
@@ -112,13 +130,31 @@ function StaffClientsPage() {
           business_name: business.trim() || null,
           email: contactEmail,
           phone: phone.trim() || null,
+          // A monthly retainer is the recurring allowance; hour packages are one-offs.
+          retainer_hours: startKind === "retainer" ? hours : 0,
+          hourly_rate: hourlyRate,
+          default_project: projectName,
         })
         .select("id")
         .single();
       if (error) throw error;
+      const clientId = (data as { id: string }).id;
+
+      if (hours > 0) {
+        const { error: creditError } = await db.from("hour_credits").insert({
+          client_id: clientId,
+          hours,
+          kind: startKind,
+          billable: startBillable === "billable",
+          effective_month: startKind === "retainer" ? currentMonthStart() : null,
+          note: projectName ? `Onboarding — ${projectName}` : "Onboarding",
+        });
+        if (creditError) throw creditError;
+      }
+
       const result = await inviteClient({
         data: {
-          clientId: (data as { id: string }).id,
+          clientId,
           email: contactEmail,
           name: clean,
           origin: window.location.origin,
@@ -126,15 +162,23 @@ function StaffClientsPage() {
       });
       return { invited: result.invited };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setName("");
       setBusiness("");
       setEmail("");
       setPhone("");
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      if (result.invited === true) toast.success("Client added — invitation email sent");
-      else if (result.invited === false) toast.success("Client added — existing account linked");
-      else toast.success("Client added");
+      setStartHours("");
+      setStartKind("package");
+      setStartBillable("billable");
+      setRate("");
+      setProject("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["clients"] }),
+        qc.invalidateQueries({ queryKey: ["credits"] }),
+      ]);
+      if (result.invited === true) toast.success("Client onboarded — invitation email sent");
+      else if (result.invited === false) toast.success("Client onboarded — existing account linked");
+      else toast.success("Client onboarded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -190,7 +234,11 @@ function StaffClientsPage() {
       {me.isAdmin && (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="font-semibold">Add a client</h2>
+            <h2 className="font-semibold">Onboard a client</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Set up contact details, purchased hours, rate and the starting project — the
+              activation email goes out automatically, so no manual emailing.
+            </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="c-name">Name</Label>
@@ -231,9 +279,67 @@ function StaffClientsPage() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              <div className="flex items-end">
+
+              <div className="space-y-1.5">
+                <Label htmlFor="c-hours">Purchased hours — optional</Label>
+                <Input
+                  id="c-hours"
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={startHours}
+                  placeholder="e.g. 10"
+                  onChange={(e) => setStartHours(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hours type</Label>
+                <Select value={startKind} onValueChange={setStartKind}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="package">Hour package (3 months)</SelectItem>
+                    <SelectItem value="retainer">Monthly retainer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Billing</Label>
+                <Select value={startBillable} onValueChange={setStartBillable}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="billable">Billable</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-rate">Hourly rate — optional</Label>
+                <Input
+                  id="c-rate"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={rate}
+                  placeholder="e.g. 60"
+                  onChange={(e) => setRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="c-project">Project — optional</Label>
+                <Input
+                  id="c-project"
+                  value={project}
+                  maxLength={120}
+                  placeholder="e.g. Website refresh"
+                  onChange={(e) => setProject(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used as the default project when you create tasks for this client.
+                </p>
+              </div>
+              <div className="flex items-end sm:col-span-2">
                 <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
-                  <Plus className="mr-1.5 size-4" /> Add
+                  <Plus className="mr-1.5 size-4" /> Onboard client
                 </Button>
               </div>
             </div>
@@ -325,6 +431,13 @@ function StaffClientsPage() {
                     {c.name}
                     {c.business_name && (
                       <span className="block text-xs font-normal text-muted-foreground">{c.business_name}</span>
+                    )}
+                    {(c.default_project || c.hourly_rate != null) && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {c.default_project}
+                        {c.default_project && c.hourly_rate != null ? " · " : ""}
+                        {c.hourly_rate != null ? `${Number(c.hourly_rate)}/h` : ""}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-muted-foreground">
@@ -472,6 +585,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [retainer, setRetainer] = useState("");
+  const [editRate, setEditRate] = useState("");
+  const [editProject, setEditProject] = useState("");
 
   useEffect(() => {
     if (!client) return;
@@ -480,6 +595,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
     setEmail(client.email ?? "");
     setPhone(client.phone ?? "");
     setRetainer(String(Number(client.retainer_hours ?? 0)));
+    setEditRate(client.hourly_rate === null || client.hourly_rate === undefined ? "" : String(Number(client.hourly_rate)));
+    setEditProject(client.default_project ?? "");
   }, [client]);
 
   const save = useMutation({
@@ -493,6 +610,11 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
       const raw = retainer.trim();
       const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
+      const rawRate = editRate.trim();
+      const hourlyRate = rawRate === "" ? null : Number(rawRate);
+      if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
+        throw new Error("Hourly rate must be 0 or more");
+      }
       const { error } = await db
         .from("clients")
         .update({
@@ -501,6 +623,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
           email: contactEmail,
           phone: phone.trim() || null,
           retainer_hours: hours,
+          hourly_rate: hourlyRate,
+          default_project: editProject.trim() || null,
         })
         .eq("id", client.id);
       if (error) throw error;
@@ -571,6 +695,28 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
               step="0.5"
               value={retainer}
               onChange={(e) => setRetainer(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-rate">Hourly rate — optional</Label>
+            <Input
+              id="e-rate"
+              type="number"
+              min="0"
+              step="1"
+              value={editRate}
+              placeholder="Optional"
+              onChange={(e) => setEditRate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="e-project">Project — optional</Label>
+            <Input
+              id="e-project"
+              value={editProject}
+              maxLength={120}
+              placeholder="Optional"
+              onChange={(e) => setEditProject(e.target.value)}
             />
           </div>
         </div>

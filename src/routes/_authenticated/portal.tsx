@@ -63,7 +63,7 @@ function PortalPage() {
   const myClientId = me.profile?.client_id ?? null;
   // Staff can preview any client's portal; a client only ever sees their own.
   const [preview, setPreview] = useState<string>("");
-  const clientId = me.isStaff ? preview || clientList[0]?.id ?? null : myClientId;
+  const clientId = me.isStaff ? preview || (clientList[0]?.id ?? null) : myClientId;
   const client = clientList.find((c) => c.id === clientId) ?? null;
 
   const [openTask, setOpenTask] = useState<Task | null>(null);

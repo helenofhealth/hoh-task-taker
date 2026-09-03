@@ -20,6 +20,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCreditHistoryRouteImport } from './routes/_authenticated/credit-history'
+import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTimeReportRouteImport } from './routes/_authenticated/time-report'
@@ -85,6 +86,11 @@ const AuthenticatedCreditHistoryRoute =
     path: '/credit-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/portal': typeof AuthenticatedPortalRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/portal': typeof AuthenticatedPortalRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/_authenticated/portal': typeof AuthenticatedPortalRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/time-report': typeof AuthenticatedTimeReportRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/portal'
     | '/settings'
     | '/team'
     | '/time-report'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/portal'
     | '/settings'
     | '/team'
     | '/time-report'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/board'
     | '/_authenticated/clients'
     | '/_authenticated/credit-history'
+    | '/_authenticated/portal'
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/time-report'
@@ -336,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCreditHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/portal': {
+      id: '/_authenticated/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof AuthenticatedPortalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -392,6 +411,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCreditHistoryRoute: typeof AuthenticatedCreditHistoryRoute
+  AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTimeReportRoute: typeof AuthenticatedTimeReportRoute
@@ -401,6 +421,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCreditHistoryRoute: AuthenticatedCreditHistoryRoute,
+  AuthenticatedPortalRoute: AuthenticatedPortalRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTimeReportRoute: AuthenticatedTimeReportRoute,

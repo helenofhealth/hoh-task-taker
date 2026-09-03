@@ -267,6 +267,84 @@ function SettingsPage() {
   );
 }
 
+function ChangePassword() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+
+  const change = useMutation({
+    mutationFn: async () => {
+      if (!current) throw new Error("Enter your current password");
+      const invalid = validatePassword(next);
+      if (invalid) throw new Error(invalid);
+      if (next !== confirm) throw new Error("The new passwords do not match");
+      const { error } = await supabase.auth.updateUser({
+        password: next,
+        // Lovable Cloud requires the current password for signed-in changes.
+        current_password: current,
+      } as Parameters<typeof supabase.auth.updateUser>[0]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      toast.success("Password updated");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+      <p className="flex items-center gap-1.5 text-sm font-medium">
+        <KeyRound className="size-4 text-muted-foreground" /> Password
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Change the password you use to sign in to your portal.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:max-w-md">
+        <div className="space-y-1.5">
+          <Label htmlFor="pw-current">Current password</Label>
+          <PasswordInput
+            id="pw-current"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="pw-new">New password</Label>
+          <PasswordInput
+            id="pw-new"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+          />
+          <PasswordRequirements value={next} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="pw-confirm">Confirm new password</Label>
+          <PasswordInput
+            id="pw-confirm"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </div>
+        <div>
+          <Button
+            disabled={change.isPending || !current || !isPasswordValid(next) || next !== confirm}
+            onClick={() => change.mutate()}
+          >
+            Update password
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConnectedAccounts() {
   const queryClient = useQueryClient();
 

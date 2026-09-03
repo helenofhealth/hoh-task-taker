@@ -468,7 +468,7 @@ export const notifyCommentDeleted = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { taskId: string; commentId: string }) => {
     if (!input.taskId || !input.commentId) throw new Error("Task and comment are required");
-    return { ...input, origin: safeAppOrigin(input.origin) };
+    return input;
   })
   .handler(async ({ data, context }) => {
     const { data: canSee } = await context.supabase.rpc("can_see_task", { _task_id: data.taskId });

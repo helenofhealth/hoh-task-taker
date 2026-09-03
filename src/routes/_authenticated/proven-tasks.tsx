@@ -84,8 +84,61 @@ function ProvenTasksPage() {
   const [category, setCategory] = useState("all");
   const [showArchived, setShowArchived] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const navigate = useNavigate();
+
+  // "Send to client" state
+  const [sendTask, setSendTask] = useState<ProvenTask | null>(null);
+  const [sendClientId, setSendClientId] = useState("");
+  const [sendDue, setSendDue] = useState("");
+  const [sendSubAccount, setSendSubAccount] = useState("");
+  const [sendPriority, setSendPriority] = useState("normal");
 
   const library = useQuery({ queryKey: ["proven_tasks"], queryFn: fetchProvenTasks });
+  const clients = useQuery({
+    queryKey: ["clients"],
+    queryFn: fetchClients,
+    enabled: !!sendTask,
+  });
+  const assign = useServerFn(assignProvenTaskToClient);
+
+  const send = useMutation({
+    mutationFn: async () => {
+      if (!sendTask) throw new Error("Pick a proven task");
+      if (!sendClientId) throw new Error("Pick a client");
+      return assign({
+        data: {
+          provenTaskId: sendTask.id,
+          clientId: sendClientId,
+          origin: window.location.origin,
+          dueDate: sendDue || null,
+          subAccount: sendSubAccount || null,
+          priority: sendPriority,
+        },
+      });
+    },
+    onSuccess: (res) => {
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
+      if (res.ghl.pushed) {
+        toast.success(
+          res.ghl.ownAgency
+            ? "Task added to the client's portal and their own GoHighLevel agency"
+            : "Task added to the client's portal and synced to GoHighLevel",
+        );
+      } else {
+        toast.success("Task added to the client's portal", {
+          description: res.ghl.error ?? undefined,
+        });
+      }
+      const taskId = res.taskId;
+      setSendTask(null);
+      setSendClientId("");
+      setSendDue("");
+      setSendSubAccount("");
+      setSendPriority("normal");
+      void navigate({ to: "/board", search: { task: taskId } as never });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const categories = useMemo(
     () => [...new Set((library.data ?? []).map((t) => t.category))].sort(),

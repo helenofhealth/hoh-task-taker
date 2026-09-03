@@ -280,6 +280,27 @@
           }
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_proven_tasks",
+        "title": "List proven tasks",
+        "description": "List active proven-task templates (GHL playbooks) with their subtasks, deliverables and expert hour estimates. Use category to filter.",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "category": {
+              "description": "Filter by category name (case-insensitive substring).",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
       }
     ]
   }

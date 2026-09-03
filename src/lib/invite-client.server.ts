@@ -345,3 +345,60 @@ export async function sendTeamLowHoursEmail(
     await sendEmail(to, `Low hours: ${clientName} has ${fmt(remainingHours)} left`, html);
   }
 }
+
+/** Confirms to the client that an admin approved their requested task. */
+export async function sendTaskApprovalEmail(
+  email: string,
+  clientName: string,
+  taskTitle: string,
+  subtasks: string[],
+  dueDate: string | null,
+  link: string,
+) {
+  const items = subtasks.length
+    ? `<ol style="margin: 8px 0 0; padding-left: 20px; color: #3E332B; font-size: 14px;">${subtasks
+        .slice(0, 20)
+        .map((s) => `<li style="margin: 4px 0;">${esc(s)}</li>`)
+        .join("")}</ol>`
+    : `<p style="margin: 8px 0 0; color: #76685C; font-size: 13px;">No sub-tasks were needed for this one.</p>`;
+  const html = shell(
+    "Your request is approved",
+    `<p>Hi ${esc(clientName)},</p>
+     <p>Good news — we reviewed your request and it's approved. The team is on it.</p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(taskTitle)}</p>
+       ${dueDate ? `<p style="margin: 6px 0 0; color: #76685C; font-size: 13px;">Target completion: <strong>${esc(dueDate)}</strong></p>` : ""}
+       <p style="margin: 14px 0 0; font-weight: bold; color: #3E332B; font-size: 13px;">What we'll do</p>
+       ${items}
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your task</a>
+     </p>
+     <p style="color: #76685C; font-size: 13px;">Add a comment on the task if anything needs adjusting.</p>`,
+  );
+  await sendEmail(email, `Approved: "${taskTitle}"`, html);
+}
+
+/** Tells the client an admin sent their requested task back with a reason. */
+export async function sendTaskRejectionEmail(
+  email: string,
+  clientName: string,
+  taskTitle: string,
+  reason: string,
+  link: string,
+) {
+  const html = shell(
+    "We need a bit more on your request",
+    `<p>Hi ${esc(clientName)},</p>
+     <p>We reviewed your request and can't start it as it stands.</p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(taskTitle)}</p>
+       <p style="margin: 10px 0 0; color: #76685C; font-size: 13px;">${esc(reason)}</p>
+     </div>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open the request</a>
+     </p>
+     <p style="color: #76685C; font-size: 13px;">Reply on the task with the missing details and we'll pick it straight back up.</p>`,
+  );
+  await sendEmail(email, `Action needed: "${taskTitle}"`, html);
+}

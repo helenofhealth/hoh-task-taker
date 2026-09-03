@@ -66,6 +66,8 @@ export interface Task {
   approved_at?: string | null;
   rejection_reason?: string | null;
   ghl_task_id?: string | null;
+  ghl_location_id?: string | null;
+  ghl_contact_id?: string | null;
   ghl_synced_at?: string | null;
   ghl_sync_error?: string | null;
 }

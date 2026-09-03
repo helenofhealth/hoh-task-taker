@@ -30,6 +30,7 @@ export interface Profile {
   id: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
   client_id: string | null;
 }
 

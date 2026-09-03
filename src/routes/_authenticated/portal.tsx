@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, Clock } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { CalendarClock, Clock, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { CreditTimeline } from "@/components/CreditTimeline";
 import { RequestTaskDialog } from "@/components/RequestTaskDialog";
 import { TaskDialog } from "@/components/TaskDialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { claimMyClientAccount } from "@/lib/self-link.functions";
 import {
   Select,
   SelectContent,

@@ -62,12 +62,12 @@ export function NewTaskDialog({
   const [showNewClient, setShowNewClient] = useState(false);
   const [approved, setApproved] = useState(false);
 
-  const selectedProven = (provenTasks.data ?? []).find((t) => t.id === provenId) ?? null;
   const provenTasks = useQuery({
     queryKey: ["proven_tasks"],
     queryFn: fetchProvenTasks,
     enabled: open,
   });
+  const selectedProven = (provenTasks.data ?? []).find((t) => t.id === provenId) ?? null;
   const [ncName, setNcName] = useState("");
   const [ncBusiness, setNcBusiness] = useState("");
   const [ncEmail, setNcEmail] = useState("");

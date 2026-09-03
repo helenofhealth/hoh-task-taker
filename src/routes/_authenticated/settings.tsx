@@ -309,47 +309,71 @@ function ConnectedAccounts() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const providerLabel = (p: string) =>
+    p === "email"
+      ? "Email and password"
+      : p === "google"
+        ? "Google"
+        : p.charAt(0).toUpperCase() + p.slice(1);
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
       <p className="flex items-center gap-1.5 text-sm font-medium">
         <Link2 className="size-4 text-muted-foreground" /> Connected accounts
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Link Google to your existing email and password account so you can sign in either way — no
-        second account is created.
+        These are the sign-in methods linked to your account. Link Google to your existing email and
+        password account so you can sign in either way — no second account is created.
       </p>
 
-      <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">Google</p>
-          <p className="text-xs text-muted-foreground">
-            {identitiesQuery.isLoading
-              ? "Checking…"
-              : google
-                ? `Connected${google.identity_data?.["email"] ? ` — ${google.identity_data["email"]}` : ""}`
-                : "Not connected"}
-          </p>
-        </div>
-        {google ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!canUnlink || unlink.isPending}
-            title={canUnlink ? undefined : "Set a password first so you keep a way to sign in"}
-            onClick={() => unlink.mutate()}
+      <div className="mt-4 space-y-2">
+        {identitiesQuery.isLoading && (
+          <p className="text-xs text-muted-foreground">Checking your sign-in methods…</p>
+        )}
+        {!identitiesQuery.isLoading && identities.length === 0 && (
+          <p className="text-xs text-muted-foreground">No sign-in methods found.</p>
+        )}
+        {identities.map((identity) => (
+          <div
+            key={identity.identity_id ?? identity.provider}
+            className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 px-4 py-3"
           >
-            Disconnect
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            disabled={identitiesQuery.isLoading || link.isPending}
-            onClick={() => link.mutate()}
-          >
-            Connect Google
-          </Button>
+            <div>
+              <p className="text-sm font-medium">{providerLabel(identity.provider)}</p>
+              <p className="text-xs text-muted-foreground">
+                {(identity.identity_data?.["email"] as string | undefined) || "Linked"}
+                {identity.created_at
+                  ? ` · linked ${new Date(identity.created_at).toLocaleDateString()}`
+                  : ""}
+              </p>
+            </div>
+            {identity.provider === "google" && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!canUnlink || unlink.isPending}
+                title={canUnlink ? undefined : "Set a password first so you keep a way to sign in"}
+                onClick={() => unlink.mutate()}
+              >
+                Disconnect
+              </Button>
+            )}
+          </div>
+        ))}
+
+        {!identitiesQuery.isLoading && !google && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Google</p>
+              <p className="text-xs text-muted-foreground">Not connected</p>
+            </div>
+            <Button size="sm" disabled={link.isPending} onClick={() => link.mutate()}>
+              Connect Google
+            </Button>
+          </div>
         )}
       </div>
     </div>
   );
 }
+

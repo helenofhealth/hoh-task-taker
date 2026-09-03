@@ -71,6 +71,30 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  async function signInWithGoogle() {
+    setGoogleBusy(true);
+    try {
+      // Remember where the user meant to go; the OAuth flow must return to a
+      // public same-origin URL, never straight into a protected route.
+      sessionStorage.setItem("post-auth-redirect", redirectTarget);
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? "Google sign-in failed");
+        return;
+      }
+      if (result.redirected) return;
+      window.location.href = redirectTarget;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

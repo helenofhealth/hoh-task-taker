@@ -21,6 +21,8 @@ export interface Client {
   phone?: string | null;
   archived_at?: string | null;
   archived_by?: string | null;
+  hourly_rate?: number | null;
+  default_project?: string | null;
 }
 
 

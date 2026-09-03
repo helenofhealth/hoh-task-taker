@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { CreditTimeline } from "@/components/CreditTimeline";
+import { DeliverablesCalendar } from "@/components/DeliverablesCalendar";
+import { GhlSettingsCard } from "@/components/GhlSettingsCard";
 import { RequestTaskDialog } from "@/components/RequestTaskDialog";
 import { TaskDialog } from "@/components/TaskDialog";
 import { Badge } from "@/components/ui/badge";

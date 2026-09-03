@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  Library,
+  ListChecks,
   Loader2,
   Paperclip,
   Search,

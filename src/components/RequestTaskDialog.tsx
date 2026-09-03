@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -109,6 +110,8 @@ export function RequestTaskDialog({
   // Generated / reviewed brief
   const [brief, setBrief] = useState<TaskBrief | null>(null);
   const [submittedTaskId, setSubmittedTaskId] = useState<string | null>(null);
+  const [approved, setApproved] = useState(false);
+  const [editingList, setEditingList] = useState<"subtasks" | null>(null);
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestTitle, setSuggestTitle] = useState("");
   const [suggestCategory, setSuggestCategory] = useState("");
@@ -158,6 +161,8 @@ export function RequestTaskDialog({
     setLinks("");
     setFiles([]);
     setBrief(null);
+    setApproved(false);
+    setEditingList(null);
     setSubmittedTaskId(null);
   }
 

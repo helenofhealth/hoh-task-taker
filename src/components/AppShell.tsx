@@ -21,6 +21,13 @@ const nav = [
   { to: "/credit-history", label: "Credit history", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
+const nav = [
+  { to: "/onboarding", label: "Get started", clientOnly: true },
+  { to: "/portal", label: "My portal", clientOnly: true },
+  { to: "/board", label: "Board" },
+  ...
+];
+
 {nav
   .filter((item) => {
     if (item.clientOnly && !me.profile?.client_id) return false;
@@ -28,6 +35,7 @@ const nav = [
     return true;
   })
   .map((item) => (...))}
+
 export function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   const navigate = useNavigate();
   const me = useMe();

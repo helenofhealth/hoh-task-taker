@@ -170,6 +170,53 @@ export type Database = {
           },
         ]
       }
+      client_onboarding: {
+        Row: {
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          first_task_done: boolean
+          hours_reviewed: boolean
+          profile_done: boolean
+          tour_done: boolean
+          updated_at: string
+          user_id: string
+          welcome_email_sent_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          first_task_done?: boolean
+          hours_reviewed?: boolean
+          profile_done?: boolean
+          tour_done?: boolean
+          updated_at?: string
+          user_id: string
+          welcome_email_sent_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          first_task_done?: boolean
+          hours_reviewed?: boolean
+          profile_done?: boolean
+          tour_done?: boolean
+          updated_at?: string
+          user_id?: string
+          welcome_email_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           archived_at: string | null

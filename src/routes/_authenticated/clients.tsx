@@ -42,6 +42,36 @@ import type { Client } from "@/lib/tracker";
 
 const db = supabase as unknown as { from: (t: string) => any };
 
+interface ClientInvite {
+  id: string;
+  client_id: string;
+  email: string;
+  sent_at: string;
+  opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number;
+}
+
+/** Newest-first invitation tracking rows (staff only, enforced by row-level security). */
+async function fetchClientInvites(): Promise<ClientInvite[]> {
+  const { data, error } = await db
+    .from("client_invites")
+    .select("id, client_id, email, sent_at, opened_at, last_opened_at, open_count")
+    .order("sent_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ClientInvite[];
+}
+
+function shortDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({

@@ -116,7 +116,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: data.email,
-      options: { data: { full_name: data.name }, redirectTo: `${data.origin}/auth` },
+      options: { data: { full_name: data.name }, redirectTo: `${data.origin}/reset-password` },
     });
 
     if (error) {

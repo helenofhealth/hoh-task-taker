@@ -177,7 +177,13 @@ export const completeOnboardingStep = createServerFn({ method: "POST" })
       if (error) throw error;
     }
 
-    const patch: Record<string, unknown> = { [STEP_COLUMN[data.step]]: true };
+    const column = STEP_COLUMN[data.step];
+    const patch = {
+      profile_done: column === "profile_done" ? true : undefined,
+      hours_reviewed: column === "hours_reviewed" ? true : undefined,
+      first_task_done: column === "first_task_done" ? true : undefined,
+      tour_done: column === "tour_done" ? true : undefined,
+    };
     const { data: row, error } = await supabase
       .from("client_onboarding")
       .update(patch)

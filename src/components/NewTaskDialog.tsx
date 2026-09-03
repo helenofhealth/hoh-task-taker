@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
@@ -60,11 +60,14 @@ export function NewTaskDialog({
   const [provenId, setProvenId] = useState("");
   const [subAccount, setSubAccount] = useState("");
   const [showNewClient, setShowNewClient] = useState(false);
+  const [approved, setApproved] = useState(false);
+
   const provenTasks = useQuery({
     queryKey: ["proven_tasks"],
     queryFn: fetchProvenTasks,
     enabled: open,
   });
+  const selectedProven = (provenTasks.data ?? []).find((t) => t.id === provenId) ?? null;
   const [ncName, setNcName] = useState("");
   const [ncBusiness, setNcBusiness] = useState("");
   const [ncEmail, setNcEmail] = useState("");
@@ -193,6 +196,7 @@ export function NewTaskDialog({
       setDescription("");
       setProject("");
       setFollowerIds([]);
+      setApproved(false);
       toast.success("Task created");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -216,6 +220,7 @@ export function NewTaskDialog({
               value={provenId}
               onValueChange={(v) => {
                 setProvenId(v === "__none" ? "" : v);
+                setApproved(false);
                 const tpl = (provenTasks.data ?? []).find((t) => t.id === v);
                 if (tpl) {
                   if (!title.trim()) setTitle(tpl.title);
@@ -455,8 +460,45 @@ export function NewTaskDialog({
               </Button>
             </div>
           )}
-          <Button className="w-full" onClick={() => create.mutate()} disabled={create.isPending}>
-            Create task
+          {selectedProven && (selectedProven.subtasks?.length ?? 0) > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <ListChecks className="size-4 text-primary" /> Subtasks (
+                {selectedProven.subtasks.length})
+              </Label>
+              <ul className="space-y-1.5">
+                {selectedProven.subtasks.map((st, i) => (
+                  <li
+                    key={`${st}-${i}`}
+                    className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
+                  >
+                    <Checkbox checked disabled className="mt-0.5" aria-hidden />
+                    <span className="text-sm leading-relaxed">{st}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Each subtask gets its own checkbox inside the task so the team can tick them off.
+              </p>
+            </div>
+          )}
+          <label className="flex items-start gap-2.5 rounded-xl border border-primary/40 bg-primary-soft p-3 text-sm">
+            <Checkbox
+              className="mt-0.5"
+              checked={approved}
+              onCheckedChange={(v) => setApproved(v === true)}
+            />
+            <span>
+              I've proofread this task — title, description, client, dates and subtasks are correct
+              and ready to go.
+            </span>
+          </label>
+          <Button
+            className="w-full"
+            onClick={() => create.mutate()}
+            disabled={create.isPending || !approved}
+          >
+            Approve &amp; create task
           </Button>
         </div>
       </DialogContent>

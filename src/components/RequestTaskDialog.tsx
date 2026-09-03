@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  Library,
+  ListChecks,
   Loader2,
   Paperclip,
   Search,
@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -109,6 +110,8 @@ export function RequestTaskDialog({
   // Generated / reviewed brief
   const [brief, setBrief] = useState<TaskBrief | null>(null);
   const [submittedTaskId, setSubmittedTaskId] = useState<string | null>(null);
+  const [approved, setApproved] = useState(false);
+  const [editingList, setEditingList] = useState<"subtasks" | null>(null);
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestTitle, setSuggestTitle] = useState("");
   const [suggestCategory, setSuggestCategory] = useState("");
@@ -158,6 +161,8 @@ export function RequestTaskDialog({
     setLinks("");
     setFiles([]);
     setBrief(null);
+    setApproved(false);
+    setEditingList(null);
     setSubmittedTaskId(null);
   }
 
@@ -208,6 +213,7 @@ export function RequestTaskDialog({
       suggested_category: t.category,
       matched_proven_task_id: t.id,
     });
+    setPath("proven");
     setStep("details");
   }
 
@@ -264,6 +270,7 @@ export function RequestTaskDialog({
       return result;
     },
     onSuccess: (result) => {
+      setApproved(false);
       setBrief(result);
       if (!title.trim()) setTitle(result.title);
       setStep("review");
@@ -385,140 +392,130 @@ export function RequestTaskDialog({
         )}
 
         {step === "path" && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => {
-                setPath("proven");
-              }}
-              className={`rounded-2xl border p-5 text-left transition-colors ${
-                path === "proven"
-                  ? "border-primary bg-primary-soft"
-                  : "border-border bg-card hover:bg-surface-muted"
-              }`}
-            >
-              <Library className="mb-2 size-6 text-primary" />
-              <p className="font-semibold">Start from a proven task</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Pick from our library of ready-made GoHighLevel tasks with subtasks, deliverables and
-                time estimates.
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPath("describe");
-                setStep("details");
-              }}
-              className={`rounded-2xl border p-5 text-left transition-colors ${
-                path === "describe"
-                  ? "border-primary bg-primary-soft"
-                  : "border-border bg-card hover:bg-surface-muted"
-              }`}
-            >
-              <Sparkles className="mb-2 size-6 text-primary" />
-              <p className="font-semibold">Describe it yourself</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Tell us what you need in your own words — upload files too — and AI drafts the full
-                brief for you to approve.
-              </p>
-            </button>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-56 flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={pickerSearch}
+                  onChange={(e) => setPickerSearch(e.target.value)}
+                  placeholder="Describe what you need…"
+                  className="h-12 rounded-xl pl-9 text-base"
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="h-12 rounded-xl"
+                onClick={() => {
+                  setPath("describe");
+                  if (pickerSearch.trim()) setDetails(pickerSearch.trim());
+                  setStep("details");
+                }}
+              >
+                <Sparkles className="mr-1.5 size-4" /> Blank task
+              </Button>
+            </div>
 
-            {path === "proven" && (
-              <div className="sm:col-span-2">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <div className="relative min-w-52 flex-1">
-                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={pickerSearch}
-                      onChange={(e) => setPickerSearch(e.target.value)}
-                      placeholder="Search proven tasks"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select value={pickerCategory} onValueChange={setPickerCategory}>
-                    <SelectTrigger className="w-56">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All categories</SelectItem>
-                      {categories.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="max-h-80 space-y-2 overflow-y-auto rounded-xl border border-border p-2">
-                  {pickerList.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => pickProven(t)}
-                      className="w-full rounded-lg border border-border bg-card p-3 text-left hover:bg-surface-muted"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium">{t.title}</p>
-                        {t.estimated_hours != null && (
-                          <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="size-3" /> ~{t.estimated_hours}h
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{t.category}</p>
-                    </button>
-                  ))}
-                  {pickerList.length === 0 && (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                      {library.isLoading ? "Loading library…" : "No proven tasks match."}
+            <div className="flex flex-wrap gap-2">
+              {["all", ...categories].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setPickerCategory(c)}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                    pickerCategory === c
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-foreground hover:bg-surface-muted"
+                  }`}
+                >
+                  {c === "all" ? "All" : c}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid max-h-[52vh] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+              {pickerList.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => pickProven(t)}
+                  className="rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-surface-muted"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t.category}
+                  </p>
+                  <p className="mt-1.5 font-semibold leading-snug">{t.title}</p>
+                  {t.description && (
+                    <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {t.description}
                     </p>
                   )}
-                </div>
-                <div className="rounded-xl border border-dashed border-border p-3">
-                  {!showSuggest ? (
-                    <button
-                      type="button"
-                      className="text-sm text-primary hover:underline"
-                      onClick={() => setShowSuggest(true)}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {t.estimated_hours != null && (
+                      <span className="flex items-center gap-1 rounded-md bg-surface-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        <Clock className="size-3" /> ~{t.estimated_hours}h
+                      </span>
+                    )}
+                    {(t.subtasks?.length ?? 0) > 0 && (
+                      <span className="rounded-md bg-surface-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {t.subtasks.length} subtasks
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {pickerList.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground sm:col-span-2">
+                  {library.isLoading
+                    ? "Loading library…"
+                    : "No proven task matches — use “Blank task” and AI will draft the brief."}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-dashed border-border p-3">
+              {!showSuggest ? (
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => setShowSuggest(true)}
+                >
+                  Can't find it? Suggest a proven task for the library
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Suggest a proven task</p>
+                  <Input
+                    value={suggestTitle}
+                    maxLength={200}
+                    placeholder="Task name, e.g. 'Build a webinar registration funnel'"
+                    onChange={(e) => setSuggestTitle(e.target.value)}
+                  />
+                  <Input
+                    value={suggestCategory}
+                    maxLength={80}
+                    placeholder="Category (optional), e.g. Funnels & websites"
+                    onChange={(e) => setSuggestCategory(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={suggestProven.isPending}
+                      onClick={() => suggestProven.mutate()}
                     >
-                      Can't find it? Suggest a proven task for the library
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Suggest a proven task</p>
-                      <Input
-                        value={suggestTitle}
-                        maxLength={200}
-                        placeholder="Task name, e.g. 'Build a webinar registration funnel'"
-                        onChange={(e) => setSuggestTitle(e.target.value)}
-                      />
-                      <Input
-                        value={suggestCategory}
-                        maxLength={80}
-                        placeholder="Category (optional), e.g. Funnels & websites"
-                        onChange={(e) => setSuggestCategory(e.target.value)}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={suggestProven.isPending}
-                          onClick={() => suggestProven.mutate()}
-                        >
-                          Send suggestion
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setShowSuggest(false)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                      Send suggestion
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowSuggest(false)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
+
 
         {step === "details" && (
           <div className="space-y-4">
@@ -751,9 +748,56 @@ export function RequestTaskDialog({
                 onChange={(e) => setBrief({ ...brief, description: e.target.value })}
               />
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <ListChecks className="size-4 text-primary" /> Subtasks ({brief.subtasks.length})
+                </Label>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setEditingList(editingList === "subtasks" ? null : "subtasks")}
+                >
+                  {editingList === "subtasks" ? "Done editing" : "Edit subtasks"}
+                </button>
+              </div>
+              {editingList === "subtasks" ? (
+                <Textarea
+                  rows={Math.min(12, Math.max(4, brief.subtasks.length + 1))}
+                  value={brief.subtasks.join("\n")}
+                  onChange={(e) =>
+                    setBrief({
+                      ...brief,
+                      subtasks: e.target.value
+                        .split("\n")
+                        .map((l) => l.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+              ) : (
+                <ul className="space-y-1.5">
+                  {brief.subtasks.map((s, i) => (
+                    <li
+                      key={`${s}-${i}`}
+                      className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
+                    >
+                      <Checkbox checked disabled className="mt-0.5" aria-hidden />
+                      <span className="text-sm leading-relaxed">{s}</span>
+                    </li>
+                  ))}
+                  {brief.subtasks.length === 0 && (
+                    <li className="text-sm text-muted-foreground">No subtasks yet.</li>
+                  )}
+                </ul>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Each subtask becomes its own checkbox inside the task for the team to tick off.
+              </p>
+            </div>
+
             {(
               [
-                ["Subtasks", "subtasks"],
                 ["Deliverables", "deliverables"],
                 ["QC checklist", "qc_checklist"],
               ] as const
@@ -799,6 +843,18 @@ export function RequestTaskDialog({
               </p>
             </div>
 
+            <label className="flex items-start gap-2.5 rounded-xl border border-primary/40 bg-primary-soft p-3 text-sm">
+              <Checkbox
+                className="mt-0.5"
+                checked={approved}
+                onCheckedChange={(v) => setApproved(v === true)}
+              />
+              <span>
+                I've proofread this request — the title, description, subtasks, deliverables and
+                dates are correct and ready for the team.
+              </span>
+            </label>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Button variant="ghost" onClick={() => setStep("details")}>
                 <ArrowLeft className="mr-1.5 size-4" /> Edit details
@@ -818,13 +874,13 @@ export function RequestTaskDialog({
                     Regenerate
                   </Button>
                 )}
-                <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+                <Button onClick={() => submit.mutate()} disabled={submit.isPending || !approved}>
                   {submit.isPending ? (
                     <Loader2 className="mr-1.5 size-4 animate-spin" />
                   ) : (
                     <CheckCircle2 className="mr-1.5 size-4" />
                   )}
-                  This is correct — submit request
+                  Approve &amp; submit request
                 </Button>
               </div>
             </div>

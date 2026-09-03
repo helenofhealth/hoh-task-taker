@@ -1118,9 +1118,57 @@ export function TaskDialog({
                       </p>
                     )}
                   </div>
+                  {(task.subtasks?.length ?? 0) > 0 && (
+                    <div>
+                      <p className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <span>Subtasks</span>
+                        <span className="normal-case tracking-normal">
+                          {(task.subtasks_done ?? []).filter((d) =>
+                            (task.subtasks ?? []).includes(d),
+                          ).length}{" "}
+                          / {task.subtasks!.length} done
+                        </span>
+                      </p>
+                      <ul className="space-y-1">
+                        {task.subtasks!.map((item, i) => {
+                          const done = (task.subtasks_done ?? []).includes(item);
+                          return (
+                            <li
+                              key={`${item}-${i}`}
+                              className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
+                            >
+                              <Checkbox
+                                id={`st-${task.id}-${i}`}
+                                className="mt-0.5"
+                                checked={done}
+                                disabled={!canEdit}
+                                onCheckedChange={(v) => {
+                                  const current = (task.subtasks_done ?? []).filter((d) =>
+                                    (task.subtasks ?? []).includes(d),
+                                  );
+                                  const next =
+                                    v === true
+                                      ? [...new Set([...current, item])]
+                                      : current.filter((d) => d !== item);
+                                  save.mutate({ subtasks_done: next } as never);
+                                }}
+                              />
+                              <Label
+                                htmlFor={`st-${task.id}-${i}`}
+                                className={`cursor-pointer text-sm font-normal leading-relaxed ${
+                                  done ? "text-muted-foreground line-through" : ""
+                                }`}
+                              >
+                                {item}
+                              </Label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   {(
                     [
-                      ["Subtasks", task.subtasks],
                       ["Deliverables", task.deliverables],
                       ["QC checklist", task.qc_checklist],
                     ] as const
@@ -1130,7 +1178,7 @@ export function TaskDialog({
                         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           {label}
                         </p>
-                        <ul className="list-disc space-y-0.5 pl-5">
+                        <ul className="list-disc space-y-1 pl-5 leading-relaxed">
                           {items!.map((item, i) => (
                             <li key={i}>{item}</li>
                           ))}

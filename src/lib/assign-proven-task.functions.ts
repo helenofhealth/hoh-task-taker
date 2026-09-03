@@ -15,7 +15,6 @@ export interface AssignProvenInput {
 export interface AssignProvenResult {
   ok: true;
   taskId: string;
-  ghl: { pushed: boolean; taskId: string | null; error: string | null; ownAgency: boolean };
 }
 
 const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
@@ -101,63 +100,12 @@ export const assignProvenTaskToClient = createServerFn({ method: "POST" })
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(created.id)}`;
 
-    const ghl: AssignProvenResult["ghl"] = {
-      pushed: false,
-      taskId: null,
-      error: null,
-      ownAgency: false,
-    };
-    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
-    const creds = await resolveGhlCredentials(supabaseAdmin, client.id);
-    if (creds) {
-      ghl.ownAgency = creds.ownAgency;
-      try {
-        const res = await pushBriefToGhl(
-          supabaseAdmin,
-          creds.apiKey,
-          {
-            title: proven.title,
-            description: proven.description ?? null,
-            subtasks: (proven.subtasks as string[] | null) ?? [],
-            deliverables: (proven.deliverables as string[] | null) ?? [],
-            qcChecklist: (proven.qc_checklist as string[] | null) ?? [],
-            dueDate: data.dueDate,
-            estimatedHours: proven.estimated_hours ?? null,
-            subAccount: data.subAccount,
-            clientName: client.name,
-            clientEmail: client.email ?? null,
-            appLink: link,
-          },
-          creds.locationId,
-        );
-        ghl.pushed = true;
-        ghl.taskId = res.taskId;
-        await supabaseAdmin
-          .from("tasks")
-          .update({
-            ghl_task_id: res.taskId,
-            ghl_contact_id: res.contactId,
-            ghl_location_id: res.locationId,
-            ghl_synced_at: new Date().toISOString(),
-            ghl_sync_error: null,
-          })
-          .eq("id", created.id);
-      } catch (err) {
-        ghl.error = err instanceof Error ? err.message : "GoHighLevel push failed";
-        await supabaseAdmin.from("tasks").update({ ghl_sync_error: ghl.error }).eq("id", created.id);
-      }
-    } else {
-      ghl.error = "GoHighLevel isn't connected, so the task lives in the portal only.";
-    }
-
     await supabaseAdmin.from("task_activity").insert({
       task_id: created.id,
       actor_id: context.userId,
       kind: "system",
-      detail: ghl.pushed
-        ? `Sent from the proven tasks library to ${client.name} and synced to GoHighLevel`
-        : `Sent from the proven tasks library to ${client.name}`,
+      detail: `Sent from the proven tasks library to ${client.name}`,
     });
 
-    return { ok: true, taskId: created.id as string, ghl };
+    return { ok: true, taskId: created.id as string };
   });

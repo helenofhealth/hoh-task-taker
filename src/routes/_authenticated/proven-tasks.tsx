@@ -123,17 +123,7 @@ function ProvenTasksPage() {
     },
     onSuccess: (res) => {
       void qc.invalidateQueries({ queryKey: ["tasks"] });
-      if (res.ghl.pushed) {
-        toast.success(
-          res.ghl.ownAgency
-            ? "Task added to the client's portal and their own GoHighLevel agency"
-            : "Task added to the client's portal and synced to GoHighLevel",
-        );
-      } else {
-        toast.success("Task added to the client's portal", {
-          description: res.ghl.error ?? undefined,
-        });
-      }
+      toast.success("Task added to the client's portal");
       const taskId = res.taskId;
       setSendTask(null);
       setSendClientId("");

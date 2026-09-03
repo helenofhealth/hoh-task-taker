@@ -255,7 +255,10 @@ function SettingsPage() {
             </div>
           )}
         </div>
+
+        <ConnectedAccounts />
       </div>
+
     </AppShell>
   );
 }

@@ -341,6 +341,11 @@ function ProvenTasksPage() {
               {t.category}
               {t.status === "draft" && " · suggestion"}
             </p>
+            <span className="mt-1.5 w-fit rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              {t.client_id
+                ? `${clientName.get(t.client_id) ?? "Client"} only`
+                : "Shared library"}
+            </span>
             {t.description && (
               <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{t.description}</p>
             )}

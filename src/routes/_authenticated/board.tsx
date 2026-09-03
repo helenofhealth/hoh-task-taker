@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useMe } from "@/hooks/useAuth";
 import {
   STATUSES,
@@ -89,6 +90,7 @@ export const Route = createFileRoute("/_authenticated/board")({
 
 function BoardPage() {
   const qc = useQueryClient();
+  useRealtimeTasks();
   const me = useMe();
   const navigate = useNavigate({ from: Route.path });
   const search = Route.useSearch();

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMe } from "@/hooks/useAuth";
+import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import {
   STATUSES,
   computeBalance,
@@ -56,6 +57,7 @@ export const Route = createFileRoute("/_authenticated/portal")({
 
 function PortalPage() {
   const me = useMe();
+  useRealtimeTasks();
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
   const entries = useQuery({ queryKey: ["time-entries"], queryFn: fetchTimeEntries });
@@ -275,8 +277,8 @@ function PortalPage() {
       )}
 
       <TaskDialog
-        task={openTask ? myTasks.find((t) => t.id === openTask.id) ?? openTask : null}
-        open={!!openTask}
+        task={openTask ? myTasks.find((t) => t.id === openTask.id) ?? null : null}
+        open={!!openTask && myTasks.some((t) => t.id === openTask.id)}
         onClose={() => setOpenTask(null)}
         profiles={profiles.data ?? []}
         clients={clientList}

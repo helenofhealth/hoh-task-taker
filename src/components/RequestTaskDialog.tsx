@@ -270,6 +270,7 @@ export function RequestTaskDialog({
       return result;
     },
     onSuccess: (result) => {
+      setApproved(false);
       setBrief(result);
       if (!title.trim()) setTitle(result.title);
       setStep("review");

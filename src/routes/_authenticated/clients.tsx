@@ -962,11 +962,19 @@ function ArchivedClients() {
                   >
                     <RotateCcw className="mr-1.5 size-3.5" /> Restore
                   </Button>
-                  {me.isAdmin && (
-                    <Button variant="destructive" size="sm" onClick={() => setPurgeTarget(c)}>
-                      <Trash2 className="mr-1.5 size-3.5" /> Delete permanently
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (!me.isAdmin) {
+                        toast.error("Not authorized — only admins can permanently delete a client");
+                        return;
+                      }
+                      setPurgeTarget(c);
+                    }}
+                  >
+                    <Trash2 className="mr-1.5 size-3.5" /> Delete permanently
+                  </Button>
                 </div>
               </td>
             </tr>

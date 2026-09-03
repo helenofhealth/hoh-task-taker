@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Mail, MailOpen, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { CreditTimeline } from "@/components/CreditTimeline";
 import {
   Dialog,
@@ -207,6 +207,7 @@ function StaffClientsPage() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["clients"] }),
         qc.invalidateQueries({ queryKey: ["credits"] }),
+        qc.invalidateQueries({ queryKey: ["client_invites"] }),
       ]);
       if (result.invited === true) toast.success("Client onboarded — invitation email sent");
       else if (result.invited === false) toast.success("Client onboarded — existing account linked");
@@ -226,7 +227,10 @@ function StaffClientsPage() {
         },
       });
     },
-    onSuccess: () => toast.success("Activation email sent"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client_invites"] });
+      toast.success("Activation email sent — you'll see here once it's opened");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 

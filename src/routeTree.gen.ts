@@ -25,6 +25,7 @@ import { Route as AuthenticatedProvenTasksRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTimeReportRouteImport } from './routes/_authenticated/time-report'
+import { Route as AuthenticatedUsageReportRouteImport } from './routes/_authenticated/usage-report'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicDigestRouteImport } from './routes/api/public/digest'
@@ -114,6 +115,12 @@ const AuthenticatedTimeReportRoute = AuthenticatedTimeReportRouteImport.update({
   path: '/time-report',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsageReportRoute =
+  AuthenticatedUsageReportRouteImport.update({
+    id: '/usage-report',
+    path: '/usage-report',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
+  '/usage-report': typeof AuthenticatedUsageReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
+  '/usage-report': typeof AuthenticatedUsageReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
@@ -203,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/time-report': typeof AuthenticatedTimeReportRoute
+  '/_authenticated/usage-report': typeof AuthenticatedUsageReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/digest': typeof ApiPublicDigestRoute
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/time-report'
+    | '/usage-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/time-report'
+    | '/usage-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
@@ -272,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/time-report'
+    | '/_authenticated/usage-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/digest'
@@ -409,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTimeReportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/usage-report': {
+      id: '/_authenticated/usage-report'
+      path: '/usage-report'
+      fullPath: '/usage-report'
+      preLoaderRoute: typeof AuthenticatedUsageReportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -456,6 +476,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTimeReportRoute: typeof AuthenticatedTimeReportRoute
+  AuthenticatedUsageReportRoute: typeof AuthenticatedUsageReportRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -467,6 +488,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTimeReportRoute: AuthenticatedTimeReportRoute,
+  AuthenticatedUsageReportRoute: AuthenticatedUsageReportRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -742,9 +742,56 @@ export function RequestTaskDialog({
                 onChange={(e) => setBrief({ ...brief, description: e.target.value })}
               />
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <ListChecks className="size-4 text-primary" /> Subtasks ({brief.subtasks.length})
+                </Label>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setEditingList(editingList === "subtasks" ? null : "subtasks")}
+                >
+                  {editingList === "subtasks" ? "Done editing" : "Edit subtasks"}
+                </button>
+              </div>
+              {editingList === "subtasks" ? (
+                <Textarea
+                  rows={Math.min(12, Math.max(4, brief.subtasks.length + 1))}
+                  value={brief.subtasks.join("\n")}
+                  onChange={(e) =>
+                    setBrief({
+                      ...brief,
+                      subtasks: e.target.value
+                        .split("\n")
+                        .map((l) => l.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+              ) : (
+                <ul className="space-y-1.5">
+                  {brief.subtasks.map((s, i) => (
+                    <li
+                      key={`${s}-${i}`}
+                      className="flex items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
+                    >
+                      <Checkbox checked disabled className="mt-0.5" aria-hidden />
+                      <span className="text-sm leading-relaxed">{s}</span>
+                    </li>
+                  ))}
+                  {brief.subtasks.length === 0 && (
+                    <li className="text-sm text-muted-foreground">No subtasks yet.</li>
+                  )}
+                </ul>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Each subtask becomes its own checkbox inside the task for the team to tick off.
+              </p>
+            </div>
+
             {(
               [
-                ["Subtasks", "subtasks"],
                 ["Deliverables", "deliverables"],
                 ["QC checklist", "qc_checklist"],
               ] as const

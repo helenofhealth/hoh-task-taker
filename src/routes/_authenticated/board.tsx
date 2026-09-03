@@ -45,9 +45,12 @@ import {
   fetchTasks,
   fetchTimeEntries,
   formatHours,
+  restoreTasks,
+  softDeleteTasks,
   type Task,
   type TaskStatus,
 } from "@/lib/tracker";
+
 
 const searchSchema = z.object({
   task: z.string().optional(),

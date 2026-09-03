@@ -311,7 +311,7 @@ function BoardPage() {
                 ))}
                 {items.length === 0 && (
                   <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-                    Drop a task here
+                    {me.isStaff ? "Drop a task here" : "No tasks"}
                   </p>
                 )}
               </div>

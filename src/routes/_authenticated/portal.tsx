@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, Clock } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { CalendarClock, Clock, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { CreditTimeline } from "@/components/CreditTimeline";
 import { RequestTaskDialog } from "@/components/RequestTaskDialog";
 import { TaskDialog } from "@/components/TaskDialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { claimMyClientAccount } from "@/lib/self-link.functions";
 import {
   Select,
   SelectContent,
@@ -69,6 +73,27 @@ function PortalPage() {
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
+  const queryClient = useQueryClient();
+  const claimAccount = useServerFn(claimMyClientAccount);
+  const [claiming, setClaiming] = useState(false);
+
+  async function claim() {
+    setClaiming(true);
+    try {
+      const result = await claimAccount({});
+      if (!result.ok) {
+        toast.error(result.message ?? "We could not connect your account");
+        return;
+      }
+      toast.success(`Connected to ${result.clientName}`);
+      await queryClient.invalidateQueries();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We could not connect your account");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
   const myTasks = useMemo(
     () => (tasks.data ?? []).filter((t) => t.client_id && t.client_id === clientId),
     [tasks.data, clientId],
@@ -124,10 +149,19 @@ function PortalPage() {
       </div>
 
       {!client ? (
-        <p className="mt-8 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-soft">
-          Your account is not linked to a client yet. Please contact the Helen of Health team and
-          they will connect your login to your account.
-        </p>
+        <div className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <p className="text-sm text-muted-foreground">
+            Your login is not connected to a client workspace yet. If you were onboarded with this
+            email address, you can connect it yourself right now.
+          </p>
+          <Button onClick={claim} disabled={claiming}>
+            {claiming && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Connect my account
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No match found? Contact the Helen of Health team and they will connect it for you.
+          </p>
+        </div>
       ) : (
         <>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

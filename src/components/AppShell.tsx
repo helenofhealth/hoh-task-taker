@@ -21,12 +21,7 @@ const nav = [
   { to: "/credit-history", label: "Credit history", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
-{nav
-  .filter((item) => {
-    if (item.clientOnly && !me.profile?.client_id) return false;
-    if (item.staffOnly && !me.isStaff) return false;
-    return true;
-  })
+
 export function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   const navigate = useNavigate();
   const me = useMe();

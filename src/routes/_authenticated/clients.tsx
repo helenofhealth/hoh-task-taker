@@ -391,8 +391,20 @@ function StaffClientsPage() {
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {me.isAdmin && (
+                     <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTimelineFor(open ? null : c.id)}
+                      >
+                        {open ? (
+                          <ChevronDown className="mr-1.5 size-3.5" />
+                        ) : (
+                          <ChevronRight className="mr-1.5 size-3.5" />
+                        )}
+                        Hours timeline
+                      </Button>
+                       {me.isAdmin && (
                         <Button variant="outline" size="sm" onClick={() => setEditing(c)}>
                           <Pencil className="mr-1.5 size-3.5" /> Edit
                         </Button>

@@ -176,7 +176,7 @@ function UsageReportPage() {
     downloadTextFile(`client-usage-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
-  if (!me.loading && !me.isStaff) {
+  if (!me.isStaff) {
     return (
       <AppShell>
         <p className="mt-8 text-sm text-muted-foreground">

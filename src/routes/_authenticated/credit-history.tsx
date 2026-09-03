@@ -57,9 +57,9 @@ function actionLabel(action: HourCreditAuditRow["action"]) {
 }
 
 function actionClass(action: HourCreditAuditRow["action"]) {
-  if (action === "added") return "bg-status-complete/15 text-status-complete";
+  if (action === "added") return "bg-status-completed/15 text-status-completed";
   if (action === "edited") return "bg-status-progress/15 text-status-progress";
-  return "bg-status-urgent/15 text-status-urgent";
+  return "bg-status-hold/15 text-status-hold";
 }
 
 function kindLabel(kind: string | null) {

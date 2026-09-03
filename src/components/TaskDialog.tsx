@@ -776,6 +776,54 @@ export function TaskDialog({
               </span>
             </div>
           )}
+          {balance && (
+            <div className="rounded-lg bg-card px-3 py-2 text-xs">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-muted-foreground">
+                  {running ? "Balance after stopping" : "Hours left"}
+                </span>
+                <span
+                  className={`font-semibold ${liveRemaining <= 0 ? "text-warning" : "text-primary"}`}
+                >
+                  {formatHours(Math.max(0, liveRemaining))}
+                </span>
+                {running && (
+                  <span className="text-muted-foreground">
+                    of {formatHours(balance.remaining)} now
+                  </span>
+                )}
+              </div>
+              {bucketPreview.length > 0 ? (
+                <ul className="mt-1.5 space-y-1">
+                  {bucketPreview.map((b, i) => (
+                    <li key={`${b.expiry}-${i}`} className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-medium">
+                        {b.retainer ? "Retainer" : "Hour package"}
+                      </span>
+                      {b.free && (
+                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                          Free
+                        </Badge>
+                      )}
+                      <span className="text-muted-foreground">
+                        {formatHours(b.left)} left · expires {expiryLabel(daysUntil(b.expiry))} (
+                        {b.expiry})
+                      </span>
+                      {b.take > 0.0001 && (
+                        <span className="font-medium text-primary">
+                          −{formatHours(b.take)} this session
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-muted-foreground">
+                  No unexpired credits — this time will be logged as an overrun.
+                </p>
+              )}
+            </div>
+          )}
           {wouldExceed && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs">
               <AlertTriangle className="size-3.5 text-warning" />

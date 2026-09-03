@@ -54,11 +54,11 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
 
     // Push a real task into GoHighLevel when the integration is connected.
     const ghl: ApprovalResult["ghl"] = { pushed: false, taskId: null, error: null };
-    const apiKey = process.env["GHL_API_KEY"];
-    if (apiKey) {
+    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
+    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
+    if (creds) {
       try {
-        const { pushBriefToGhl } = await import("./ghl-push.server");
-        const res = await pushBriefToGhl(supabaseAdmin, apiKey, {
+        const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
           title: task.title,
           description: task.description ?? null,
           subtasks: (task.subtasks as string[] | null) ?? [],

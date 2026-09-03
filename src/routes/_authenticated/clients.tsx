@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CreditTimeline } from "@/components/CreditTimeline";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +96,7 @@ function StaffClientsPage() {
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
   const [creditBillable, setCreditBillable] = useState("billable");
+  const [timelineFor, setTimelineFor] = useState<string | null>(null);
 
   const addClient = useMutation({
     mutationFn: async () => {
@@ -315,8 +317,10 @@ function StaffClientsPage() {
           <tbody>
             {clientList.map((c) => {
               const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
+              const open = timelineFor === c.id;
               return (
-                <tr key={c.id} className="border-t border-border">
+                <Fragment key={c.id}>
+                <tr className="border-t border-border">
                   <td className="px-4 py-2.5 font-medium">
                     {c.name}
                     {c.business_name && (
@@ -387,8 +391,20 @@ function StaffClientsPage() {
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {me.isAdmin && (
+                     <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTimelineFor(open ? null : c.id)}
+                      >
+                        {open ? (
+                          <ChevronDown className="mr-1.5 size-3.5" />
+                        ) : (
+                          <ChevronRight className="mr-1.5 size-3.5" />
+                        )}
+                        Hours timeline
+                      </Button>
+                       {me.isAdmin && (
                         <Button variant="outline" size="sm" onClick={() => setEditing(c)}>
                           <Pencil className="mr-1.5 size-3.5" /> Edit
                         </Button>
@@ -412,9 +428,21 @@ function StaffClientsPage() {
                         </Button>
                       )}
 
-                    </div>
+                     </div>
                   </td>
                 </tr>
+                {open && (
+                  <tr className="border-t border-border bg-surface-muted/50">
+                    <td colSpan={10} className="px-4 py-4">
+                      <CreditTimeline
+                        clientId={c.id}
+                        credits={credits.data ?? []}
+                        entries={entries.data ?? []}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
             {clientList.length === 0 && (

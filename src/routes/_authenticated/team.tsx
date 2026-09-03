@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { PendingAccounts } from "@/components/PendingAccounts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -248,6 +249,8 @@ function StaffTeamPage() {
           </tbody>
         </table>
       </div>
+
+      {me.isAdmin && <PendingAccounts />}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

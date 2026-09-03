@@ -4,6 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeBalance } from "@/lib/tracker";
 import type { Client, HourCredit, TimeEntry } from "@/lib/tracker";
 
+/** Balance share at or below which alerts fire (20% of purchased hours). */
+const TEAM_ALERT_THRESHOLD = 0.2;
+
 /** Email the client once their usable balance drops to 20% or less. */
 export const checkClientHourAlert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -15,12 +15,14 @@ export const getGhlStatus = createServerFn({ method: "GET" })
     const { data: isStaff } = await context.supabase.rpc("is_staff", {
       _user_id: context.userId,
     });
-    if (!isStaff) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("ghl_sub_accounts")
-      .select("id, ghl_id, name, synced_at")
-      .order("name");
+    // Clients see the connection status only; sub-account names stay staff-only.
+    const { data } = isStaff
+      ? await supabaseAdmin
+          .from("ghl_sub_accounts")
+          .select("id, ghl_id, name, synced_at")
+          .order("name")
+      : { data: [] as any[] };
     const rows = data ?? [];
     return {
       connected: !!process.env["GHL_API_KEY"],

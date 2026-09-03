@@ -304,6 +304,20 @@ function ProvenTasksPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={agency} onValueChange={setAgency}>
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All agencies</SelectItem>
+            <SelectItem value={SHARED}>Shared library</SelectItem>
+            {(clients.data ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button variant="ghost" size="sm" onClick={() => setShowArchived((s) => !s)}>
           {showArchived ? "Show active" : "Show archived"}
         </Button>

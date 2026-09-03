@@ -134,6 +134,7 @@ export function RequestTaskDialog({
     const q = pickerSearch.trim().toLowerCase();
     return (library.data ?? [])
       .filter((t) => t.status === "active")
+      .filter((t) => t.client_id === null || t.client_id === client.id)
       .filter((t) => pickerCategory === "all" || t.category === pickerCategory)
       .filter(
         (t) =>
@@ -141,7 +142,7 @@ export function RequestTaskDialog({
           t.title.toLowerCase().includes(q) ||
           (t.description ?? "").toLowerCase().includes(q),
       );
-  }, [library.data, pickerSearch, pickerCategory]);
+  }, [library.data, pickerSearch, pickerCategory, client.id]);
 
   function resetAll() {
     setPath("pick");
@@ -186,6 +187,7 @@ export function RequestTaskDialog({
         status: "draft",
         is_system: false,
         created_by: userId,
+        client_id: client.id,
       });
       if (error) throw error;
     },

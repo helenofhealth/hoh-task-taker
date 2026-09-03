@@ -666,6 +666,12 @@ export function computeBalance(
     monthRetainer: Number(client?.retainer_hours ?? 0),
 
     monthUsed,
+    remainingBuckets: live.map((b) => ({
+      expiry: b.expiry,
+      hours: b.left,
+      free: b.free,
+      retainer: b.retainer,
+    })),
   };
 }
 

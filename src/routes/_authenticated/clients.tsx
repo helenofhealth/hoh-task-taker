@@ -428,9 +428,21 @@ function StaffClientsPage() {
                         </Button>
                       )}
 
-                    </div>
+                     </div>
                   </td>
                 </tr>
+                {open && (
+                  <tr className="border-t border-border bg-surface-muted/50">
+                    <td colSpan={10} className="px-4 py-4">
+                      <CreditTimeline
+                        clientId={c.id}
+                        credits={credits.data ?? []}
+                        entries={entries.data ?? []}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
             {clientList.length === 0 && (

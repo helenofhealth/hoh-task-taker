@@ -1,62 +1,69 @@
-# Client task requests + Proven Tasks library
+# Client task requests + GHL Proven Tasks library + AI brief builder
 
-Clients stop "adding" tasks and instead **submit a request** that lands in the Requested column, through a guided intake flow modelled on the Level9 Task Intelligence screen — including a **Proven Tasks** library to start from.
+Clients **submit a request** (they never "add" a task). Requests land in the **Requested** column, built through a guided intake modelled on the Level9 Task Intelligence screen.
 
 ## About the 154 proven tasks
 
-I can read the Level9 page's structure, but not their task list: the 154 proven tasks live in their private database behind login (a task-template library table), so the content is not publicly readable. So I rebuild the feature and seed our own library.
+I can read the Level9 page structure, but not their list: their 154 proven tasks live in a private database behind login, so the content isn't publicly readable. I'll build the same feature and seed our own library from GoHighLevel capabilities.
 
-## Library scope: GoHighLevel capabilities
+## Proven Tasks library — full GHL coverage
 
-The seeded proven tasks map to what GHL can actually do, grouped by category:
+Categories seeded, each task with description, subtasks, deliverables, QC checklist and an **estimated hours** figure based on a mid-experienced GHL expert:
 
-- Sub-account setup: snapshot load, domains, business profile, phone/A2P registration, email sending domain
-- Funnels & websites: funnel build, landing page, order form/upsell, blog, tracking code
-- Workflows & automations: lead nurture, appointment reminders, missed-call text-back, review request, abandoned-cart, internal notifications
-- CRM & pipelines: pipeline/stage setup, custom fields, tags, smart lists, bulk imports, opportunity hygiene
-- Calendars & booking: calendar setup, round-robin teams, availability, confirmation/reminder sequences
-- Forms, surveys & quizzes: intake forms, conditional logic, embeds
-- Email & SMS marketing: campaign build, template design, list segmentation, scheduled sends
-- Conversations & AI: chat widget, SMS/WhatsApp setup, AI employee/bot prompts, snippets
-- Reputation & listings: review requests, review replies, Google profile connection
-- Memberships & courses: course build, offers, drip content
-- Payments & invoicing: products, invoices, subscriptions, payment link setup
-- Reporting: dashboards, attribution, campaign reports, monthly client report
+- Sub-accounts & snapshots: create sub-account, build snapshot, load/refresh snapshot, snapshot audit, agency-wide rollout, white-label setup
+- Domains & sending: domain connect, email sending domain/DKIM, dedicated sending, A2P 10DLC & LC Phone registration
+- Funnels & websites: funnel build, landing page, order form/upsell/downsell, blogs, tracking scripts, store/product pages
+- Workflows & automations: lead nurture, appointment reminders, missed-call text-back, review requests, abandoned cart, internal notifications, webhooks & custom actions, Zapier/Make bridges
+- CRM & pipelines: pipelines/stages, custom fields & objects, tags, smart lists, imports, opportunity hygiene, duplicate cleanup
+- Calendars & booking: calendar setup, round-robin/team, availability & buffers, confirmation & reminder sequences
+- Forms, surveys & quizzes: intake forms, conditional logic, embeds, scoring
+- Email & SMS marketing: campaign builds, template design, segmentation, scheduled sends, deliverability checks
+- Conversations & AI: chat widget, SMS/WhatsApp/FB/IG channels, AI employee/voice AI prompts, snippets, trigger links
+- Reputation & listings: review requests, replies, Google Business Profile connection, listings
+- Memberships & courses: course build, offers, drip content, certificates
+- Payments & invoicing: products, invoices, subscriptions, payment links, Stripe connection
+- Reporting & dashboards: dashboards, attribution, campaign & agent reporting, monthly client report
+- Users & permissions: user roles, teams, sub-account access, SaaS mode configuration
 
-Each seeded task carries category, description, subtasks, deliverables, QC checklist and estimated hours, so a request submitted from it arrives as a complete brief.
-
-## What I need from you
-
-Nothing blocking — I can build the GHL library from standard GHL capabilities. It would sharpen it if you share: which GHL plan/features you actually use (e.g. AI employee, memberships, invoicing), your typical deliverable/QC standards, and whether you want live GHL integration later (that would need a GHL API key / OAuth app; not part of this build).
+Staff can add, edit, archive and re-estimate tasks in-app, so the library grows past the starter set.
 
 ## Client request flow
 
-- The board's "New task" button becomes **"Request a task"** for clients. Staff keep full task creation.
-- Two starting points, like Level9:
-  1. **Start from a Proven Task** — searchable, category-filtered list with usage ranking ("most used first") and a "View all N" expander.
-  2. **Describe it yourself** — a blank guided brief.
-- Guided intake (no status, owner, priority internals, or time fields):
-  - What do you need? (title)
-  - Details / what does done look like?
-  - Project (pre-filled from the client's default project)
-  - Urgency in plain language (Low / Normal / High / Urgent)
-  - Needed by (optional date)
-  - Attachments and reference links (optional, existing 20MB limit)
-  - When started from a Proven Task: its required intake questions, subtasks, deliverables and QC checklist are pre-filled into the description brief.
-- Live summary panel previewing the exact card staff will see, plus soft readiness hints (vague title, no detail, past due date) — nudges, never blockers.
-- Draft autosave in local storage so a half-written request survives a refresh.
-- On submit: task created with status **Requested**, the client's own client_id, priority from urgency, and a "Client request" tag on the card. Confirmation screen with a link to the task and "Submit another".
-- Clients also get **Suggest a proven task**, which files a draft template for staff review instead of creating a task.
+Two starting points, both with attachments, sub-account field and urgency:
 
-## Staff side
+1. **Start from a Proven Task** — searchable, category-filtered, most-used-first, "View all N". Selecting one pre-fills brief, subtasks, deliverables, QC and estimated hours.
+2. **Describe it yourself (AI)** — the client writes what they need and can upload any file format. Lovable AI reads the description **and the file contents** and produces: a detailed description of what's needed, subtasks, deliverables, QC checklist, suggested category, and matching proven task if one exists. File content is summarised into the description and the relevant subtasks so the team never has to open the file to know what to do.
 
-- Existing new-task notifications/emails fire as usual; the activity timeline records that it came from a client request.
-- Admin view on the Clients/Team area to manage the library: create, edit, archive proven tasks, set category, subtasks, deliverables, QC checklist, estimated hours, and approve client suggestions.
+Guided intake fields (all included):
+- What do you need (title)
+- Details / what does done look like
+- **Sub-account name** (which GHL sub-account the work is for) — free text now, picked from synced sub-accounts once GHL is connected
+- Project (pre-filled from the client's default project)
+- Urgency: Low / Normal / High / Urgent — on both paths
+- Desired completion date — **minimum 3 business days (Mon-Fri) ahead**; earlier dates are rejected with the earliest allowed date shown
+- Attachments (any format) and reference links
+- Live readiness hints and draft autosave
+
+**Approval step:** before submitting, the client sees the full generated task — description, subtasks, deliverables, QC, sub-account, urgency, desired date, files — and must confirm "This is correct". They can edit any field or regenerate before approving.
+
+On submit: task created as **Requested** for their own client, priority from urgency, due date from desired completion, subtasks/deliverables/QC written into the task brief, files attached, and a "Client request" tag on the card. Confirmation screen with a link to the task and "Submit another".
+
+## Notifications
+
+- On submission, **all admins get an email** with client name, sub-account, urgency, desired date, a short brief and a direct link to the task, plus the usual in-app notification.
+- Clients also get "Suggest a proven task", which files a draft template for staff review.
+
+## Live GHL integration (ready for later)
+
+- Settings page to store an agency-level GHL API key / OAuth connection as a secret.
+- Sync of sub-accounts (locations) so the sub-account field becomes a dropdown, with manual entry as fallback.
+- Nothing else calls GHL yet — the connection is scaffolded so we can push tasks or read data when you want it.
 
 ## Technical notes
 
-- New tables: `task_categories`, `proven_tasks` (title, description, category, subtasks, deliverables, QC checklist, default instructions, estimated hours, status draft/active, is_system), with GRANTs and RLS: staff read/write, clients read active rows and insert draft suggestions only.
-- Seed migration inserts the starter library rows literally.
-- `tasks` gains `proven_task_id` (nullable) and `source` ('staff' | 'client_request') for tagging and usage ranking.
-- New `src/components/RequestTaskDialog.tsx` (stepped flow) rendered in `board.tsx` for `!me.isStaff`; `NewTaskDialog` stays for staff and gains an optional "Start from a proven task" picker.
-- Attachments reuse the `task-files` bucket and existing `task_attachments` policies; RLS already blocks clients from status changes and deletes.
+- New tables: `proven_tasks` (title, description, category, subtasks, deliverables, qc_checklist, estimated_hours, status, is_system), `task_categories`, plus seed rows in the migration. Staff read/write; clients read active rows and may insert draft suggestions.
+- `tasks` gains `proven_task_id`, `sub_account`, `source` ('staff' | 'client_request'), `subtasks`/`deliverables`/`qc_checklist` JSON, and `requested_completion_date`.
+- AI brief builder: `createServerFn` calling Lovable AI (`openai/gpt-5.6-sol`) with structured output; file text extracted server-side (PDF/text natively, other formats passed as file input or text-extracted) and included in the prompt.
+- New `src/components/RequestTaskDialog.tsx` (stepped flow + approval screen); `board.tsx` renders it for clients, `NewTaskDialog` stays for staff and gains the proven-task picker.
+- Admin email uses the existing Resend/notification path with a task deep link; attachments use the existing `task-files` bucket.
+- Existing RLS already blocks clients from status changes and deletes.

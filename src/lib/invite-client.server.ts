@@ -275,7 +275,7 @@ export async function sendLowHoursEmail(
      </div>
      <p>Hour blocks are valid for 3 months from purchase, and monthly retainer hours do not roll over to the next month.</p>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your time report</a>
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your hours timeline</a>
      </p>
      <p style="color: #666; font-size: 13px;">Reply to your account manager if you would like to top up.</p>`,
   );

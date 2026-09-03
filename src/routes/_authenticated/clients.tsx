@@ -432,6 +432,13 @@ function StaffClientsPage() {
                     {c.business_name && (
                       <span className="block text-xs font-normal text-muted-foreground">{c.business_name}</span>
                     )}
+                    {(c.default_project || c.hourly_rate != null) && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {c.default_project}
+                        {c.default_project && c.hourly_rate != null ? " · " : ""}
+                        {c.hourly_rate != null ? `${Number(c.hourly_rate)}/h` : ""}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-muted-foreground">
                     {c.email && <span className="block">{c.email}</span>}

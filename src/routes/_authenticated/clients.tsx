@@ -578,6 +578,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [retainer, setRetainer] = useState("");
+  const [editRate, setEditRate] = useState("");
+  const [editProject, setEditProject] = useState("");
 
   useEffect(() => {
     if (!client) return;
@@ -586,6 +588,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
     setEmail(client.email ?? "");
     setPhone(client.phone ?? "");
     setRetainer(String(Number(client.retainer_hours ?? 0)));
+    setEditRate(client.hourly_rate === null || client.hourly_rate === undefined ? "" : String(Number(client.hourly_rate)));
+    setEditProject(client.default_project ?? "");
   }, [client]);
 
   const save = useMutation({
@@ -599,6 +603,11 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
       const raw = retainer.trim();
       const hours = raw === "" ? 0 : Number(raw);
       if (!Number.isFinite(hours) || hours < 0) throw new Error("Retainer must be 0 or more");
+      const rawRate = editRate.trim();
+      const hourlyRate = rawRate === "" ? null : Number(rawRate);
+      if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
+        throw new Error("Hourly rate must be 0 or more");
+      }
       const { error } = await db
         .from("clients")
         .update({
@@ -607,6 +616,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
           email: contactEmail,
           phone: phone.trim() || null,
           retainer_hours: hours,
+          hourly_rate: hourlyRate,
+          default_project: editProject.trim() || null,
         })
         .eq("id", client.id);
       if (error) throw error;
@@ -677,6 +688,28 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
               step="0.5"
               value={retainer}
               onChange={(e) => setRetainer(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e-rate">Hourly rate — optional</Label>
+            <Input
+              id="e-rate"
+              type="number"
+              min="0"
+              step="1"
+              value={editRate}
+              placeholder="Optional"
+              onChange={(e) => setEditRate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="e-project">Project — optional</Label>
+            <Input
+              id="e-project"
+              value={editProject}
+              maxLength={120}
+              placeholder="Optional"
+              onChange={(e) => setEditProject(e.target.value)}
             />
           </div>
         </div>

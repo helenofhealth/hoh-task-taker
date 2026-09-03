@@ -317,8 +317,10 @@ function StaffClientsPage() {
           <tbody>
             {clientList.map((c) => {
               const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
+              const open = timelineFor === c.id;
               return (
-                <tr key={c.id} className="border-t border-border">
+                <Fragment key={c.id}>
+                <tr className="border-t border-border">
                   <td className="px-4 py-2.5 font-medium">
                     {c.name}
                     {c.business_name && (

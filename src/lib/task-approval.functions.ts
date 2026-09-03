@@ -13,7 +13,6 @@ export interface ApprovalResult {
   ok: true;
   approvalStatus: "approved" | "rejected";
   emailed: boolean;
-  ghl: { pushed: boolean; taskId: string | null; error: string | null };
 }
 
 function validate(input: ApprovalInput) {
@@ -33,7 +32,7 @@ async function requireAdmin(context: any) {
 const TASK_SELECT =
   "id, title, description, subtasks, deliverables, qc_checklist, estimated_hours, due_date, requested_completion_date, sub_account, client_id, approval_status, clients(name, email)";
 
-/** Approves a requested task, pushes it to GoHighLevel and confirms to the client. */
+/** Approves a requested task and confirms it to the client. */
 export const approveTaskRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(validate)
@@ -52,46 +51,6 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
 
-    // Push a real task into GoHighLevel when the integration is connected.
-    const ghl: ApprovalResult["ghl"] = { pushed: false, taskId: null, error: null };
-    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
-    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
-    if (creds) {
-      try {
-        const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
-          title: task.title,
-          description: task.description ?? null,
-          subtasks: (task.subtasks as string[] | null) ?? [],
-          deliverables: (task.deliverables as string[] | null) ?? [],
-          qcChecklist: (task.qc_checklist as string[] | null) ?? [],
-          dueDate: task.due_date ?? task.requested_completion_date ?? null,
-          estimatedHours: task.estimated_hours ?? null,
-          subAccount: task.sub_account ?? null,
-          clientName: client?.name ?? "Client",
-          clientEmail: client?.email ?? null,
-          appLink: link,
-        }, creds.locationId);
-        ghl.pushed = true;
-        ghl.taskId = res.taskId;
-        await supabaseAdmin
-          .from("tasks")
-          .update({
-            ghl_task_id: res.taskId,
-            ghl_contact_id: res.contactId,
-            ghl_location_id: res.locationId,
-            ghl_synced_at: new Date().toISOString(),
-            ghl_sync_error: null,
-          })
-          .eq("id", task.id);
-      } catch (err) {
-        ghl.error = err instanceof Error ? err.message : "GoHighLevel push failed";
-        await supabaseAdmin
-          .from("tasks")
-          .update({ ghl_sync_error: ghl.error })
-          .eq("id", task.id);
-      }
-    }
-
     await supabaseAdmin
       .from("tasks")
       .update({
@@ -106,9 +65,7 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
       task_id: task.id,
       actor_id: context.userId,
       kind: "status",
-      detail: ghl.pushed
-        ? "Request approved and pushed to GoHighLevel"
-        : "Request approved",
+      detail: "Request approved",
     });
 
     let emailed = false;
@@ -129,7 +86,7 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
       }
     }
 
-    return { ok: true, approvalStatus: "approved", emailed, ghl };
+    return { ok: true, approvalStatus: "approved", emailed };
   });
 
 /** Rejects a requested task with a reason and tells the client what to change. */
@@ -191,66 +148,6 @@ export const rejectTaskRequest = createServerFn({ method: "POST" })
       }
     }
 
-    return {
-      ok: true,
-      approvalStatus: "rejected",
-      emailed,
-      ghl: { pushed: false, taskId: null, error: null },
-    };
+    return { ok: true, approvalStatus: "rejected", emailed };
   });
 
-/** Retries the GoHighLevel push for an already-approved task. */
-export const pushTaskToGhl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(validate)
-  .handler(async ({ data, context }) => {
-    await requireAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: task, error } = await supabaseAdmin
-      .from("tasks")
-      .select(TASK_SELECT)
-      .eq("id", data.taskId)
-      .single();
-    if (error || !task) throw new Error("Task not found");
-
-    const client = (task.clients as { name: string; email: string | null } | null) ?? null;
-    const base = data.origin.replace(/\/+$/, "");
-    const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
-    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
-    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
-    if (!creds) {
-      throw new Error(
-        "GoHighLevel isn't connected yet — connect an agency in Settings and try again.",
-      );
-    }
-    try {
-      const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
-        title: task.title,
-        description: task.description ?? null,
-        subtasks: (task.subtasks as string[] | null) ?? [],
-        deliverables: (task.deliverables as string[] | null) ?? [],
-        qcChecklist: (task.qc_checklist as string[] | null) ?? [],
-        dueDate: task.due_date ?? task.requested_completion_date ?? null,
-        estimatedHours: task.estimated_hours ?? null,
-        subAccount: task.sub_account ?? null,
-        clientName: client?.name ?? "Client",
-        clientEmail: client?.email ?? null,
-        appLink: link,
-      }, creds.locationId);
-      await supabaseAdmin
-        .from("tasks")
-        .update({
-          ghl_task_id: res.taskId,
-          ghl_contact_id: res.contactId,
-          ghl_location_id: res.locationId,
-          ghl_synced_at: new Date().toISOString(),
-          ghl_sync_error: null,
-        })
-        .eq("id", task.id);
-      return { ok: true as const, taskId: res.taskId };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "GoHighLevel push failed";
-      await supabaseAdmin.from("tasks").update({ ghl_sync_error: message }).eq("id", task.id);
-      throw new Error(message);
-    }
-  });

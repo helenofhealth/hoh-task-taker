@@ -85,8 +85,8 @@ export function GhlSettingsCard() {
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         {me.isStaff
-          ? "Connect your agency account so client requests pick from your real sub-accounts, and every request an admin approves is created as a real GoHighLevel task — brief, sub-tasks, deliverables and QC checklist included — inside that sub-account."
-          : "Your requests are delivered straight into GoHighLevel. Once a request is approved, it becomes a real GoHighLevel task in your sub-account with the brief, sub-tasks, deliverables and QC checklist included."}
+          ? "Connect your agency account so request forms can pick from your real sub-account names. Nothing is written back into GoHighLevel — tasks stay in this portal."
+          : "Connecting your agency only pulls in your sub-account names, so you can pick the right one when you send a request. Nothing is created or changed inside your GoHighLevel account."}
       </p>
 
       <div className="mt-4 space-y-3 text-sm">
@@ -104,22 +104,21 @@ export function GhlSettingsCard() {
             {!effectiveConnected && me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 Add your agency-level GoHighLevel API key as the <code>GHL_API_KEY</code> secret.
-                As soon as it's saved, this card connects, the sync below pulls your real
-                sub-accounts into the request form dropdown, and approved requests are created as
-                real GoHighLevel tasks.
+                As soon as it's saved, the sync below pulls your real sub-account names into the
+                request form dropdown.
               </p>
             )}
             {!effectiveConnected && !me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 Your team is still setting up the GoHighLevel connection. You can keep sending
-                requests — they will sync across once it's connected.
+                requests — you'll be able to pick a sub-account once it's connected.
               </p>
             )}
             {effectiveConnected && !me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 {own?.connected
-                  ? "Approved requests are created inside your own GoHighLevel agency."
-                  : "Approved requests are created automatically in GoHighLevel for you."}
+                  ? "Your own agency's sub-accounts are available in the request form."
+                  : "Sub-account names are available in the request form."}
               </p>
             )}
 
@@ -133,7 +132,7 @@ export function GhlSettingsCard() {
                       {own.connectedAt
                         ? ` on ${new Date(own.connectedAt).toLocaleDateString()}`
                         : ""}
-                      . Your tasks are created inside your own GoHighLevel agency.
+                      . Your sub-account names are pulled from your own agency.
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button
@@ -161,8 +160,8 @@ export function GhlSettingsCard() {
                 ) : (
                   <>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Have your own GoHighLevel agency? Connect it here and your approved requests
-                      are created inside your agency instead of ours.
+                      Have your own GoHighLevel agency? Connect it here to pick from your own
+                      sub-accounts when you send a request. We never write into your account.
                     </p>
                     {!showForm && (
                       <Button

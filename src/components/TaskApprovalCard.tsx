@@ -1,14 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, Clock, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  approveTaskRequest,
-  pushTaskToGhl,
-  rejectTaskRequest,
-} from "@/lib/task-approval.functions";
+import { approveTaskRequest, rejectTaskRequest } from "@/lib/task-approval.functions";
 import type { Task } from "@/lib/tracker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,7 +17,6 @@ export function TaskApprovalCard({ task }: { task: Task }) {
   const qc = useQueryClient();
   const approveFn = useServerFn(approveTaskRequest);
   const rejectFn = useServerFn(rejectTaskRequest);
-  const pushFn = useServerFn(pushTaskToGhl);
   const [reason, setReason] = useState("");
   const [showReject, setShowReject] = useState(false);
 
@@ -33,13 +28,8 @@ export function TaskApprovalCard({ task }: { task: Task }) {
     onSuccess: (r) => {
       refresh();
       toast.success(
-        r.ghl.pushed
-          ? "Approved — task created in GoHighLevel and the client was notified"
-          : r.emailed
-            ? "Approved — the client has been emailed"
-            : "Request approved",
+        r.emailed ? "Approved — the client has been emailed" : "Request approved",
       );
-      if (r.ghl.error) toast.error(`GoHighLevel: ${r.ghl.error}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -52,15 +42,6 @@ export function TaskApprovalCard({ task }: { task: Task }) {
       setShowReject(false);
       setReason("");
       toast.success("Sent back to the client with your notes");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const retry = useMutation({
-    mutationFn: () => pushFn({ data: { taskId: task.id, origin: window.location.origin } }),
-    onSuccess: () => {
-      refresh();
-      toast.success("Task created in GoHighLevel");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -80,15 +61,6 @@ export function TaskApprovalCard({ task }: { task: Task }) {
 
       {status === "rejected" && task.rejection_reason && (
         <p className="text-xs text-muted-foreground">Reason: {task.rejection_reason}</p>
-      )}
-      {status === "approved" && (
-        <p className="text-xs text-muted-foreground">
-          {task.ghl_task_id
-            ? `Created in GoHighLevel${task.ghl_synced_at ? ` on ${new Date(task.ghl_synced_at).toLocaleString()}` : ""}.`
-            : task.ghl_sync_error
-              ? `GoHighLevel push failed: ${task.ghl_sync_error}`
-              : "Not pushed to GoHighLevel."}
-        </p>
       )}
 
       {!me.isAdmin ? (
@@ -136,21 +108,6 @@ export function TaskApprovalCard({ task }: { task: Task }) {
                 Send back to client
               </Button>
             </div>
-          )}
-          {status === "approved" && !task.ghl_task_id && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => retry.mutate()}
-              disabled={retry.isPending}
-            >
-              {retry.isPending ? (
-                <Loader2 className="mr-1.5 size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1.5 size-4" />
-              )}
-              Create in GoHighLevel
-            </Button>
           )}
         </div>
       )}

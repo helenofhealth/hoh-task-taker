@@ -234,6 +234,9 @@ export function NewTaskDialog({
                     return;
                   }
                   setClientId(v);
+                  // Prefill the client's onboarding project so tracked time is grouped from day one.
+                  const preset = clients.find((c) => c.id === v)?.default_project;
+                  if (preset && !project.trim()) setProject(preset);
                 }}
               >
                 <SelectTrigger><SelectValue placeholder="Pick a client" /></SelectTrigger>

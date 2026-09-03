@@ -735,6 +735,46 @@ export function TaskDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {canEdit && (
+          <div className="-mt-2 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleteTaskOpen(true)}
+            >
+              <Trash2 className="mr-1.5 size-4" />
+              Delete task
+            </Button>
+          </div>
+        )}
+
+        <AlertDialog open={deleteTaskOpen} onOpenChange={setDeleteTaskOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently deletes &quot;{task.title}&quot; along with its comments, files,
+                activity and tracked time entries. This can&apos;t be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  removeTask.mutate();
+                }}
+                disabled={removeTask.isPending}
+              >
+                {removeTask.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Delete task
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+
         <div className="space-y-2 rounded-xl bg-primary-soft p-3">
 
           <div className="flex flex-wrap items-center gap-2">

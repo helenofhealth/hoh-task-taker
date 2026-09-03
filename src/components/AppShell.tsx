@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { initials, useMe } from "@/hooks/useAuth";
 
 const nav = [
+  { to: "/portal", label: "My portal" },
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
   { to: "/clients", label: "Clients", staffOnly: true },

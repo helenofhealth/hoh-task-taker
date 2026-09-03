@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Mail, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CreditTimeline } from "@/components/CreditTimeline";
 import {
   Dialog,
   DialogContent,

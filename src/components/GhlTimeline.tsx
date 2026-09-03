@@ -97,7 +97,7 @@ export function GhlTimeline({ task, entries }: { task: Task; entries: TimeEntry[
 
   const snapshots = (task.deliverables ?? []).filter((d) => /snapshot/i.test(d));
 
-  const rows: { icon: React.ReactNode; label: string; value: string; hint?: string }[] = [];
+  const rows: { icon: React.ReactNode; label: string; value: string; hint?: string | undefined }[] = [];
 
   const startValue =
     fmtDate(task.start_date) ??

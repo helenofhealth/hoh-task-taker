@@ -72,8 +72,24 @@ export const inviteClient = createServerFn({ method: "POST" })
     const userId = inviteLink.user?.id;
     if (userId) await linkUserToClient(userId);
     if (userId && inviteLink.properties?.action_link) {
+      const actionLink = inviteLink.properties.action_link;
+      // One tracking row per invitation so staff can see if it was opened.
+      const { data: invite } = await supabaseAdmin
+        .from("client_invites")
+        .insert({ client_id: data.clientId, email: data.email })
+        .select("token")
+        .single();
+
+      const tracking = invite?.token
+        ? {
+            pixelUrl: `${data.origin}/api/public/invite-open?t=${invite.token}`,
+            clickUrl: `${data.origin}/api/public/invite-open?t=${invite.token}&r=${encodeURIComponent(actionLink)}`,
+          }
+        : undefined;
+
       const { sendActivationEmail } = await import("./invite-client.server");
-      await sendActivationEmail(data.email, data.name, inviteLink.properties.action_link);
+      await sendActivationEmail(data.email, data.name, actionLink, tracking);
     }
     return { ok: true as const, invited: true as const, userId };
+
   });

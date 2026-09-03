@@ -118,6 +118,122 @@ export function GhlSettingsCard() {
                 Approved requests are created automatically in GoHighLevel for you.
               </p>
             )}
+
+            {!me.isStaff && (
+              <div className="rounded-xl border border-border bg-primary-soft/50 p-3">
+                <p className="text-sm font-medium">Your own agency</p>
+                {own?.connected ? (
+                  <>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Connected{own.agencyName ? ` — ${own.agencyName}` : ""}
+                      {own.connectedAt
+                        ? ` on ${new Date(own.connectedAt).toLocaleDateString()}`
+                        : ""}
+                      . Your tasks are created inside your own GoHighLevel agency.
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowForm((v) => !v)}
+                      >
+                        <RefreshCw className="mr-1.5 size-4" /> Replace API key
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => removeOwn.mutate()}
+                        disabled={removeOwn.isPending}
+                      >
+                        {removeOwn.isPending ? (
+                          <Loader2 className="mr-1.5 size-4 animate-spin" />
+                        ) : (
+                          <Unplug className="mr-1.5 size-4" />
+                        )}
+                        Disconnect
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Have your own GoHighLevel agency? Connect it here and your approved requests
+                      are created inside your agency instead of ours.
+                    </p>
+                    {!showForm && (
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setShowForm(true)}
+                        disabled={ownStatus.isLoading}
+                      >
+                        <Link2 className="mr-1.5 size-4" /> Connect my agency
+                      </Button>
+                    )}
+                  </>
+                )}
+
+                {showForm && (
+                  <form
+                    className="mt-3 space-y-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      saveOwn.mutate();
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <Label htmlFor="ghl-key" className="text-xs">
+                        Agency API key
+                      </Label>
+                      <Input
+                        id="ghl-key"
+                        type="password"
+                        autoComplete="off"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="Paste your agency-level API key"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ghl-location" className="text-xs">
+                        Default sub-account ID (optional)
+                      </Label>
+                      <Input
+                        id="ghl-location"
+                        value={locationId}
+                        onChange={(e) => setLocationId(e.target.value)}
+                        placeholder="Leave blank to use your first sub-account"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Your key is stored securely on the server and is never shown again. Find it in
+                      GoHighLevel under Settings → Business Profile → API key.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" type="submit" disabled={saveOwn.isPending}>
+                        {saveOwn.isPending ? (
+                          <Loader2 className="mr-1.5 size-4 animate-spin" />
+                        ) : (
+                          <Link2 className="mr-1.5 size-4" />
+                        )}
+                        Save connection
+                      </Button>
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowForm(false);
+                          setApiKey("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
             {data.connected && me.isStaff && (
               <>
                 <div className="flex items-center gap-2">

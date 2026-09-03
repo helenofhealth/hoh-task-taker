@@ -172,6 +172,36 @@ export async function fetchClientAudit(): Promise<ClientAuditRow[]> {
 }
 
 
+export interface HourCreditAuditRow {
+  id: string;
+  credit_id: string;
+  client_id: string;
+  actor_id: string | null;
+  action: "added" | "edited" | "removed";
+  hours: number | null;
+  previous_hours: number | null;
+  kind: string | null;
+  previous_kind: string | null;
+  billable: boolean | null;
+  previous_billable: boolean | null;
+  effective_month: string | null;
+  expires_at: string | null;
+  previous_expires_at: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export async function fetchCreditAudit(): Promise<HourCreditAuditRow[]> {
+  const { data, error } = await db
+    .from("hour_credit_audit")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) throw error;
+  return (data ?? []) as HourCreditAuditRow[];
+}
+
+
 export async function fetchProfiles(): Promise<Profile[]> {
   const { data, error } = await db.from("visible_profiles").select("*").order("full_name");
   if (error) throw error;

@@ -159,6 +159,63 @@ export type Database = {
           },
         ]
       }
+      hour_credit_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          billable: boolean | null
+          client_id: string
+          created_at: string
+          credit_id: string
+          effective_month: string | null
+          expires_at: string | null
+          hours: number | null
+          id: string
+          kind: string | null
+          note: string | null
+          previous_billable: boolean | null
+          previous_expires_at: string | null
+          previous_hours: number | null
+          previous_kind: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          billable?: boolean | null
+          client_id: string
+          created_at?: string
+          credit_id: string
+          effective_month?: string | null
+          expires_at?: string | null
+          hours?: number | null
+          id?: string
+          kind?: string | null
+          note?: string | null
+          previous_billable?: boolean | null
+          previous_expires_at?: string | null
+          previous_hours?: number | null
+          previous_kind?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          billable?: boolean | null
+          client_id?: string
+          created_at?: string
+          credit_id?: string
+          effective_month?: string | null
+          expires_at?: string | null
+          hours?: number | null
+          id?: string
+          kind?: string | null
+          note?: string | null
+          previous_billable?: boolean | null
+          previous_expires_at?: string | null
+          previous_hours?: number | null
+          previous_kind?: string | null
+        }
+        Relationships: []
+      }
       hour_credits: {
         Row: {
           billable: boolean

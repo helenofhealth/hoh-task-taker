@@ -259,12 +259,13 @@ function BoardPage() {
             <div
               key={col.key}
               onDragOver={(e) => {
+                if (!me.isStaff) return;
                 e.preventDefault();
                 setOverStatus(col.key);
               }}
               onDragLeave={() => setOverStatus((s) => (s === col.key ? null : s))}
               onDrop={() => {
-                if (dragId) {
+                if (dragId && me.isStaff) {
                   const dragged = (tasks.data ?? []).find((t) => t.id === dragId);
                   move.mutate({
                     id: dragId,
@@ -305,11 +306,12 @@ function BoardPage() {
                     onDragStart={() => setDragId(t.id)}
                     onDragEnd={() => setDragId(null)}
                     dragging={dragId === t.id}
+                    canDrag={me.isStaff}
                   />
                 ))}
                 {items.length === 0 && (
                   <p className="px-1 py-6 text-center text-xs text-muted-foreground">
-                    Drop a task here
+                    {me.isStaff ? "Drop a task here" : "No tasks"}
                   </p>
                 )}
               </div>

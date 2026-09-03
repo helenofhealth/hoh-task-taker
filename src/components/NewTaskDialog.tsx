@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ListChecks, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, ListChecks, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
@@ -216,34 +217,19 @@ export function NewTaskDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Start from a proven task — optional</Label>
-            <Select
-              value={provenId}
-              onValueChange={(v) => {
-                setProvenId(v === "__none" ? "" : v);
-                setApproved(false);
-                const tpl = (provenTasks.data ?? []).find((t) => t.id === v);
-                if (tpl) {
-                  if (!title.trim()) setTitle(tpl.title);
-                  if (!description.trim()) setDescription(tpl.description ?? "");
-                }
-              }}
+            <Link
+              to="/proven-tasks"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted/40 px-3 py-2.5 text-sm text-ink-soft transition-colors hover:bg-surface-muted"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Pick a template to pre-fill brief, subtasks and estimate" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">No template</SelectItem>
-                {(provenTasks.data ?? [])
-                  .filter((t) => t.status === "active")
-                  .map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.category} · {t.title}
-                      {t.estimated_hours != null ? ` (~${t.estimated_hours}h)` : ""}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+              <span>Browse the proven tasks library</span>
+              <ArrowRight className="size-4 text-primary" />
+            </Link>
+            <p className="text-xs text-muted-foreground">
+              Pick a template there to pre-fill the brief, subtasks and estimate.
+            </p>
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>
             <Input id="t-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />

@@ -371,6 +371,81 @@ function ProvenTasksPage() {
         )}
       </div>
 
+      <Dialog open={!!sendTask} onOpenChange={(v) => !v && setSendTask(null)}>
+        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Send to a client's portal</DialogTitle>
+          </DialogHeader>
+          {sendTask && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                “{sendTask.title}” will be created as a real task in the client's board with its{" "}
+                {sendTask.subtasks.length} subtasks, {sendTask.deliverables.length} deliverables and{" "}
+                {sendTask.qc_checklist.length} QC checks, then synced to GoHighLevel.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Client</Label>
+                <Select value={sendClientId} onValueChange={setSendClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={clients.isLoading ? "Loading…" : "Pick a client"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(clients.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Due date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={sendDue}
+                    onChange={(e) => setSendDue(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Priority</Label>
+                  <Select value={sendPriority} onValueChange={setSendPriority}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>GoHighLevel sub-account (optional)</Label>
+                <Input
+                  value={sendSubAccount}
+                  onChange={(e) => setSendSubAccount(e.target.value)}
+                  placeholder="Exact sub-account name"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setSendTask(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!sendClientId || send.isPending}
+                  onClick={() => send.mutate()}
+                >
+                  {send.isPending ? "Sending…" : "Send to client"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
         <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
           <DialogHeader>

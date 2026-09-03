@@ -208,6 +208,7 @@ export function RequestTaskDialog({
       suggested_category: t.category,
       matched_proven_task_id: t.id,
     });
+    setPath("proven");
     setStep("details");
   }
 

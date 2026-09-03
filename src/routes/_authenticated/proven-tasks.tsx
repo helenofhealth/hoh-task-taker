@@ -86,6 +86,7 @@ function ProvenTasksPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [agency, setAgency] = useState("all");
   const [showArchived, setShowArchived] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const navigate = useNavigate();

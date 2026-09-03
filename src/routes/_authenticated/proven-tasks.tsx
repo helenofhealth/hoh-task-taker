@@ -315,7 +315,21 @@ function ProvenTasksPage() {
               {t.subtasks.length} subtasks · {t.deliverables.length} deliverables ·{" "}
               {t.qc_checklist.length} QC checks
             </p>
-            <div className="mt-auto flex gap-2 pt-3">
+            <div className="mt-auto flex flex-wrap gap-2 pt-3">
+              {t.status !== "archived" && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSendTask(t);
+                    setSendClientId("");
+                    setSendDue("");
+                    setSendSubAccount("");
+                    setSendPriority("normal");
+                  }}
+                >
+                  <Send className="mr-1 size-3.5" /> Send to client
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"

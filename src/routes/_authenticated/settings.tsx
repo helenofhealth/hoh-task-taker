@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Mail, Moon } from "lucide-react";
+import { Bell, Link2, Mail, Moon } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -260,5 +261,95 @@ function SettingsPage() {
       </div>
 
     </AppShell>
+  );
+}
+
+function ConnectedAccounts() {
+  const queryClient = useQueryClient();
+
+  const identitiesQuery = useQuery({
+    queryKey: ["user-identities"],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.getUserIdentities();
+      if (error) throw error;
+      return data.identities ?? [];
+    },
+  });
+
+  const identities = identitiesQuery.data ?? [];
+  const google = identities.find((i) => i.provider === "google");
+  const canUnlink = identities.length > 1;
+
+  const link = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/settings` },
+      });
+      if (error) throw error;
+    },
+    onError: (err: Error) =>
+      toast.error(
+        /manual linking/i.test(err.message)
+          ? "Account linking is turned off for this workspace. Ask an administrator to enable manual identity linking."
+          : err.message,
+      ),
+  });
+
+  const unlink = useMutation({
+    mutationFn: async () => {
+      if (!google) return;
+      const { error } = await supabase.auth.unlinkIdentity(google);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-identities"] });
+      toast.success("Google account disconnected");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+      <p className="flex items-center gap-1.5 text-sm font-medium">
+        <Link2 className="size-4 text-muted-foreground" /> Connected accounts
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Link Google to your existing email and password account so you can sign in either way — no
+        second account is created.
+      </p>
+
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 px-4 py-3">
+        <div>
+          <p className="text-sm font-medium">Google</p>
+          <p className="text-xs text-muted-foreground">
+            {identitiesQuery.isLoading
+              ? "Checking…"
+              : google
+                ? `Connected${google.identity_data?.["email"] ? ` — ${google.identity_data["email"]}` : ""}`
+                : "Not connected"}
+          </p>
+        </div>
+        {google ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canUnlink || unlink.isPending}
+            title={canUnlink ? undefined : "Set a password first so you keep a way to sign in"}
+            onClick={() => unlink.mutate()}
+          >
+            Disconnect
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            disabled={identitiesQuery.isLoading || link.isPending}
+            onClick={() => link.mutate()}
+          >
+            Connect Google
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

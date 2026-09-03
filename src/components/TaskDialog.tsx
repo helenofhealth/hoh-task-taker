@@ -66,6 +66,8 @@ import {
   fetchTimeAudit,
   formatClock,
   formatDuration,
+  expiryLabel,
+  daysUntil,
   roundedPreview,
   startTimer,
   stopTimer,
@@ -683,6 +685,20 @@ export function TaskDialog({
   // unused complimentary hours.
   const hasFreeHours = (balance?.remainingFree ?? 0) > 0.0001;
 
+  // Live balance preview: draw the hours this session would log from the credit
+  // buckets in the same order the balance calculation spends them.
+  const preferFree = running ? running.billable === false : !trackBillable;
+  const fundingOrder = [...(balance?.remainingBuckets ?? [])].sort(
+    (a, b) => (a.free === preferFree ? 0 : 1) - (b.free === preferFree ? 0 : 1),
+  );
+  let toDraw = running ? willLog / 60 : 0;
+  const bucketPreview = fundingOrder.map((b) => {
+    const take = Math.min(b.hours, Math.max(0, toDraw));
+    toDraw -= take;
+    return { ...b, take, left: b.hours - take };
+  });
+  const liveRemaining = (balance?.remaining ?? 0) - (running ? willLog / 60 : 0);
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -758,6 +774,54 @@ export function TaskDialog({
                 (rounded up to 15-minute increments · next step in{" "}
                 {nextStepIn === 0 ? "less than a minute" : `${nextStepIn} min`})
               </span>
+            </div>
+          )}
+          {balance && (
+            <div className="rounded-lg bg-card px-3 py-2 text-xs">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-muted-foreground">
+                  {running ? "Balance after stopping" : "Hours left"}
+                </span>
+                <span
+                  className={`font-semibold ${liveRemaining <= 0 ? "text-warning" : "text-primary"}`}
+                >
+                  {formatHours(Math.max(0, liveRemaining))}
+                </span>
+                {running && (
+                  <span className="text-muted-foreground">
+                    of {formatHours(balance.remaining)} now
+                  </span>
+                )}
+              </div>
+              {bucketPreview.length > 0 ? (
+                <ul className="mt-1.5 space-y-1">
+                  {bucketPreview.map((b, i) => (
+                    <li key={`${b.expiry}-${i}`} className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-medium">
+                        {b.retainer ? "Retainer" : "Hour package"}
+                      </span>
+                      {b.free && (
+                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                          Free
+                        </Badge>
+                      )}
+                      <span className="text-muted-foreground">
+                        {formatHours(b.left)} left · expires {expiryLabel(daysUntil(b.expiry))} (
+                        {b.expiry})
+                      </span>
+                      {b.take > 0.0001 && (
+                        <span className="font-medium text-primary">
+                          −{formatHours(b.take)} this session
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-muted-foreground">
+                  No unexpired credits — this time will be logged as an overrun.
+                </p>
+              )}
             </div>
           )}
           {wouldExceed && (

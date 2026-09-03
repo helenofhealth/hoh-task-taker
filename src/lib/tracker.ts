@@ -531,7 +531,19 @@ export interface ClientBalance {
   retainerExpiresInDays: number | null;
   monthRetainer: number;
   monthUsed: number;
+  /** Still-usable credit buckets, soonest expiry first (funding order). */
+  remainingBuckets: CreditBucket[];
+}
 
+export interface CreditBucket {
+  /** YYYY-MM-DD the bucket stops funding new time. */
+  expiry: string;
+  /** Unused hours left in this bucket. */
+  hours: number;
+  /** true = complimentary hours. */
+  free: boolean;
+  /** true = monthly retainer, false = hour package. */
+  retainer: boolean;
 }
 
 export function todayISO() {
@@ -654,6 +666,12 @@ export function computeBalance(
     monthRetainer: Number(client?.retainer_hours ?? 0),
 
     monthUsed,
+    remainingBuckets: live.map((b) => ({
+      expiry: b.expiry,
+      hours: b.left,
+      free: b.free,
+      retainer: b.retainer,
+    })),
   };
 }
 

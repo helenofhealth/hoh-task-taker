@@ -528,6 +528,22 @@ export function TaskDialog({
   });
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
+
+  const removeTask = useMutation({
+    mutationFn: async () => {
+      const { error } = await db.from("tasks").delete().eq("id", task!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setDeleteTaskOpen(false);
+      toast.success("Task deleted");
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const removeComment = useMutation({
     mutationFn: async (commentId: string) => {

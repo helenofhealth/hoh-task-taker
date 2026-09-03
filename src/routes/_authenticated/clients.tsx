@@ -87,6 +87,8 @@ function StaffClientsPage() {
   const clients = useQuery({ queryKey: ["clients"], queryFn: fetchClients });
   const credits = useQuery({ queryKey: ["credits"], queryFn: fetchCredits });
   const entries = useQuery({ queryKey: ["time_entries"], queryFn: fetchTimeEntries });
+  const invites = useQuery({ queryKey: ["client_invites"], queryFn: fetchClientInvites });
+
 
   const [name, setName] = useState("");
   const [business, setBusiness] = useState("");

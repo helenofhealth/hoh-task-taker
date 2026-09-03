@@ -76,6 +76,16 @@ export function TaskCard({
             {clientName}
           </Badge>
         )}
+        {task.sub_account && (
+          <Badge variant="outline" className="rounded-md text-[10px] uppercase tracking-wide">
+            {task.sub_account}
+          </Badge>
+        )}
+        {task.source === "client_request" && (
+          <Badge variant="outline" className="rounded-md border-primary/40 text-[10px] uppercase tracking-wide text-primary">
+            Client request
+          </Badge>
+        )}
         {task.priority === "high" && (
           <Badge
             variant="outline"

@@ -15,6 +15,7 @@ const nav = [
   { to: "/time-report", label: "Time report" },
   { to: "/clients", label: "Clients", staffOnly: true },
   { to: "/team", label: "Team members", staffOnly: true },
+  { to: "/proven-tasks", label: "Proven tasks", staffOnly: true },
   { to: "/credit-history", label: "Credit history", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];

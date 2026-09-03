@@ -6,6 +6,7 @@ import updateTaskStatusTool from "./tools/update-task-status";
 import addCommentTool from "./tools/add-comment";
 import listClientsTool from "./tools/list-clients";
 import getTimeReportTool from "./tools/get-time-report";
+import listProvenTasksTool from "./tools/list-proven-tasks";
 
 // The OAuth issuer MUST be the direct Supabase host; on publish SUPABASE_URL is
 // rewritten to the proxy, which fails issuer discovery. The project ref is the
@@ -32,5 +33,6 @@ export default defineMcp({
     addCommentTool,
     listClientsTool,
     getTimeReportTool,
+    listProvenTasksTool,
   ] as unknown as Parameters<typeof defineMcp>[0]["tools"],
 });

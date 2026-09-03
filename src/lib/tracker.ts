@@ -48,6 +48,43 @@ export interface Task {
   due_date: string | null;
   position: number;
   created_at: string;
+  /** 'staff' or 'client_request'. */
+  source?: string;
+  /** GHL sub-account the work is for. */
+  sub_account?: string | null;
+  proven_task_id?: string | null;
+  subtasks?: string[];
+  deliverables?: string[];
+  qc_checklist?: string[];
+  requested_completion_date?: string | null;
+  estimated_hours?: number | null;
+}
+
+export interface ProvenTask {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  subtasks: string[];
+  deliverables: string[];
+  qc_checklist: string[];
+  default_instructions: string | null;
+  estimated_hours: number | null;
+  status: "active" | "draft" | "archived";
+  is_system: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchProvenTasks(): Promise<ProvenTask[]> {
+  const { data, error } = await db
+    .from("proven_tasks")
+    .select("*")
+    .order("category")
+    .order("title");
+  if (error) throw error;
+  return (data ?? []) as ProvenTask[];
 }
 
 export interface TimeEntry {

@@ -18,6 +18,12 @@ export default defineTool({
     due_date: z.string().optional().describe("Due date, YYYY-MM-DD."),
     is_recurring: z.boolean().default(false).describe("Whether the task repeats."),
     recurrence: z.string().optional().describe("Recurrence rule, e.g. 'weekly', 'monthly'."),
+    sub_account: z.string().optional().describe("GHL sub-account name the work is for."),
+    proven_task_id: z
+      .string()
+      .uuid()
+      .optional()
+      .describe("Proven-task template id (from list_proven_tasks) to link."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -37,6 +43,9 @@ export default defineTool({
         due_date: input.due_date ?? null,
         is_recurring: input.is_recurring,
         recurrence: input.recurrence ?? null,
+        sub_account: input.sub_account ?? null,
+        proven_task_id: input.proven_task_id ?? null,
+        source: "staff",
       })
       .select()
       .single();

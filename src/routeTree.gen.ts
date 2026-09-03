@@ -21,6 +21,7 @@ import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCreditHistoryRouteImport } from './routes/_authenticated/credit-history'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
+import { Route as AuthenticatedProvenTasksRouteImport } from './routes/_authenticated/proven-tasks'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedTimeReportRouteImport } from './routes/_authenticated/time-report'
@@ -91,6 +92,12 @@ const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
   path: '/portal',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProvenTasksRoute =
+  AuthenticatedProvenTasksRouteImport.update({
+    id: '/proven-tasks',
+    path: '/proven-tasks',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
@@ -160,6 +168,7 @@ export interface FileRoutesByTo {
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/time-report': typeof AuthenticatedTimeReportRoute
@@ -182,6 +191,7 @@ export interface FileRoutesById {
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/credit-history': typeof AuthenticatedCreditHistoryRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
+  '/_authenticated/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/time-report': typeof AuthenticatedTimeReportRoute
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/credit-history'
     | '/portal'
+    | '/proven-tasks'
     | '/settings'
     | '/team'
     | '/time-report'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/credit-history'
     | '/portal'
+    | '/proven-tasks'
     | '/settings'
     | '/team'
     | '/time-report'
@@ -245,6 +257,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clients'
     | '/_authenticated/credit-history'
     | '/_authenticated/portal'
+    | '/_authenticated/proven-tasks'
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/_authenticated/time-report'
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortalRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/proven-tasks': {
+      id: '/_authenticated/proven-tasks'
+      path: '/proven-tasks'
+      fullPath: '/proven-tasks'
+      preLoaderRoute: typeof AuthenticatedProvenTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -412,6 +432,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCreditHistoryRoute: typeof AuthenticatedCreditHistoryRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
+  AuthenticatedProvenTasksRoute: typeof AuthenticatedProvenTasksRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTimeReportRoute: typeof AuthenticatedTimeReportRoute
@@ -422,6 +443,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCreditHistoryRoute: AuthenticatedCreditHistoryRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
+  AuthenticatedProvenTasksRoute: AuthenticatedProvenTasksRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTimeReportRoute: AuthenticatedTimeReportRoute,

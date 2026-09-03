@@ -685,6 +685,20 @@ export function TaskDialog({
   // unused complimentary hours.
   const hasFreeHours = (balance?.remainingFree ?? 0) > 0.0001;
 
+  // Live balance preview: draw the hours this session would log from the credit
+  // buckets in the same order the balance calculation spends them.
+  const preferFree = running ? running.billable === false : !trackBillable;
+  const fundingOrder = [...(balance?.remainingBuckets ?? [])].sort(
+    (a, b) => (a.free === preferFree ? 0 : 1) - (b.free === preferFree ? 0 : 1),
+  );
+  let toDraw = running ? willLog / 60 : 0;
+  const bucketPreview = fundingOrder.map((b) => {
+    const take = Math.min(b.hours, Math.max(0, toDraw));
+    toDraw -= take;
+    return { ...b, take, left: b.hours - take };
+  });
+  const liveRemaining = (balance?.remaining ?? 0) - (running ? willLog / 60 : 0);
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

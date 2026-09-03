@@ -73,6 +73,27 @@ function PortalPage() {
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
+  const queryClient = useQueryClient();
+  const claimAccount = useServerFn(claimMyClientAccount);
+  const [claiming, setClaiming] = useState(false);
+
+  async function claim() {
+    setClaiming(true);
+    try {
+      const result = await claimAccount({});
+      if (!result.ok) {
+        toast.error(result.message ?? "We could not connect your account");
+        return;
+      }
+      toast.success(`Connected to ${result.clientName}`);
+      await queryClient.invalidateQueries();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We could not connect your account");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
   const myTasks = useMemo(
     () => (tasks.data ?? []).filter((t) => t.client_id && t.client_id === clientId),
     [tasks.data, clientId],

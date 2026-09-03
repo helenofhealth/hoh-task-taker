@@ -837,6 +837,18 @@ export function RequestTaskDialog({
               </p>
             </div>
 
+            <label className="flex items-start gap-2.5 rounded-xl border border-primary/40 bg-primary-soft p-3 text-sm">
+              <Checkbox
+                className="mt-0.5"
+                checked={approved}
+                onCheckedChange={(v) => setApproved(v === true)}
+              />
+              <span>
+                I've proofread this request — the title, description, subtasks, deliverables and
+                dates are correct and ready for the team.
+              </span>
+            </label>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Button variant="ghost" onClick={() => setStep("details")}>
                 <ArrowLeft className="mr-1.5 size-4" /> Edit details
@@ -856,13 +868,13 @@ export function RequestTaskDialog({
                     Regenerate
                   </Button>
                 )}
-                <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+                <Button onClick={() => submit.mutate()} disabled={submit.isPending || !approved}>
                   {submit.isPending ? (
                     <Loader2 className="mr-1.5 size-4 animate-spin" />
                   ) : (
                     <CheckCircle2 className="mr-1.5 size-4" />
                   )}
-                  This is correct — submit request
+                  Approve &amp; submit request
                 </Button>
               </div>
             </div>

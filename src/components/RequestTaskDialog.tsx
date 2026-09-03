@@ -314,6 +314,7 @@ export function RequestTaskDialog({
           is_recurring: recurring,
           recurrence: recurring ? recurrence : null,
           source: "client_request",
+          approval_status: "pending",
           sub_account: subAccount.trim() || null,
           proven_task_id: brief.matched_proven_task_id ?? proven?.id ?? null,
           subtasks: brief.subtasks,

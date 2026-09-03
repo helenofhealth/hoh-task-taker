@@ -281,3 +281,59 @@ export async function sendLowHoursEmail(
   );
   await sendEmail(email, "Heads-up: only 20% of your hours remain", html);
 }
+
+export interface TeamAlertBucket {
+  expiry: string;
+  hours: number;
+  free: boolean;
+  retainer: boolean;
+}
+
+/** Notify the internal team when a client's usable balance drops below the threshold. */
+export async function sendTeamLowHoursEmail(
+  recipients: string[],
+  clientName: string,
+  remainingHours: number,
+  boughtHours: number,
+  thresholdPercent: number,
+  buckets: TeamAlertBucket[],
+  link: string,
+) {
+  const fmt = (h: number) => `${Math.round(h * 100) / 100}h`;
+  const rows = buckets.length
+    ? buckets
+        .map(
+          (b) => `<tr>
+             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${esc(b.expiry)}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${b.retainer ? "Monthly retainer" : "Hour block"}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${b.free ? "Free" : "Billable"}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8; font-weight: bold;">${esc(fmt(b.hours))}</td>
+           </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="4" style="padding: 8px 10px; border-top: 1px solid #f0e0e8; color: #666;">No valid credits left — new time cannot be funded.</td></tr>`;
+
+  const html = shell(
+    `${esc(clientName)} is low on hours`,
+    `<p>${esc(clientName)} has <strong>${esc(fmt(remainingHours))}</strong> usable of ${esc(fmt(boughtHours))} —
+      at or below the ${Math.round(thresholdPercent * 100)}% alert threshold.</p>
+     <p style="margin: 22px 0 8px; font-weight: bold; color: #4a1d33;">Credits still valid</p>
+     <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+       <tr style="text-align: left; color: #8a4a68;">
+         <th style="padding: 6px 10px;">Expires</th>
+         <th style="padding: 6px 10px;">Type</th>
+         <th style="padding: 6px 10px;">Pool</th>
+         <th style="padding: 6px 10px;">Remaining</th>
+       </tr>
+       ${rows}
+     </table>
+     <p style="margin: 28px 0;">
+       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open clients &amp; hours</a>
+     </p>
+     <p style="color: #666; font-size: 13px;">Hour blocks stay valid 3 months from purchase; retainer hours expire at month end and do not roll over.</p>`,
+  );
+
+  for (const to of recipients) {
+    await sendEmail(to, `Low hours: ${clientName} has ${fmt(remainingHours)} left`, html);
+  }
+}

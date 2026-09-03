@@ -64,18 +64,24 @@ export async function sendActivationEmail(
   email: string,
   name: string | undefined,
   link: string,
+  tracking?: { pixelUrl: string; clickUrl: string },
 ) {
+  // The click-through URL records the open, then forwards to the real activation link.
+  const activateHref = tracking?.clickUrl || link;
   const html = shell(
     "Welcome to your client portal",
     `<p>Hi ${esc(name || "there")},</p>
      <p>You've been invited to track your projects, time reports, and deliverables with us. Activate your account and set your password here:</p>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
+       <a href="${activateHref}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
      </p>
-     <p style="color: #666; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>`,
+     <p style="color: #666; font-size: 13px;">Confirming this invite lets your account manager know you received it.</p>
+     <p style="color: #666; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>
+     ${tracking ? `<img src="${tracking.pixelUrl}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" />` : ""}`,
   );
   await sendEmail(email, "You're invited — activate your client portal account", html);
 }
+
 
 export async function sendTaskStatusEmail(
   email: string,

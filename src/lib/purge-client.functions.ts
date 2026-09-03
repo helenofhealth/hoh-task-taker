@@ -78,11 +78,16 @@ export const purgeClient = createServerFn({ method: "POST" })
     }
 
     // Client-scoped records: credits, invites, alerts and audit snapshots.
-    await supabaseAdmin.from("hour_credit_audit").delete().eq("client_id", client.id);
+    // Delete the credits first — the audit trigger writes a "removed" row for
+    // each one, so the audit table has to be cleared after that fires.
     await supabaseAdmin.from("hour_credits").delete().eq("client_id", client.id);
+    await supabaseAdmin.from("hour_credit_audit").delete().eq("client_id", client.id);
     await supabaseAdmin.from("client_invites").delete().eq("client_id", client.id);
     await supabaseAdmin.from("client_hour_alerts").delete().eq("client_id", client.id);
     await supabaseAdmin.from("client_audit").delete().eq("client_id", client.id);
+    // Portal onboarding progress is client-specific; drop it so a re-invited
+    // user starts fresh instead of inheriting a purged client's checklist.
+    await supabaseAdmin.from("client_onboarding").delete().eq("client_id", client.id);
 
     const { error: tasksError } = await supabaseAdmin
       .from("tasks")

@@ -58,7 +58,10 @@ interface DraftState {
   deliverables: string;
   qc: string;
   estimated: string;
+  clientId: string;
 }
+
+const SHARED = "shared";
 
 const EMPTY_DRAFT: DraftState = {
   id: null,
@@ -69,6 +72,7 @@ const EMPTY_DRAFT: DraftState = {
   deliverables: "",
   qc: "",
   estimated: "",
+  clientId: SHARED,
 };
 
 const toLines = (s: string) =>

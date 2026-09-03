@@ -549,6 +549,28 @@ function ProvenTasksPage() {
                 />
               </div>
               <div className="space-y-1.5">
+                <Label>Available to</Label>
+                <Select
+                  value={draft.clientId}
+                  onValueChange={(v) => setDraft({ ...draft, clientId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SHARED}>Shared library — every client</SelectItem>
+                    {(clients.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} only
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Agency-specific tasks and their subtasks only appear for that client.
+                </p>
+              </div>
+              <div className="space-y-1.5">
                 <Label>Estimated hours</Label>
                 <Input
                   type="number"

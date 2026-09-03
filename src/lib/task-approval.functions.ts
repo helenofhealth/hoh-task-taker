@@ -70,7 +70,7 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
           clientName: client?.name ?? "Client",
           clientEmail: client?.email ?? null,
           appLink: link,
-        });
+        }, creds.locationId);
         ghl.pushed = true;
         ghl.taskId = res.taskId;
         await supabaseAdmin

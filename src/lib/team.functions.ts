@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -83,14 +84,13 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     if (input.role !== "admin" && input.role !== "member") throw new Error("Invalid role");
     if (input.hourlyRate != null && (isNaN(input.hourlyRate) || input.hourlyRate < 0))
       throw new Error("Hourly rate must be a positive number");
-    if (!/^https?:\/\//.test(input.origin)) throw new Error("Invalid origin");
     return {
       name: input.name.trim(),
       email,
       phone: input.phone?.trim() || undefined,
       role: input.role,
       hourlyRate: input.hourlyRate ?? 0,
-      origin: input.origin.replace(/\/+$/, ""),
+      origin: safeAppOrigin(input.origin),
     };
   })
   .handler(async ({ data, context }) => {

@@ -1,3 +1,4 @@
+import { safeAppOrigin } from "@/lib/app-origin";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -23,14 +24,13 @@ type Priority = (typeof PRIORITIES)[number];
 function validate(input: AssignProvenInput) {
   if (!input?.provenTaskId) throw new Error("Pick a proven task");
   if (!input?.clientId) throw new Error("Pick a client");
-  if (!/^https?:\/\//.test(input.origin ?? "")) throw new Error("Invalid origin");
   const priority: Priority = (PRIORITIES as readonly string[]).includes(input.priority ?? "")
     ? (input.priority as Priority)
     : "normal";
   return {
     provenTaskId: input.provenTaskId,
     clientId: input.clientId,
-    origin: input.origin,
+    origin: safeAppOrigin(input.origin),
     dueDate: (input.dueDate ?? "").trim() || null,
     subAccount: (input.subAccount ?? "").trim() || null,
     project: (input.project ?? "").trim() || null,
@@ -97,7 +97,7 @@ export const assignProvenTaskToClient = createServerFn({ method: "POST" })
       .single();
     if (taskError || !created) throw taskError ?? new Error("Could not create the task");
 
-    const base = data.origin.replace(/\/+$/, "");
+    const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(created.id)}`;
 
     await supabaseAdmin.from("task_activity").insert({

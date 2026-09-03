@@ -261,6 +261,20 @@ function PortalPage() {
           </section>
 
           <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <h2 className="text-lg font-semibold">Upcoming deliverables</h2>
+            <p className="text-xs text-muted-foreground">
+              Every dated task on your account, so you can see what lands when.
+            </p>
+            <div className="mt-4">
+              <DeliverablesCalendar tasks={myTasks} onOpenTask={setOpenTask} />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <GhlSettingsCard />
+          </section>
+
+          <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-soft">
             <h2 className="text-lg font-semibold">Your hours timeline</h2>
             <p className="text-xs text-muted-foreground">
               Hour blocks are valid for 3 months; monthly retainer hours do not roll over.

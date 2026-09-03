@@ -813,7 +813,7 @@ export function TaskDialog({
                 </span>
               )}
             </div>
-            {hasFreeHours && !running && (
+            {canEdit && hasFreeHours && !running && (
               <Select
                 value={trackBillable ? "billable" : "free"}
                 onValueChange={(v) => setTrackBillable(v === "billable")}
@@ -834,16 +834,22 @@ export function TaskDialog({
                 {running.billable === false ? "Free hours" : "Billable hours"}
               </Badge>
             )}
-            <Button
-              size="sm"
-              variant={running ? "destructive" : "default"}
-              className="ml-auto"
-              onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate({}))}
-              disabled={timer.isPending}
-            >
-              {running ? <Square className="mr-1.5 size-3.5" /> : <Play className="mr-1.5 size-3.5" />}
-              {running ? "Stop timer" : "Start timer"}
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant={running ? "destructive" : "default"}
+                className="ml-auto"
+                onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate({}))}
+                disabled={timer.isPending}
+              >
+                {running ? (
+                  <Square className="mr-1.5 size-3.5" />
+                ) : (
+                  <Play className="mr-1.5 size-3.5" />
+                )}
+                {running ? "Stop timer" : "Start timer"}
+              </Button>
+            )}
           </div>
 
           {running && (

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
@@ -61,6 +61,8 @@ export function NewTaskDialog({
   const [subAccount, setSubAccount] = useState("");
   const [showNewClient, setShowNewClient] = useState(false);
   const [approved, setApproved] = useState(false);
+
+  const selectedProven = (provenTasks.data ?? []).find((t) => t.id === provenId) ?? null;
   const provenTasks = useQuery({
     queryKey: ["proven_tasks"],
     queryFn: fetchProvenTasks,

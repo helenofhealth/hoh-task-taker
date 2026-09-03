@@ -20,6 +20,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCreditHistoryRouteImport } from './routes/_authenticated/credit-history'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedProvenTasksRouteImport } from './routes/_authenticated/proven-tasks'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -89,6 +90,11 @@ const AuthenticatedCreditHistoryRoute =
     path: '/credit-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
   id: '/portal',
   path: '/portal',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
   '/_authenticated/proven-tasks': typeof AuthenticatedProvenTasksRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/onboarding'
     | '/portal'
     | '/proven-tasks'
     | '/settings'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/onboarding'
     | '/portal'
     | '/proven-tasks'
     | '/settings'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/_authenticated/board'
     | '/_authenticated/clients'
     | '/_authenticated/credit-history'
+    | '/_authenticated/onboarding'
     | '/_authenticated/portal'
     | '/_authenticated/proven-tasks'
     | '/_authenticated/settings'
@@ -387,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCreditHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/portal': {
       id: '/_authenticated/portal'
       path: '/portal'
@@ -471,6 +490,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCreditHistoryRoute: typeof AuthenticatedCreditHistoryRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
   AuthenticatedProvenTasksRoute: typeof AuthenticatedProvenTasksRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -483,6 +503,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCreditHistoryRoute: AuthenticatedCreditHistoryRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
   AuthenticatedProvenTasksRoute: AuthenticatedProvenTasksRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

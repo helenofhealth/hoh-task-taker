@@ -62,6 +62,31 @@ function shell(title: string, body: string) {
     </div>`;
 }
 
+/** Sent the first time a client signs in, pointing them at the setup steps. */
+export async function sendClientWelcomeEmail(
+  email: string,
+  name: string | undefined,
+  clientName: string | null,
+  onboardingUrl: string,
+) {
+  const html = shell(
+    "Welcome aboard — let's set up your portal",
+    `<p>Hi ${esc(name || "there")},</p>
+     <p>Your ${clientName ? `${esc(clientName)} ` : ""}client portal is ready. Four quick steps and you're all set — no need to wait on our team:</p>
+     <ol style="color: #3E332B; font-size: 14px; line-height: 1.7;">
+       <li>Confirm your contact details</li>
+       <li>Review your purchased hours and when they expire</li>
+       <li>Request your first task</li>
+       <li>Take the two-minute portal tour</li>
+     </ol>
+     <p style="margin: 28px 0;">
+       <a href="${onboardingUrl}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Start setup</a>
+     </p>
+     <p style="color: #76685C; font-size: 13px;">You can pick this up any time from the "Get started" link in your portal.</p>`,
+  );
+  await sendEmail(email, "Welcome — set up your client portal", html);
+}
+
 export async function sendActivationEmail(
   email: string,
   name: string | undefined,

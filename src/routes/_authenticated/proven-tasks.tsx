@@ -58,7 +58,10 @@ interface DraftState {
   deliverables: string;
   qc: string;
   estimated: string;
+  clientId: string;
 }
+
+const SHARED = "shared";
 
 const EMPTY_DRAFT: DraftState = {
   id: null,
@@ -69,6 +72,7 @@ const EMPTY_DRAFT: DraftState = {
   deliverables: "",
   qc: "",
   estimated: "",
+  clientId: SHARED,
 };
 
 const toLines = (s: string) =>
@@ -82,6 +86,7 @@ function ProvenTasksPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [agency, setAgency] = useState("all");
   const [showArchived, setShowArchived] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const navigate = useNavigate();
@@ -97,7 +102,7 @@ function ProvenTasksPage() {
   const clients = useQuery({
     queryKey: ["clients"],
     queryFn: fetchClients,
-    enabled: !!sendTask,
+    
   });
   const assign = useServerFn(assignProvenTaskToClient);
 
@@ -145,18 +150,31 @@ function ProvenTasksPage() {
     [library.data],
   );
 
+  const clientName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clients.data ?? []) map.set(c.id, c.name);
+    return map;
+  }, [clients.data]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (library.data ?? [])
       .filter((t) => (showArchived ? t.status === "archived" : t.status !== "archived"))
       .filter((t) => category === "all" || t.category === category)
+      .filter((t) =>
+        agency === "all"
+          ? true
+          : agency === SHARED
+            ? t.client_id === null
+            : t.client_id === agency,
+      )
       .filter(
         (t) =>
           !q ||
           t.title.toLowerCase().includes(q) ||
           (t.description ?? "").toLowerCase().includes(q),
       );
-  }, [library.data, search, category, showArchived]);
+  }, [library.data, search, category, agency, showArchived]);
 
   const drafts = (library.data ?? []).filter((t) => t.status === "draft");
 
@@ -176,6 +194,7 @@ function ProvenTasksPage() {
         deliverables: toLines(d.deliverables),
         qc_checklist: toLines(d.qc),
         estimated_hours: est,
+        client_id: d.clientId === SHARED ? null : d.clientId,
       };
       if (d.id) {
         const { error } = await db.from("proven_tasks").update(row).eq("id", d.id);
@@ -285,6 +304,20 @@ function ProvenTasksPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={agency} onValueChange={setAgency}>
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All agencies</SelectItem>
+            <SelectItem value={SHARED}>Shared library</SelectItem>
+            {(clients.data ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button variant="ghost" size="sm" onClick={() => setShowArchived((s) => !s)}>
           {showArchived ? "Show active" : "Show archived"}
         </Button>
@@ -308,6 +341,11 @@ function ProvenTasksPage() {
               {t.category}
               {t.status === "draft" && " · suggestion"}
             </p>
+            <span className="mt-1.5 w-fit rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              {t.client_id
+                ? `${clientName.get(t.client_id) ?? "Client"} only`
+                : "Shared library"}
+            </span>
             {t.description && (
               <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{t.description}</p>
             )}
@@ -343,6 +381,7 @@ function ProvenTasksPage() {
                     deliverables: t.deliverables.join("\n"),
                     qc: t.qc_checklist.join("\n"),
                     estimated: t.estimated_hours != null ? String(t.estimated_hours) : "",
+                    clientId: t.client_id ?? SHARED,
                   })
                 }
               >
@@ -508,6 +547,28 @@ function ProvenTasksPage() {
                   value={draft.qc}
                   onChange={(e) => setDraft({ ...draft, qc: e.target.value })}
                 />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Available to</Label>
+                <Select
+                  value={draft.clientId}
+                  onValueChange={(v) => setDraft({ ...draft, clientId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SHARED}>Shared library — every client</SelectItem>
+                    {(clients.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} only
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Agency-specific tasks and their subtasks only appear for that client.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Estimated hours</Label>

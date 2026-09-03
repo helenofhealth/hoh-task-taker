@@ -95,6 +95,7 @@ function StaffClientsPage() {
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
   const [creditBillable, setCreditBillable] = useState("billable");
+  const [timelineFor, setTimelineFor] = useState<string | null>(null);
 
   const addClient = useMutation({
     mutationFn: async () => {

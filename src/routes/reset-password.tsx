@@ -6,8 +6,9 @@ import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/password-policy";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/reset-password")({

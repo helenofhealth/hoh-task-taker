@@ -12,6 +12,8 @@ import { rememberPostAuthPath, resolvePostAuthPath } from "@/lib/post-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/password-policy";
 import { Label } from "@/components/ui/label";
 
 
@@ -110,6 +112,13 @@ function AuthPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup") {
+      const policyError = validatePassword(password);
+      if (policyError) {
+        toast.error(policyError);
+        return;
+      }
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
@@ -190,9 +199,10 @@ function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={mode === "signup" ? PASSWORD_MIN_LENGTH : 6}
               maxLength={72}
             />
+            {mode === "signup" && <PasswordRequirements value={password} className="pt-1" />}
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 size-4 animate-spin" />}

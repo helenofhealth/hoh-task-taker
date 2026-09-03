@@ -675,6 +675,87 @@ export function computeBalance(
   };
 }
 
+export interface CreditTimelineRow {
+  id: string;
+  kind: string;
+  free: boolean;
+  retainer: boolean;
+  note: string | null;
+  /** Date the credit was added (YYYY-MM-DD). */
+  addedOn: string;
+  /** Date the credit stops funding new time (YYYY-MM-DD). */
+  expiry: string;
+  /** Days until expiry — negative once expired. */
+  expiresInDays: number;
+  /** Hours originally granted. */
+  hours: number;
+  /** Hours consumed by logged time. */
+  used: number;
+  /** Hours left in this credit. */
+  left: number;
+  /** active = usable today, expiring = usable but within 14 days, expired. */
+  status: "active" | "expiring" | "expired";
+}
+
+/** Per-credit timeline for one client: what each credit held, what it funded,
+ *  and when it expires. Uses the same soonest-expiry-first spending order as
+ *  computeBalance so the numbers always agree. */
+export function creditTimeline(
+  clientId: string,
+  credits: HourCredit[],
+  entries: (TimeEntry & { tasks: { client_id: string | null } | null })[],
+): CreditTimelineRow[] {
+  const clientCredits = credits.filter((c) => c.client_id === clientId);
+  const clientEntries = entries.filter((e) => e.tasks?.client_id === clientId && e.minutes);
+
+  const buckets = clientCredits
+    .map((c) => ({
+      credit: c,
+      expiry: creditExpiry(c),
+      hours: Number(c.hours),
+      left: Number(c.hours),
+      free: c.billable === false,
+    }))
+    .sort((a, b) => a.expiry.localeCompare(b.expiry));
+
+  const spend = (amount: number, preferFree: boolean, onDate: string) => {
+    let toSpend = amount;
+    for (const pass of [preferFree, !preferFree]) {
+      for (const bucket of buckets) {
+        if (toSpend <= 0) return;
+        if (bucket.free !== pass) continue;
+        if (bucket.expiry < onDate) continue;
+        const take = Math.min(bucket.left, toSpend);
+        bucket.left -= take;
+        toSpend -= take;
+      }
+    }
+  };
+
+  for (const entry of [...clientEntries].sort((a, b) => a.started_at.localeCompare(b.started_at))) {
+    spend(hoursFromMinutes(entry.minutes ?? 0), entry.billable === false, entry.started_at.slice(0, 10));
+  }
+
+  const today = todayISO();
+  return buckets.map((b) => {
+    const days = daysUntil(b.expiry);
+    return {
+      id: b.credit.id,
+      kind: b.credit.kind,
+      free: b.free,
+      retainer: b.credit.kind === "retainer",
+      note: b.credit.note,
+      addedOn: b.credit.effective_month ?? b.credit.created_at.slice(0, 10),
+      expiry: b.expiry,
+      expiresInDays: days,
+      hours: b.hours,
+      used: b.hours - b.left,
+      left: b.left,
+      status: b.expiry < today ? "expired" : days <= 14 ? "expiring" : "active",
+    };
+  });
+}
+
 /** "in 12 days" / "today" / "tomorrow" / "expired" label for an expiry date. */
 export function expiryLabel(days: number | null) {
   if (days === null) return "—";

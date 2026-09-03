@@ -168,8 +168,13 @@ export async function pushBriefToGhl(
   supabaseAdmin: any,
   apiKey: string,
   payload: GhlTaskPayload,
+  fallbackLocationId: string | null = null,
 ): Promise<GhlPushResult> {
-  const locationId = await resolveLocationId(supabaseAdmin, payload.subAccount);
+  const locationId = await resolveLocationId(
+    supabaseAdmin,
+    payload.subAccount,
+    fallbackLocationId,
+  );
   const contactId = await resolveContactId(
     apiKey,
     locationId,

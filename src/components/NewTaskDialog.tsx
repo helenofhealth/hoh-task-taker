@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ListChecks, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, ListChecks, Plus } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";

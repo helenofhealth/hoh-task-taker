@@ -15,6 +15,8 @@ interface Props {
   onDragStart: () => void;
   onDragEnd: () => void;
   dragging: boolean;
+  /** Clients cannot change task status, so dragging is disabled for them. */
+  canDrag?: boolean;
 }
 
 const priorityLabel: Record<string, string> = {
@@ -35,17 +37,18 @@ export function TaskCard({
   onDragStart,
   onDragEnd,
   dragging,
+  canDrag = true,
 }: Props) {
   const owner = displayName(profiles, task.owner_id);
 
   return (
     <button
       type="button"
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      draggable={canDrag}
+      onDragStart={canDrag ? onDragStart : undefined}
+      onDragEnd={canDrag ? onDragEnd : undefined}
       onClick={onOpen}
-      className={`group w-full cursor-grab rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent hover:shadow-lift ${
+      className={`group w-full ${canDrag ? "cursor-grab" : "cursor-pointer"} rounded-xl border border-border bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent hover:shadow-lift ${
         dragging ? "opacity-40" : ""
       }`}
     >

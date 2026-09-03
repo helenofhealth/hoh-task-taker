@@ -216,9 +216,15 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
     const client = (task.clients as { name: string; email: string | null } | null) ?? null;
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
-    const { pushBriefToGhl } = await import("./ghl-push.server");
+    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
+    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
+    if (!creds) {
+      throw new Error(
+        "GoHighLevel isn't connected yet — connect an agency in Settings and try again.",
+      );
+    }
     try {
-      const res = await pushBriefToGhl(supabaseAdmin, apiKey, {
+      const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
         title: task.title,
         description: task.description ?? null,
         subtasks: (task.subtasks as string[] | null) ?? [],

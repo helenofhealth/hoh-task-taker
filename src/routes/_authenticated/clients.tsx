@@ -234,7 +234,11 @@ function StaffClientsPage() {
       {me.isAdmin && (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-            <h2 className="font-semibold">Add a client</h2>
+            <h2 className="font-semibold">Onboard a client</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Set up contact details, purchased hours, rate and the starting project — the
+              activation email goes out automatically, so no manual emailing.
+            </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="c-name">Name</Label>
@@ -275,9 +279,67 @@ function StaffClientsPage() {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              <div className="flex items-end">
+
+              <div className="space-y-1.5">
+                <Label htmlFor="c-hours">Purchased hours — optional</Label>
+                <Input
+                  id="c-hours"
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={startHours}
+                  placeholder="e.g. 10"
+                  onChange={(e) => setStartHours(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hours type</Label>
+                <Select value={startKind} onValueChange={setStartKind}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="package">Hour package (3 months)</SelectItem>
+                    <SelectItem value="retainer">Monthly retainer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Billing</Label>
+                <Select value={startBillable} onValueChange={setStartBillable}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="billable">Billable</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-rate">Hourly rate — optional</Label>
+                <Input
+                  id="c-rate"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={rate}
+                  placeholder="e.g. 60"
+                  onChange={(e) => setRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="c-project">Project — optional</Label>
+                <Input
+                  id="c-project"
+                  value={project}
+                  maxLength={120}
+                  placeholder="e.g. Website refresh"
+                  onChange={(e) => setProject(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used as the default project when you create tasks for this client.
+                </p>
+              </div>
+              <div className="flex items-end sm:col-span-2">
                 <Button onClick={() => addClient.mutate()} disabled={addClient.isPending}>
-                  <Plus className="mr-1.5 size-4" /> Add
+                  <Plus className="mr-1.5 size-4" /> Onboard client
                 </Button>
               </div>
             </div>

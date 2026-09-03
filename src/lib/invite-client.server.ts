@@ -47,14 +47,14 @@ function shell(title: string, body: string) {
           <td style="vertical-align: middle;">
             <img src="${LOGO_URL}" alt="${APP_NAME} logo" width="40" height="40" style="display: block; border-radius: 10px;" />
           </td>
-          <td style="vertical-align: middle; padding-left: 12px; font-size: 17px; font-weight: bold; color: #c2185b;">
+          <td style="vertical-align: middle; padding-left: 12px; font-size: 17px; font-weight: bold; color: #A96042;">
             ${APP_NAME}
           </td>
         </tr>
       </table>
-      <h1 style="color: #c2185b; font-size: 22px; margin-top: 0;">${title}</h1>
+      <h1 style="color: #A96042; font-size: 22px; margin-top: 0;">${title}</h1>
       ${body}
-      <p style="color: #999; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+      <p style="color: #9A8C7E; font-size: 12px; margin-top: 32px; border-top: 1px solid #D8CBBB; padding-top: 16px;">
         Sent by ${APP_NAME} &middot; no-reply@tasks.helenofhealth.com
       </p>
     </div>`;
@@ -73,10 +73,10 @@ export async function sendActivationEmail(
     `<p>Hi ${esc(name || "there")},</p>
      <p>You've been invited to track your projects, time reports, and deliverables with us. Activate your account and set your password here:</p>
      <p style="margin: 28px 0;">
-       <a href="${activateHref}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
+       <a href="${activateHref}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Activate your account</a>
      </p>
-     <p style="color: #666; font-size: 13px;">Confirming this invite lets your account manager know you received it.</p>
-     <p style="color: #666; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>
+     <p style="color: #76685C; font-size: 13px;">Confirming this invite lets your account manager know you received it.</p>
+     <p style="color: #76685C; font-size: 13px;">If you weren't expecting this invite, you can ignore this email.</p>
      ${tracking ? `<img src="${tracking.pixelUrl}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" />` : ""}`,
   );
   await sendEmail(email, "You're invited — activate your client portal account", html);
@@ -96,12 +96,12 @@ export async function sendTaskStatusEmail(
     `Task update: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
      <p><strong>${esc(changedByName)}</strong> moved a task${clientName ? ` for <strong>${esc(clientName)}</strong>` : ""} from <strong>${esc(oldStatusLabel)}</strong> to <strong>${esc(newStatusLabel)}</strong>:</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
-       <p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">${esc(oldStatusLabel)} &rarr; <strong>${esc(newStatusLabel)}</strong></p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(taskTitle)}</p>
+       <p style="margin: 6px 0 0; color: #76685C; font-size: 13px;">${esc(oldStatusLabel)} &rarr; <strong>${esc(newStatusLabel)}</strong></p>
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
      </p>`,
   );
   await sendEmail(email, `Task "${taskTitle}" is now ${newStatusLabel}`, html);
@@ -118,12 +118,12 @@ export async function sendTaskCommentEmail(
     `New comment on: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
      <p><strong>${esc(commenterName)}</strong> left a comment on a task you follow:</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
-       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${esc(commentBody)}</p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(taskTitle)}</p>
+       <p style="margin: 8px 0 0; color: #76685C; font-size: 14px;">${esc(commentBody)}</p>
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
      </p>`,
   );
   await sendEmail(email, `New comment on "${taskTitle}"`, html);
@@ -140,12 +140,12 @@ export async function sendTaskMentionEmail(
     `You were mentioned on: ${esc(taskTitle)}`,
     `<p>Hi there,</p>
      <p><strong>${esc(mentionerName)}</strong> mentioned you in a comment on a task:</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(taskTitle)}</p>
-       <p style="margin: 8px 0 0; color: #555; font-size: 14px;">${esc(commentBody)}</p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(taskTitle)}</p>
+       <p style="margin: 8px 0 0; color: #76685C; font-size: 14px;">${esc(commentBody)}</p>
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reply in the portal</a>
      </p>`,
   );
   await sendEmail(email, `${mentionerName} mentioned you on "${taskTitle}"`, html);
@@ -161,12 +161,12 @@ export async function sendTaskUpdateEmail(
   const html = shell(
     esc(heading),
     `<p>Hi there,</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; color: #4a1d33; font-size: 14px;">${esc(detail)}</p>
-       ${subtitle ? `<p style="margin: 8px 0 0; color: #4a1d33; font-size: 14px;"><strong>${esc(subtitle)}</strong></p>` : ""}
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; color: #3E332B; font-size: 14px;">${esc(detail)}</p>
+       ${subtitle ? `<p style="margin: 8px 0 0; color: #3E332B; font-size: 14px;"><strong>${esc(subtitle)}</strong></p>` : ""}
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
      </p>`,
   );
   await sendEmail(email, heading, html);
@@ -182,19 +182,19 @@ export async function sendBatchedUpdatesEmail(
   const items = lines
     .map(
       (l) =>
-        `<div style="border-bottom:1px solid #f0e0e8;padding:10px 0;"><p style="margin:0;font-size:14px;color:#4a1d33;">${esc(l)}</p></div>`,
+        `<div style="border-bottom:1px solid #D8CBBB;padding:10px 0;"><p style="margin:0;font-size:14px;color:#3E332B;">${esc(l)}</p></div>`,
     )
     .join("");
   const html = shell(
     esc(heading),
     `<p>Hi there,</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
        ${items}
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View task</a>
      </p>
-     <p style="color: #666; font-size: 13px;">Quick changes are grouped into one email so your inbox stays tidy.</p>`,
+     <p style="color: #76685C; font-size: 13px;">Quick changes are grouped into one email so your inbox stays tidy.</p>`,
   );
   await sendEmail(email, heading, html);
 }
@@ -216,11 +216,11 @@ export async function sendDailyDigestEmail(
     .map((n) => {
       const badge =
         n.kind === "status" || n.kind === "details"
-          ? '<span style="display:inline-block;background:#f5d3e0;color:#8a4a68;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">STATUS</span>'
-          : '<span style="display:inline-block;background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
-      return `<div style="border-bottom:1px solid #f0e0e8;padding:12px 0;">
+          ? '<span style="display:inline-block;background:#D8CBBB;color:#76685C;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">STATUS</span>'
+          : '<span style="display:inline-block;background:#EFE7DB;color:#6F8C91;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
+      return `<div style="border-bottom:1px solid #D8CBBB;padding:12px 0;">
         <p style="margin:0;font-size:14px;">${badge}<strong>${esc(n.title)}</strong></p>
-        ${n.body ? `<p style="margin:6px 0 0;color:#555;font-size:13px;">${esc(n.body)}</p>` : ""}
+        ${n.body ? `<p style="margin:6px 0 0;color:#76685C;font-size:13px;">${esc(n.body)}</p>` : ""}
       </div>`;
     })
     .join("");
@@ -229,13 +229,13 @@ export async function sendDailyDigestEmail(
     "Your daily task digest",
     `<p>Hi there,</p>
      <p>Here's what happened on your tasks <strong>${esc(windowLabel)}</strong> — ${items.length} update${items.length === 1 ? "" : "s"}:</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 8px 20px; margin: 20px 0;">
        ${rows}
      </div>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open your board</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open your board</a>
      </p>
-     <p style="color: #666; font-size: 13px;">You're receiving one daily summary because you enabled the daily digest in Settings. Turn it off anytime to get instant emails again.</p>`,
+     <p style="color: #76685C; font-size: 13px;">You're receiving one daily summary because you enabled the daily digest in Settings. Turn it off anytime to get instant emails again.</p>`,
   );
   await sendEmail(email, `Daily digest: ${items.length} task update${items.length === 1 ? "" : "s"}`, html);
 }
@@ -248,9 +248,9 @@ export async function sendPasswordResetEmail(email: string, link: string) {
     `<p>Hi there,</p>
      <p>We received a request to reset the password for your Helen of Health Task Taker account. Click below to choose a new password — the link expires in one hour.</p>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reset my password</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Reset my password</a>
      </p>
-     <p style="color: #666; font-size: 13px;">If you didn't request this, you can safely ignore this email — your password stays unchanged.</p>`,
+     <p style="color: #76685C; font-size: 13px;">If you didn't request this, you can safely ignore this email — your password stays unchanged.</p>`,
   );
   await sendEmail(email, "Reset your Helen of Health Task Taker password", html);
 }
@@ -267,7 +267,7 @@ export async function sendLowHoursEmail(
   const fmt = (h: number) => `${Math.round(h * 100) / 100}h`;
   const expiryLine =
     expiresAt !== null && expiresInDays !== null
-      ? `<p style="margin: 6px 0 0; color: #8a4a68; font-size: 13px;">These hours expire on <strong>${esc(expiresAt)}</strong>${
+      ? `<p style="margin: 6px 0 0; color: #76685C; font-size: 13px;">These hours expire on <strong>${esc(expiresAt)}</strong>${
           expiresInDays >= 0 ? ` — ${expiresInDays === 0 ? "today" : `in ${expiresInDays} day${expiresInDays === 1 ? "" : "s"}`}` : ""
         }.</p>`
       : "";
@@ -275,15 +275,15 @@ export async function sendLowHoursEmail(
     "Only 20% of your hours are left",
     `<p>Hi ${esc(clientName)},</p>
      <p>A quick heads-up: you have used 80% of your allocated hours.</p>
-     <div style="background: #fdf2f6; border: 1px solid #f5d3e0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
-       <p style="margin: 0; font-weight: bold; color: #4a1d33;">${esc(fmt(remainingHours))} remaining of ${esc(fmt(boughtHours))}</p>
+     <div style="background: #F6ECDD; border: 1px solid #D8CBBB; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
+       <p style="margin: 0; font-weight: bold; color: #3E332B;">${esc(fmt(remainingHours))} remaining of ${esc(fmt(boughtHours))}</p>
        ${expiryLine}
      </div>
      <p>Hour blocks are valid for 3 months from purchase, and monthly retainer hours do not roll over to the next month.</p>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your hours timeline</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View your hours timeline</a>
      </p>
-     <p style="color: #666; font-size: 13px;">Reply to your account manager if you would like to top up.</p>`,
+     <p style="color: #76685C; font-size: 13px;">Reply to your account manager if you would like to top up.</p>`,
   );
   await sendEmail(email, "Heads-up: only 20% of your hours remain", html);
 }
@@ -310,22 +310,22 @@ export async function sendTeamLowHoursEmail(
     ? buckets
         .map(
           (b) => `<tr>
-             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${esc(b.expiry)}</td>
-             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${b.retainer ? "Monthly retainer" : "Hour block"}</td>
-             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8;">${b.free ? "Free" : "Billable"}</td>
-             <td style="padding: 6px 10px; border-top: 1px solid #f0e0e8; font-weight: bold;">${esc(fmt(b.hours))}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #D8CBBB;">${esc(b.expiry)}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #D8CBBB;">${b.retainer ? "Monthly retainer" : "Hour block"}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #D8CBBB;">${b.free ? "Free" : "Billable"}</td>
+             <td style="padding: 6px 10px; border-top: 1px solid #D8CBBB; font-weight: bold;">${esc(fmt(b.hours))}</td>
            </tr>`,
         )
         .join("")
-    : `<tr><td colspan="4" style="padding: 8px 10px; border-top: 1px solid #f0e0e8; color: #666;">No valid credits left — new time cannot be funded.</td></tr>`;
+    : `<tr><td colspan="4" style="padding: 8px 10px; border-top: 1px solid #D8CBBB; color: #76685C;">No valid credits left — new time cannot be funded.</td></tr>`;
 
   const html = shell(
     `${esc(clientName)} is low on hours`,
     `<p>${esc(clientName)} has <strong>${esc(fmt(remainingHours))}</strong> usable of ${esc(fmt(boughtHours))} —
       at or below the ${Math.round(thresholdPercent * 100)}% alert threshold.</p>
-     <p style="margin: 22px 0 8px; font-weight: bold; color: #4a1d33;">Credits still valid</p>
+     <p style="margin: 22px 0 8px; font-weight: bold; color: #3E332B;">Credits still valid</p>
      <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 13px;">
-       <tr style="text-align: left; color: #8a4a68;">
+       <tr style="text-align: left; color: #76685C;">
          <th style="padding: 6px 10px;">Expires</th>
          <th style="padding: 6px 10px;">Type</th>
          <th style="padding: 6px 10px;">Pool</th>
@@ -334,9 +334,9 @@ export async function sendTeamLowHoursEmail(
        ${rows}
      </table>
      <p style="margin: 28px 0;">
-       <a href="${link}" style="background: #c2185b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open clients &amp; hours</a>
+       <a href="${link}" style="background: #A96042; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open clients &amp; hours</a>
      </p>
-     <p style="color: #666; font-size: 13px;">Hour blocks stay valid 3 months from purchase; retainer hours expire at month end and do not roll over.</p>`,
+     <p style="color: #76685C; font-size: 13px;">Hour blocks stay valid 3 months from purchase; retainer hours expire at month end and do not roll over.</p>`,
   );
 
   for (const to of recipients) {

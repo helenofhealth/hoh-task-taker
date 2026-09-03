@@ -143,3 +143,48 @@ export const disconnectClientGhl = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true as const };
   });
+
+export interface ClientSubAccount {
+  id: string;
+  name: string;
+}
+
+/**
+ * Lists the sub-account (location) names of the client's own GoHighLevel agency.
+ * Names are pulled live from GHL using the stored agency key; a client only ever
+ * sees the sub-accounts of their own agency.
+ */
+export const listClientSubAccounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input?: { clientId?: string | null }) => ({
+    clientId: input?.clientId ?? null,
+  }))
+  .handler(async ({ data, context }) => {
+    const { clientId } = await resolveClient(context as any, data.clientId);
+    if (!clientId) return { subAccounts: [] as ClientSubAccount[] };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("client_ghl_connections")
+      .select("api_key")
+      .eq("client_id", clientId)
+      .maybeSingle();
+    if (!row?.api_key) return { subAccounts: [] as ClientSubAccount[] };
+
+    const res = await fetch("https://services.leadconnectorhq.com/locations/search?limit=100", {
+      headers: {
+        Authorization: `Bearer ${row.api_key}`,
+        Version: "2021-07-28",
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) {
+      console.error(`GHL sub-account list failed [${res.status}]`);
+      return { subAccounts: [] as ClientSubAccount[] };
+    }
+    const json = (await res.json()) as { locations?: { id: string; name: string }[] };
+    const subAccounts = (json.locations ?? [])
+      .map((l) => ({ id: l.id, name: l.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return { subAccounts };
+  });

@@ -24,6 +24,7 @@ import {
   notifyAdminsTaskRequest,
   type TaskBrief,
 } from "@/lib/request-task.functions";
+import { listClientSubAccounts } from "@/lib/client-ghl.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -174,13 +175,14 @@ export function RequestTaskDialog({
     setSubmittedTaskId(null);
   }
 
+  // Sub-accounts come live from this client's own GoHighLevel agency only.
+  const listSubAccounts = useServerFn(listClientSubAccounts);
   const subAccounts = useQuery({
-    queryKey: ["ghl-sub-accounts"],
+    queryKey: ["ghl-client-sub-accounts", client.id],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await db.from("ghl_sub_accounts").select("name").order("name");
-      if (error) return [] as { name: string }[];
-      return (data ?? []) as { name: string }[];
+      const r = await listSubAccounts({ data: { clientId: client.id } });
+      return r.subAccounts;
     },
   });
 
@@ -554,21 +556,37 @@ export function RequestTaskDialog({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="r-sub">GHL sub-account name</Label>
-                <Input
-                  id="r-sub"
-                  value={subAccount}
-                  maxLength={160}
-                  list="ghl-sub-accounts"
-                  placeholder="Which sub-account is this for?"
-                  onChange={(e) => setSubAccount(e.target.value)}
-                />
-                {(subAccounts.data?.length ?? 0) > 0 && (
-                  <datalist id="ghl-sub-accounts">
-                    {subAccounts.data!.map((s) => (
-                      <option key={s.name} value={s.name} />
-                    ))}
-                  </datalist>
+                <Label htmlFor="r-sub">GHL sub-account</Label>
+                {(subAccounts.data?.length ?? 0) > 0 ? (
+                  <Select value={subAccount} onValueChange={setSubAccount}>
+                    <SelectTrigger id="r-sub">
+                      <SelectValue placeholder="Pick a sub-account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subAccounts.data!.map((s) => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="r-sub"
+                    value={subAccount}
+                    maxLength={160}
+                    placeholder={
+                      subAccounts.isLoading
+                        ? "Loading your sub-accounts…"
+                        : "Which sub-account is this for?"
+                    }
+                    onChange={(e) => setSubAccount(e.target.value)}
+                  />
+                )}
+                {!subAccounts.isLoading && (subAccounts.data?.length ?? 0) === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Connect your GoHighLevel agency in Settings to pick from your sub-accounts.
+                  </p>
                 )}
               </div>
               <div className="space-y-1.5">

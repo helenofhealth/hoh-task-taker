@@ -14,7 +14,7 @@ export function PasswordRequirements({ value, className }: { value: string; clas
             key={rule.id}
             className={cn("flex items-center gap-1.5", ok ? "text-foreground" : "text-muted-foreground")}
           >
-            {ok ? <Check className="size-3.5 text-[hsl(var(--complete,var(--primary)))]" /> : <X className="size-3.5" />}
+            {ok ? <Check className="size-3.5 text-primary" /> : <X className="size-3.5" />}
             <span>{rule.label}</span>
           </li>
         );

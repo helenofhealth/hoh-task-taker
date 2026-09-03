@@ -124,10 +124,19 @@ function PortalPage() {
       </div>
 
       {!client ? (
-        <p className="mt-8 rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-soft">
-          Your account is not linked to a client yet. Please contact the Helen of Health team and
-          they will connect your login to your account.
-        </p>
+        <div className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <p className="text-sm text-muted-foreground">
+            Your login is not connected to a client workspace yet. If you were onboarded with this
+            email address, you can connect it yourself right now.
+          </p>
+          <Button onClick={claim} disabled={claiming}>
+            {claiming && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Connect my account
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No match found? Contact the Helen of Health team and they will connect it for you.
+          </p>
+        </div>
       ) : (
         <>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -192,7 +192,7 @@ function StaffClientsPage() {
           origin: window.location.origin,
         },
       });
-      return { invited: result.invited };
+      return { invited: result.invited, emailSent: result.emailSent };
     },
     onSuccess: async (result) => {
       setName("");

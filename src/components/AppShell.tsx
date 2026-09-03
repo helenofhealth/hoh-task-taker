@@ -10,8 +10,8 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { initials, useMe } from "@/hooks/useAuth";
 
 const nav = [
-  { to: "/onboarding", label: "Get started" },
-  { to: "/portal", label: "My portal" },
+  { to: "/onboarding", label: "Get started" clientOnly: true },
+  { to: "/portal", label: "My portal" clientOnly: true  },
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
   { to: "/usage-report", label: "Usage report", staffOnly: true },
@@ -21,7 +21,12 @@ const nav = [
   { to: "/credit-history", label: "Credit history", staffOnly: true },
   { to: "/settings", label: "Settings" },
 ];
-
+{nav
+  .filter((item) => {
+    if (item.clientOnly && !me.profile?.client_id) return false;
+    if (item.staffOnly && !me.isStaff) return false;
+    return true;
+  })
 export function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   const navigate = useNavigate();
   const me = useMe();

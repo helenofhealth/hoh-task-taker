@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, Clock, Inbox, Library, Pencil, Plus, Search } from "lucide-react";
+import { Archive, Clock, Inbox, Library, Pencil, Plus, Search, Send } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -24,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMe } from "@/hooks/useAuth";
-import { fetchProvenTasks, type ProvenTask } from "@/lib/tracker";
+import { fetchClients, fetchProvenTasks, type ProvenTask } from "@/lib/tracker";
+import { assignProvenTaskToClient } from "@/lib/assign-proven-task.functions";
 
 const db = supabase as unknown as { from: (t: string) => any };
 
@@ -82,8 +84,61 @@ function ProvenTasksPage() {
   const [category, setCategory] = useState("all");
   const [showArchived, setShowArchived] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const navigate = useNavigate();
+
+  // "Send to client" state
+  const [sendTask, setSendTask] = useState<ProvenTask | null>(null);
+  const [sendClientId, setSendClientId] = useState("");
+  const [sendDue, setSendDue] = useState("");
+  const [sendSubAccount, setSendSubAccount] = useState("");
+  const [sendPriority, setSendPriority] = useState("normal");
 
   const library = useQuery({ queryKey: ["proven_tasks"], queryFn: fetchProvenTasks });
+  const clients = useQuery({
+    queryKey: ["clients"],
+    queryFn: fetchClients,
+    enabled: !!sendTask,
+  });
+  const assign = useServerFn(assignProvenTaskToClient);
+
+  const send = useMutation({
+    mutationFn: async () => {
+      if (!sendTask) throw new Error("Pick a proven task");
+      if (!sendClientId) throw new Error("Pick a client");
+      return assign({
+        data: {
+          provenTaskId: sendTask.id,
+          clientId: sendClientId,
+          origin: window.location.origin,
+          dueDate: sendDue || null,
+          subAccount: sendSubAccount || null,
+          priority: sendPriority,
+        },
+      });
+    },
+    onSuccess: (res) => {
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
+      if (res.ghl.pushed) {
+        toast.success(
+          res.ghl.ownAgency
+            ? "Task added to the client's portal and their own GoHighLevel agency"
+            : "Task added to the client's portal and synced to GoHighLevel",
+        );
+      } else {
+        toast.success("Task added to the client's portal", {
+          description: res.ghl.error ?? undefined,
+        });
+      }
+      const taskId = res.taskId;
+      setSendTask(null);
+      setSendClientId("");
+      setSendDue("");
+      setSendSubAccount("");
+      setSendPriority("normal");
+      void navigate({ to: "/board", search: { task: taskId } as never });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const categories = useMemo(
     () => [...new Set((library.data ?? []).map((t) => t.category))].sort(),
@@ -260,7 +315,21 @@ function ProvenTasksPage() {
               {t.subtasks.length} subtasks · {t.deliverables.length} deliverables ·{" "}
               {t.qc_checklist.length} QC checks
             </p>
-            <div className="mt-auto flex gap-2 pt-3">
+            <div className="mt-auto flex flex-wrap gap-2 pt-3">
+              {t.status !== "archived" && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSendTask(t);
+                    setSendClientId("");
+                    setSendDue("");
+                    setSendSubAccount("");
+                    setSendPriority("normal");
+                  }}
+                >
+                  <Send className="mr-1 size-3.5" /> Send to client
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
@@ -301,6 +370,81 @@ function ProvenTasksPage() {
           </p>
         )}
       </div>
+
+      <Dialog open={!!sendTask} onOpenChange={(v) => !v && setSendTask(null)}>
+        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Send to a client's portal</DialogTitle>
+          </DialogHeader>
+          {sendTask && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                “{sendTask.title}” will be created as a real task in the client's board with its{" "}
+                {sendTask.subtasks.length} subtasks, {sendTask.deliverables.length} deliverables and{" "}
+                {sendTask.qc_checklist.length} QC checks, then synced to GoHighLevel.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Client</Label>
+                <Select value={sendClientId} onValueChange={setSendClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={clients.isLoading ? "Loading…" : "Pick a client"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(clients.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Due date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={sendDue}
+                    onChange={(e) => setSendDue(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Priority</Label>
+                  <Select value={sendPriority} onValueChange={setSendPriority}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>GoHighLevel sub-account (optional)</Label>
+                <Input
+                  value={sendSubAccount}
+                  onChange={(e) => setSendSubAccount(e.target.value)}
+                  placeholder="Exact sub-account name"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setSendTask(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!sendClientId || send.isPending}
+                  onClick={() => send.mutate()}
+                >
+                  {send.isPending ? "Sending…" : "Send to client"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
         <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">

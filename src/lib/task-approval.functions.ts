@@ -54,11 +54,11 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
 
     // Push a real task into GoHighLevel when the integration is connected.
     const ghl: ApprovalResult["ghl"] = { pushed: false, taskId: null, error: null };
-    const apiKey = process.env["GHL_API_KEY"];
-    if (apiKey) {
+    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
+    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
+    if (creds) {
       try {
-        const { pushBriefToGhl } = await import("./ghl-push.server");
-        const res = await pushBriefToGhl(supabaseAdmin, apiKey, {
+        const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
           title: task.title,
           description: task.description ?? null,
           subtasks: (task.subtasks as string[] | null) ?? [],
@@ -70,7 +70,7 @@ export const approveTaskRequest = createServerFn({ method: "POST" })
           clientName: client?.name ?? "Client",
           clientEmail: client?.email ?? null,
           appLink: link,
-        });
+        }, creds.locationId);
         ghl.pushed = true;
         ghl.taskId = res.taskId;
         await supabaseAdmin
@@ -205,10 +205,6 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
   .inputValidator(validate)
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const apiKey = process.env["GHL_API_KEY"];
-    if (!apiKey) {
-      throw new Error("GoHighLevel is not connected yet — add the GHL_API_KEY secret first.");
-    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: task, error } = await supabaseAdmin
       .from("tasks")
@@ -220,9 +216,15 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
     const client = (task.clients as { name: string; email: string | null } | null) ?? null;
     const base = data.origin.replace(/\/+$/, "");
     const link = `${base}/board?task=${encodeURIComponent(task.id)}`;
-    const { pushBriefToGhl } = await import("./ghl-push.server");
+    const { pushBriefToGhl, resolveGhlCredentials } = await import("./ghl-push.server");
+    const creds = await resolveGhlCredentials(supabaseAdmin, task.client_id ?? null);
+    if (!creds) {
+      throw new Error(
+        "GoHighLevel isn't connected yet — connect an agency in Settings and try again.",
+      );
+    }
     try {
-      const res = await pushBriefToGhl(supabaseAdmin, apiKey, {
+      const res = await pushBriefToGhl(supabaseAdmin, creds.apiKey, {
         title: task.title,
         description: task.description ?? null,
         subtasks: (task.subtasks as string[] | null) ?? [],
@@ -234,7 +236,7 @@ export const pushTaskToGhl = createServerFn({ method: "POST" })
         clientName: client?.name ?? "Client",
         clientEmail: client?.email ?? null,
         appLink: link,
-      });
+      }, creds.locationId);
       await supabaseAdmin
         .from("tasks")
         .update({

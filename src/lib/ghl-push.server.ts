@@ -76,21 +76,56 @@ export function buildGhlBody(p: GhlTaskPayload) {
     .slice(0, 5000);
 }
 
+export interface GhlCredentials {
+  apiKey: string;
+  /** Location to use when the client connected their own agency. */
+  locationId: string | null;
+  /** Whether the credentials belong to the client's own agency. */
+  ownAgency: boolean;
+}
+
+/**
+ * Picks the credentials to push with: the client's own connected agency when
+ * they have one, otherwise our agency key.
+ */
+export async function resolveGhlCredentials(
+  supabaseAdmin: any,
+  clientId: string | null,
+): Promise<GhlCredentials | null> {
+  if (clientId) {
+    const { data: own } = await supabaseAdmin
+      .from("client_ghl_connections")
+      .select("api_key, location_id")
+      .eq("client_id", clientId)
+      .maybeSingle();
+    if (own?.api_key) {
+      return { apiKey: own.api_key, locationId: own.location_id ?? null, ownAgency: true };
+    }
+  }
+  const agencyKey = process.env["GHL_API_KEY"];
+  if (agencyKey) return { apiKey: agencyKey, locationId: null, ownAgency: false };
+  return null;
+}
+
 /** Resolves the GHL location id for a sub-account name (falls back to the only one). */
 async function resolveLocationId(
   supabaseAdmin: any,
   subAccount: string | null,
+  fallbackLocationId: string | null,
 ): Promise<string> {
   const { data } = await supabaseAdmin.from("ghl_sub_accounts").select("ghl_id, name");
   const rows = (data ?? []) as { ghl_id: string; name: string }[];
-  if (rows.length === 0) {
-    throw new Error("No GoHighLevel sub-accounts synced yet — run the sync in Settings first.");
-  }
   if (subAccount) {
     const wanted = subAccount.trim().toLowerCase();
     const hit = rows.find((r) => r.name.trim().toLowerCase() === wanted);
     if (hit) return hit.ghl_id;
-    throw new Error(`No synced GoHighLevel sub-account named "${subAccount}".`);
+    if (!fallbackLocationId) {
+      throw new Error(`No synced GoHighLevel sub-account named "${subAccount}".`);
+    }
+  }
+  if (fallbackLocationId) return fallbackLocationId;
+  if (rows.length === 0) {
+    throw new Error("No GoHighLevel sub-accounts synced yet — run the sync in Settings first.");
   }
   if (rows.length === 1) return rows[0]!.ghl_id;
   throw new Error("This task has no sub-account set, so we can't tell where to create it in GoHighLevel.");
@@ -133,8 +168,13 @@ export async function pushBriefToGhl(
   supabaseAdmin: any,
   apiKey: string,
   payload: GhlTaskPayload,
+  fallbackLocationId: string | null = null,
 ): Promise<GhlPushResult> {
-  const locationId = await resolveLocationId(supabaseAdmin, payload.subAccount);
+  const locationId = await resolveLocationId(
+    supabaseAdmin,
+    payload.subAccount,
+    fallbackLocationId,
+  );
   const contactId = await resolveContactId(
     apiKey,
     locationId,

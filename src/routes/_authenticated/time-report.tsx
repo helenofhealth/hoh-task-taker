@@ -106,12 +106,14 @@ function TimeReportPage() {
   const [action, setAction] = useState<AuditAction | "all">("all");
   const [taskId, setTaskId] = useState<string>("all");
   const [clientId, setClientId] = useState<string>("all");
+  const [project, setProject] = useState<string>("all");
 
   // Every filter is independent and optional — "all" means "don't filter on this field".
   const actionFilter = action === "all" ? null : action;
   const taskFilter = taskId === "all" ? null : taskId;
   const clientFilter = clientId === "all" ? null : clientId;
-  const hasFilters = Boolean(actionFilter || taskFilter || clientFilter);
+  const projectFilter = project === "all" ? null : project;
+  const hasFilters = Boolean(actionFilter || taskFilter || clientFilter || projectFilter);
 
   const inRange = (iso: string) => {
     const day = isoDay(new Date(new Date(iso).getTime() - new Date(iso).getTimezoneOffset() * 60000));
@@ -121,10 +123,28 @@ function TimeReportPage() {
   const taskClientId = (taskIdValue: string, fallback?: string | null) =>
     (tasks.data ?? []).find((t) => t.id === taskIdValue)?.client_id ?? fallback ?? null;
 
+  const NO_PROJECT = "No project";
+  const taskProject = (taskIdValue: string, fallback?: string | null | undefined) =>
+    (tasks.data ?? []).find((t) => t.id === taskIdValue)?.project ?? fallback ?? null;
+
+  /** Every project name that appears on the tasks in view, for the filter dropdown. */
+  const projectOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of tasks.data ?? []) {
+      if (clientFilter && t.client_id !== clientFilter) continue;
+      if (t.project?.trim()) names.add(t.project.trim());
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [tasks.data, clientFilter]);
+
   const filteredLogged = logged.filter((e) => {
     if (!inRange(e.started_at)) return false;
     if (taskFilter && e.task_id !== taskFilter) return false;
     if (clientFilter && taskClientId(e.task_id, e.tasks?.client_id) !== clientFilter) return false;
+    if (projectFilter) {
+      const name = taskProject(e.task_id, e.tasks?.project ?? null);
+      if ((name?.trim() || NO_PROJECT) !== projectFilter) return false;
+    }
     return true;
   });
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "report-csv" | "report-pdf" | null>(
@@ -204,6 +224,46 @@ function TimeReportPage() {
       }));
   }, [filteredLogged, from, to]);
 
+  /** Hours per project across the filtered range. */
+  const projectTotals = useMemo(() => {
+    const taskList = tasks.data ?? [];
+    const byProject = new Map<
+      string,
+      { name: string; minutes: number; billableMinutes: number; freeMinutes: number; tasks: Set<string>; clients: Set<string> }
+    >();
+    for (const e of filteredLogged) {
+      const task = taskList.find((t) => t.id === e.task_id);
+      const name = task?.project?.trim() || e.tasks?.project?.trim() || NO_PROJECT;
+      if (!byProject.has(name))
+        byProject.set(name, {
+          name,
+          minutes: 0,
+          billableMinutes: 0,
+          freeMinutes: 0,
+          tasks: new Set(),
+          clients: new Set(),
+        });
+      const g = byProject.get(name)!;
+      const mins = e.minutes ?? 0;
+      g.minutes += mins;
+      if (e.billable === false) g.freeMinutes += mins;
+      else g.billableMinutes += mins;
+      g.tasks.add(e.task_id);
+      const cid = task?.client_id ?? e.tasks?.client_id ?? null;
+      g.clients.add(clientList.find((c) => c.id === cid)?.name ?? "No client");
+    }
+    return [...byProject.values()]
+      .sort((a, b) => b.minutes - a.minutes)
+      .map((g) => ({
+        name: g.name,
+        minutes: g.minutes,
+        billableMinutes: g.billableMinutes,
+        freeMinutes: g.freeMinutes,
+        taskCount: g.tasks.size,
+        clients: [...g.clients].sort(),
+      }));
+  }, [filteredLogged, tasks.data, clientList]);
+
   const totalRangeHours = weekly.reduce((sum, w) => sum + w.hours, 0);
   const totalRangeBillable = weekly.reduce((sum, w) => sum + w.billableHours, 0);
   const totalRangeFree = weekly.reduce((sum, w) => sum + w.freeHours, 0);
@@ -228,6 +288,7 @@ function TimeReportPage() {
         const cid = task?.client_id ?? e.tasks?.client_id ?? null;
         return [
           clientList.find((c) => c.id === cid)?.name ?? "No client",
+          task?.project?.trim() || e.tasks?.project?.trim() || NO_PROJECT,
           task?.title ?? "Task",
           displayName(profiles.data ?? [], e.user_id),
           new Date(e.started_at).toLocaleString(),
@@ -246,6 +307,7 @@ function TimeReportPage() {
     }
     const headers = [
       "Client",
+      "Project",
       "Task",
       "Member",
       "Started",
@@ -263,18 +325,18 @@ function TimeReportPage() {
     try {
       const baseName = `time-report-${label}-${from}-${to}`;
       if (format === "pdf") {
-        const totalMinutes = rows.reduce((s, r) => s + Number(r[6] ?? 0), 0);
+        const totalMinutes = rows.reduce((s, r) => s + Number(r[7] ?? 0), 0);
         await downloadPdfReport(
           `${baseName}.pdf`,
           `Time report — ${onlyClientId ? clientList.find((c) => c.id === onlyClientId)?.name ?? "Client" : "All clients"}`,
           [
             `Period: ${from} to ${to}`,
             `Entries: ${rows.length} · Total logged: ${formatHours(totalMinutes / 60)} (15-minute increments)`,
-            `Overrides: ${rows.filter((r) => r[8] === "Yes").length}`,
+            `Overrides: ${rows.filter((r) => r[9] === "Yes").length}`,
           ],
           headers,
           rows,
-          [1.2, 2, 1.2, 1.4, 0.9, 0.8, 0.8, 0.8, 0.8, 0.8],
+          [1.1, 1.2, 1.8, 1.1, 1.3, 0.85, 0.75, 0.75, 0.75, 0.75, 0.75],
         );
       } else {
         downloadTextFile(`${baseName}.csv`, toCsv(headers, rows));
@@ -450,6 +512,23 @@ function TimeReportPage() {
             </div>
             )}
             <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Project</Label>
+              <Select value={project} onValueChange={(v) => setProject(v)}>
+                <SelectTrigger className="w-[11rem]">
+                  <SelectValue placeholder="All projects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All projects</SelectItem>
+                  {projectOptions.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={NO_PROJECT}>No project</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Task</Label>
               <Select value={taskId} onValueChange={(v) => setTaskId(v)}>
                 <SelectTrigger className="w-[12rem]">
@@ -474,6 +553,7 @@ function TimeReportPage() {
                   setAction("all");
                   setClientId("all");
                   setTaskId("all");
+                  setProject("all");
                 }}
               >
                 Clear filters
@@ -712,6 +792,47 @@ function TimeReportPage() {
           </p>
         )}
       </div>
+
+      <section className="mt-10 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <h2 className="text-lg font-semibold">Hours per project</h2>
+        <p className="text-xs text-muted-foreground">
+          Time logged between {from} and {to}, grouped by project.
+        </p>
+        {projectTotals.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No logged time matches the current filters.
+          </p>
+        ) : (
+          <table className="mt-4 w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="py-2 font-medium">Project</th>
+                <th className="py-2 font-medium">Clients</th>
+                <th className="py-2 text-right font-medium">Tasks</th>
+                <th className="py-2 text-right font-medium">Billable</th>
+                <th className="py-2 text-right font-medium">Free</th>
+                <th className="py-2 text-right font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projectTotals.map((p) => (
+                <tr key={p.name} className="border-b border-border last:border-0">
+                  <td className="py-2 font-medium">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{p.clients.join(", ") || "—"}</td>
+                  <td className="py-2 text-right tabular-nums">{p.taskCount}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {formatDuration(p.billableMinutes)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">{formatDuration(p.freeMinutes)}</td>
+                  <td className="py-2 text-right font-medium tabular-nums">
+                    {formatDuration(p.minutes)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <h2 className="mt-10 text-lg font-semibold">Detailed timeline</h2>
       <p className="mt-1 text-sm text-muted-foreground">

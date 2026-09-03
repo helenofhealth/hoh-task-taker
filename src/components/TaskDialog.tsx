@@ -305,6 +305,8 @@ export function TaskDialog({
         changed.push(
           patch.start_date ? `the start date to ${patch.start_date}` : "removed the start date",
         );
+      if (patch.project !== undefined && patch.project !== task.project)
+        changed.push(patch.project ? `the project to ${patch.project}` : "removed the project");
       if (patch.priority !== undefined && patch.priority !== task.priority)
         changed.push(`the priority to ${patch.priority}`);
       if (changed.length > 0) {
@@ -992,6 +994,18 @@ export function TaskDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              </Field>
+              <Field label="Project">
+                <Input
+                  disabled={!canEdit}
+                  placeholder="No project"
+                  value={draft.project ?? ""}
+                  onChange={(e) => setDraft({ ...draft, project: e.target.value })}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next !== (task.project ?? null)) save.mutate({ project: next });
+                  }}
+                />
               </Field>
               <Field label="Start date">
                 <Input

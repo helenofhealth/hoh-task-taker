@@ -48,6 +48,7 @@ export function NewTaskDialog({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [project, setProject] = useState("");
   const [clientId, setClientId] = useState(defaultClientId ?? "");
   const [ownerId, setOwnerId] = useState(userId);
   const [followerIds, setFollowerIds] = useState<string[]>([]);
@@ -136,6 +137,7 @@ export function NewTaskDialog({
         .insert({
           title: clean,
           description: description.trim() || null,
+          project: project.trim() || null,
           client_id: clientId,
           owner_id: ownerId || null,
           priority,
@@ -174,6 +176,7 @@ export function NewTaskDialog({
       setOpen(false);
       setTitle("");
       setDescription("");
+      setProject("");
       setFollowerIds([]);
       toast.success("Task created");
     },
@@ -195,6 +198,19 @@ export function NewTaskDialog({
           <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>
             <Input id="t-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="t-project">Project (optional)</Label>
+            <Input
+              id="t-project"
+              value={project}
+              maxLength={120}
+              placeholder="e.g. Website relaunch"
+              onChange={(e) => setProject(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Group tasks and their tracked time under a project.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="t-desc">Description</Label>

@@ -578,6 +578,7 @@ export type Database = {
           owner_id: string | null
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
+          project: string | null
           recurrence: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -595,6 +596,7 @@ export type Database = {
           owner_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          project?: string | null
           recurrence?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -612,6 +614,7 @@ export type Database = {
           owner_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          project?: string | null
           recurrence?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]

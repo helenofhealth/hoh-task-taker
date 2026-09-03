@@ -106,13 +106,11 @@ function OnboardingPage() {
   });
 
   useEffect(() => {
-    if (boot.data) setState(boot.data);
-  }, [boot.data]);
-
-  useEffect(() => {
-    setFullName((prev) => prev || me.profile?.full_name || "");
-    setPhone((prev) => prev || me.profile?.phone || "");
-  }, [me.profile?.full_name, me.profile?.phone]);
+    if (!boot.data) return;
+    setState(boot.data);
+    setFullName((prev) => prev || boot.data.fullName || me.profile?.full_name || "");
+    setPhone((prev) => prev || boot.data.phone || "");
+  }, [boot.data, me.profile?.full_name]);
 
   const clientId = state?.clientId ?? me.profile?.client_id ?? null;
   const client = (clients.data ?? []).find((c) => c.id === clientId) ?? null;

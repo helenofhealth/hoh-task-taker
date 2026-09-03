@@ -5,6 +5,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export interface OnboardingState {
   clientId: string | null;
   clientName: string | null;
+  fullName: string | null;
+  phone: string | null;
   profileDone: boolean;
   hoursReviewed: boolean;
   firstTaskDone: boolean;
@@ -35,10 +37,16 @@ type Row = {
 const COLUMNS =
   "client_id, profile_done, hours_reviewed, first_task_done, tour_done, completed_at, welcome_email_sent_at";
 
-function toState(row: Row, clientName: string | null): OnboardingState {
+function toState(
+  row: Row,
+  clientName: string | null,
+  profile?: { full_name?: string | null; phone?: string | null } | null,
+): OnboardingState {
   return {
     clientId: row.client_id,
     clientName,
+    fullName: profile?.full_name ?? null,
+    phone: profile?.phone ?? null,
     profileDone: row.profile_done,
     hoursReviewed: row.hours_reviewed,
     firstTaskDone: row.first_task_done,
@@ -149,7 +157,7 @@ export const startOnboarding = createServerFn({ method: "POST" })
       }
     }
 
-    return toState(row as Row, clientName);
+    return toState(row as Row, clientName, profile);
   });
 
 /** Marks one setup step complete (and optionally saves the profile details). */
@@ -217,5 +225,11 @@ export const completeOnboardingStep = createServerFn({ method: "POST" })
       clientName = (client?.business_name as string | null) || (client?.name as string | null) || null;
     }
 
-    return toState(current, clientName);
+    const { data: saved } = await supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", userId)
+      .maybeSingle();
+
+    return toState(current, clientName, saved);
   });

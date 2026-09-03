@@ -1,0 +1,1 @@
+revoke execute on function public.create_welcome_task() from public, anon, authenticated;

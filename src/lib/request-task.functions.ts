@@ -299,7 +299,7 @@ export const notifyAdminsTaskRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: NotifyAdminsInput) => {
     if (!input.taskId) throw new Error("Task is required");
-    return input;
+    return { ...input, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { data: canSee } = await context.supabase.rpc("can_see_task", {

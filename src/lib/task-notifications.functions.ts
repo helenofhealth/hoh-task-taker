@@ -116,7 +116,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: NotifyInput) => {
     if (!input.taskId) throw new Error("Task is required");
-    return input;
+    return { ...input, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { STATUS_LABELS, createNotifications } = await import("./notifications.server");
@@ -168,7 +168,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const mentionIds = Array.isArray(input.mentionIds)
       ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
       : [];
-    return { ...input, commentBody: body, mentionIds };
+    return { ...input, commentBody: body, mentionIds, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { createNotifications } = await import("./notifications.server");
@@ -256,7 +256,7 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
   .inputValidator((input: NotifyTaskEventInput) => {
     if (!input.taskId) throw new Error("Task is required");
     if (!EVENT_KINDS.includes(input.kind)) throw new Error("Unknown event kind");
-    return input;
+    return { ...input, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { createNotifications } = await import("./notifications.server");
@@ -365,7 +365,7 @@ export const notifyCommentEdited = createServerFn({ method: "POST" })
     const mentionIds = Array.isArray(input.mentionIds)
       ? [...new Set(input.mentionIds.filter((id) => typeof id === "string" && id.length > 0))]
       : [];
-    return { ...input, commentBody: body, mentionIds };
+    return { ...input, commentBody: body, mentionIds, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { createNotifications, filterByPrefs } = await import("./notifications.server");
@@ -468,7 +468,7 @@ export const notifyCommentDeleted = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { taskId: string; commentId: string }) => {
     if (!input.taskId || !input.commentId) throw new Error("Task and comment are required");
-    return input;
+    return { ...input, origin: safeAppOrigin(input.origin) };
   })
   .handler(async ({ data, context }) => {
     const { data: canSee } = await context.supabase.rpc("can_see_task", { _task_id: data.taskId });

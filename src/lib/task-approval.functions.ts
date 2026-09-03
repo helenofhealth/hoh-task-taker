@@ -18,7 +18,7 @@ export interface ApprovalResult {
 
 function validate(input: ApprovalInput) {
   if (!input.taskId) throw new Error("Task is required");
-  return input;
+  return { ...input, origin: safeAppOrigin(input.origin) };
 }
 
 async function requireAdmin(context: any) {

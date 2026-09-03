@@ -34,6 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskApprovalCard } from "@/components/TaskApprovalCard";
+import { GhlTimeline } from "@/components/GhlTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -1094,6 +1095,10 @@ export function TaskDialog({
                 <TaskApprovalCard task={task} />
               </Field>
             )}
+
+            <Field label="GHL timeline">
+              <GhlTimeline task={task} entries={taskEntries} />
+            </Field>
 
             {(task.source === "client_request" ||
               task.sub_account ||

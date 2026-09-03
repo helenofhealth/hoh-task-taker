@@ -75,6 +75,8 @@ export function GhlSettingsCard() {
 
   const data = status.data;
   const own = ownStatus.data;
+  // A client with their own agency key is connected, even if the team-level key isn't set.
+  const effectiveConnected = Boolean(data?.connected || own?.connected);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
@@ -93,13 +95,13 @@ export function GhlSettingsCard() {
           <>
             <p>
               Status:{" "}
-              {data.connected ? (
+              {effectiveConnected ? (
                 <span className="font-medium text-status-completed">Connected</span>
               ) : (
                 <span className="font-medium text-warning">Not connected</span>
               )}
             </p>
-            {!data.connected && me.isStaff && (
+            {!effectiveConnected && me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 Add your agency-level GoHighLevel API key as the <code>GHL_API_KEY</code> secret.
                 As soon as it's saved, this card connects, the sync below pulls your real
@@ -107,15 +109,17 @@ export function GhlSettingsCard() {
                 real GoHighLevel tasks.
               </p>
             )}
-            {!data.connected && !me.isStaff && (
+            {!effectiveConnected && !me.isStaff && (
               <p className="text-xs text-muted-foreground">
                 Your team is still setting up the GoHighLevel connection. You can keep sending
                 requests — they will sync across once it's connected.
               </p>
             )}
-            {data.connected && !me.isStaff && (
+            {effectiveConnected && !me.isStaff && (
               <p className="text-xs text-muted-foreground">
-                Approved requests are created automatically in GoHighLevel for you.
+                {own?.connected
+                  ? "Approved requests are created inside your own GoHighLevel agency."
+                  : "Approved requests are created automatically in GoHighLevel for you."}
               </p>
             )}
 

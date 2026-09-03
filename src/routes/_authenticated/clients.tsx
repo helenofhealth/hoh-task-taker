@@ -455,6 +455,8 @@ function StaffClientsPage() {
           <tbody>
             {clientList.map((c) => {
               const b = computeBalance(c.id, clientList, credits.data ?? [], entries.data ?? []);
+              const invite = (invites.data ?? []).find((i) => i.client_id === c.id);
+
               const open = timelineFor === c.id;
               return (
                 <Fragment key={c.id}>

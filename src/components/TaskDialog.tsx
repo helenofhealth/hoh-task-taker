@@ -125,6 +125,9 @@ interface Props {
   entries: TimeEntry[];
   userId: string;
   canEdit: boolean;
+  /** Only admins may set who owns or follows a task. */
+  canAssign?: boolean;
+
   /** Client viewing their own still-requested task may withdraw it. */
   canWithdrawRequest?: boolean;
   initialCommentId?: string | undefined;
@@ -142,6 +145,8 @@ export function TaskDialog({
   entries,
   userId,
   canEdit,
+  canAssign = false,
+
   canWithdrawRequest = false,
   initialCommentId,
   onInitialCommentUsed,
@@ -1228,7 +1233,8 @@ export function TaskDialog({
               </div>
             )}
 
-            {canEdit && (
+            {canEdit && canAssign && (
+
               <>
                 <Field label="Owners">
                   <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">

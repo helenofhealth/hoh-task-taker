@@ -303,6 +303,8 @@ function PortalPage() {
         entries={entries.data ?? []}
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
+        canAssign={me.isAdmin}
+
       />
     </AppShell>
   );

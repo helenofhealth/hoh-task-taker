@@ -226,6 +226,9 @@ export function NewTaskDialog({
       setProject("");
       setFollowerIds([]);
       setApproved(false);
+      setAiPrompt("");
+      setAiBrief(null);
+
       toast.success("Task created");
     },
     onError: (e: Error) => toast.error(e.message),

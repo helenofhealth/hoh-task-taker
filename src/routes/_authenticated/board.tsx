@@ -456,6 +456,8 @@ function BoardPage() {
         entries={entries.data ?? []}
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
+        canAssign={me.isAdmin}
+
         canWithdrawRequest={
           me.isClient &&
           openTask?.source === "client_request" &&

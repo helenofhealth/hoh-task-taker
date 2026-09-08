@@ -188,11 +188,12 @@ export function NewTaskDialog({
           position: Date.now(),
           source: "staff",
           sub_account: subAccount.trim() || null,
-          proven_task_id: tpl?.id ?? null,
-          subtasks: tpl?.subtasks ?? [],
-          deliverables: tpl?.deliverables ?? [],
-          qc_checklist: tpl?.qc_checklist ?? [],
-          estimated_hours: tpl?.estimated_hours ?? null,
+          proven_task_id: tpl?.id ?? aiBrief?.matched_proven_task_id ?? null,
+          subtasks: tpl?.subtasks ?? aiBrief?.subtasks ?? [],
+          deliverables: tpl?.deliverables ?? aiBrief?.deliverables ?? [],
+          qc_checklist: tpl?.qc_checklist ?? aiBrief?.qc_checklist ?? [],
+          estimated_hours: tpl?.estimated_hours ?? aiBrief?.estimated_hours ?? null,
+
         })
         .select("id")
         .single();

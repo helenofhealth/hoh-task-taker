@@ -145,6 +145,8 @@ export function TaskDialog({
   entries,
   userId,
   canEdit,
+  canAssign = false,
+
   canWithdrawRequest = false,
   initialCommentId,
   onInitialCommentUsed,

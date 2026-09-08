@@ -260,6 +260,40 @@ export function NewTaskDialog({
               Pick a template there to pre-fill the brief, subtasks and estimate.
             </p>
           </div>
+          <div className="space-y-2 rounded-xl border border-primary/40 bg-primary-soft/50 p-3">
+            <Label htmlFor="t-ai" className="flex items-center gap-1.5">
+              <Sparkles className="size-4 text-primary" /> Or describe it and let AI draft it
+            </Label>
+            <Textarea
+              id="t-ai"
+              rows={3}
+              value={aiPrompt}
+              maxLength={12000}
+              placeholder="e.g. Set up a 3-email nurture sequence for new leads with a booking link"
+              onChange={(e) => setAiPrompt(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={aiDraft.isPending || aiPrompt.trim().length < 10}
+              onClick={() => aiDraft.mutate()}
+            >
+              <Sparkles className="mr-1.5 size-4" />
+              {aiDraft.isPending ? "Drafting…" : "Draft with AI"}
+            </Button>
+            {aiBrief && (
+              <div className="space-y-1 text-xs text-ink-soft">
+                <p>
+                  Drafted {aiBrief.subtasks.length} subtasks, {aiBrief.deliverables.length}{" "}
+                  deliverables, {aiBrief.qc_checklist.length} QC checks
+                  {aiBrief.estimated_hours ? ` · est. ${aiBrief.estimated_hours}h` : ""}.
+                </p>
+                <p>Title and description below are pre-filled — edit anything before creating.</p>
+              </div>
+            )}
+          </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>

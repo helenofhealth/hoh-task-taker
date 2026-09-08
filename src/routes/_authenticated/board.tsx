@@ -240,6 +240,8 @@ function BoardPage() {
             profiles={profiles.data ?? []}
             userId={me.userId ?? ""}
             canManageClients={me.isAdmin}
+            canAssign={me.isAdmin}
+
           />
         ) : myClient ? (
           <RequestTaskDialog client={myClient} userId={me.userId ?? ""} balance={myBalance} />

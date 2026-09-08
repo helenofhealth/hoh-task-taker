@@ -1233,7 +1233,8 @@ export function TaskDialog({
               </div>
             )}
 
-            {canEdit && (
+            {canEdit && canAssign && (
+
               <>
                 <Field label="Owners">
                   <div className="flex flex-wrap gap-3 rounded-xl border border-border p-3">

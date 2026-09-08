@@ -360,43 +360,48 @@ export function NewTaskDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Owner</Label>
-              <Select value={ownerId} onValueChange={setOwnerId}>
-                <SelectTrigger><SelectValue placeholder="Assign someone" /></SelectTrigger>
-                <SelectContent>
-                  {profiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>Followers — optional</Label>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-lg border border-border bg-surface-muted/40 px-3 py-2">
-                {profiles
-                  .filter((p) => p.id !== ownerId)
-                  .map((p) => {
-                    const checked = followerIds.includes(p.id);
-                    return (
-                      <label
-                        key={p.id}
-                        className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(v) =>
-                            setFollowerIds((prev) =>
-                              v === true ? [...prev, p.id] : prev.filter((id) => id !== p.id),
-                            )
-                          }
-                        />
-                        {p.full_name || p.email}
-                      </label>
-                    );
-                  })}
-              </div>
-            </div>
+            {canAssign && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>Owner</Label>
+                  <Select value={ownerId} onValueChange={setOwnerId}>
+                    <SelectTrigger><SelectValue placeholder="Assign someone" /></SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.full_name || p.email}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Followers — optional</Label>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-lg border border-border bg-surface-muted/40 px-3 py-2">
+                    {profiles
+                      .filter((p) => p.id !== ownerId)
+                      .map((p) => {
+                        const checked = followerIds.includes(p.id);
+                        return (
+                          <label
+                            key={p.id}
+                            className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) =>
+                                setFollowerIds((prev) =>
+                                  v === true ? [...prev, p.id] : prev.filter((id) => id !== p.id),
+                                )
+                              }
+                            />
+                            {p.full_name || p.email}
+                          </label>
+                        );
+                      })}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="space-y-1.5">
               <Label>Priority</Label>
               <Select value={priority} onValueChange={setPriority}>

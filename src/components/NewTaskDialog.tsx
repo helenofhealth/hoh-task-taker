@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ListChecks, Plus } from "lucide-react";
+import { ArrowRight, ListChecks, Plus, Sparkles } from "lucide-react";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
+import { generateTaskBrief, type TaskBrief } from "@/lib/request-task.functions";
 import { notifyTaskEvent } from "@/lib/task-notifications.functions";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -62,6 +65,30 @@ export function NewTaskDialog({
   const [subAccount, setSubAccount] = useState("");
   const [showNewClient, setShowNewClient] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBrief, setAiBrief] = useState<TaskBrief | null>(null);
+
+  const draftBrief = useServerFn(generateTaskBrief);
+  const aiDraft = useMutation({
+    mutationFn: async () =>
+      draftBrief({
+        data: {
+          description: aiPrompt.trim(),
+          ...(subAccount.trim() ? { subAccount: subAccount.trim() } : {}),
+          urgency: priority,
+          ...(dueDate ? { desiredDate: dueDate } : {}),
+        },
+      }),
+    onSuccess: (brief) => {
+      setAiBrief(brief);
+      if (brief.title) setTitle(brief.title);
+      if (brief.description) setDescription(brief.description);
+      toast.success("AI drafted the brief — review and edit before creating");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   const provenTasks = useQuery({
     queryKey: ["proven_tasks"],
@@ -161,11 +188,12 @@ export function NewTaskDialog({
           position: Date.now(),
           source: "staff",
           sub_account: subAccount.trim() || null,
-          proven_task_id: tpl?.id ?? null,
-          subtasks: tpl?.subtasks ?? [],
-          deliverables: tpl?.deliverables ?? [],
-          qc_checklist: tpl?.qc_checklist ?? [],
-          estimated_hours: tpl?.estimated_hours ?? null,
+          proven_task_id: tpl?.id ?? aiBrief?.matched_proven_task_id ?? null,
+          subtasks: tpl?.subtasks ?? aiBrief?.subtasks ?? [],
+          deliverables: tpl?.deliverables ?? aiBrief?.deliverables ?? [],
+          qc_checklist: tpl?.qc_checklist ?? aiBrief?.qc_checklist ?? [],
+          estimated_hours: tpl?.estimated_hours ?? aiBrief?.estimated_hours ?? null,
+
         })
         .select("id")
         .single();
@@ -198,6 +226,9 @@ export function NewTaskDialog({
       setProject("");
       setFollowerIds([]);
       setApproved(false);
+      setAiPrompt("");
+      setAiBrief(null);
+
       toast.success("Task created");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -229,6 +260,40 @@ export function NewTaskDialog({
               Pick a template there to pre-fill the brief, subtasks and estimate.
             </p>
           </div>
+          <div className="space-y-2 rounded-xl border border-primary/40 bg-primary-soft/50 p-3">
+            <Label htmlFor="t-ai" className="flex items-center gap-1.5">
+              <Sparkles className="size-4 text-primary" /> Or describe it and let AI draft it
+            </Label>
+            <Textarea
+              id="t-ai"
+              rows={3}
+              value={aiPrompt}
+              maxLength={12000}
+              placeholder="e.g. Set up a 3-email nurture sequence for new leads with a booking link"
+              onChange={(e) => setAiPrompt(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={aiDraft.isPending || aiPrompt.trim().length < 10}
+              onClick={() => aiDraft.mutate()}
+            >
+              <Sparkles className="mr-1.5 size-4" />
+              {aiDraft.isPending ? "Drafting…" : "Draft with AI"}
+            </Button>
+            {aiBrief && (
+              <div className="space-y-1 text-xs text-ink-soft">
+                <p>
+                  Drafted {aiBrief.subtasks.length} subtasks, {aiBrief.deliverables.length}{" "}
+                  deliverables, {aiBrief.qc_checklist.length} QC checks
+                  {aiBrief.estimated_hours ? ` · est. ${aiBrief.estimated_hours}h` : ""}.
+                </p>
+                <p>Title and description below are pre-filled — edit anything before creating.</p>
+              </div>
+            )}
+          </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="t-title">Title</Label>

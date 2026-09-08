@@ -8,7 +8,9 @@ import { ArrowRight, ListChecks, Plus, Sparkles } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { inviteClient } from "@/lib/invite-client.functions";
+import { generateTaskBrief, type TaskBrief } from "@/lib/request-task.functions";
 import { notifyTaskEvent } from "@/lib/task-notifications.functions";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

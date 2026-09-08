@@ -65,6 +65,30 @@ export function NewTaskDialog({
   const [subAccount, setSubAccount] = useState("");
   const [showNewClient, setShowNewClient] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBrief, setAiBrief] = useState<TaskBrief | null>(null);
+
+  const draftBrief = useServerFn(generateTaskBrief);
+  const aiDraft = useMutation({
+    mutationFn: async () =>
+      draftBrief({
+        data: {
+          description: aiPrompt.trim(),
+          ...(subAccount.trim() ? { subAccount: subAccount.trim() } : {}),
+          urgency: priority,
+          ...(dueDate ? { desiredDate: dueDate } : {}),
+        },
+      }),
+    onSuccess: (brief) => {
+      setAiBrief(brief);
+      if (brief.title) setTitle(brief.title);
+      if (brief.description) setDescription(brief.description);
+      toast.success("AI drafted the brief — review and edit before creating");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   const provenTasks = useQuery({
     queryKey: ["proven_tasks"],

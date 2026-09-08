@@ -41,12 +41,15 @@ export function NewTaskDialog({
   userId,
   defaultClientId,
   canManageClients = false,
+  canAssign = false,
 }: {
   clients: Client[];
   profiles: Profile[];
   userId: string;
   defaultClientId?: string | undefined;
   canManageClients?: boolean;
+  canAssign?: boolean;
+
 }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);

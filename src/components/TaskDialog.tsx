@@ -34,6 +34,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskApprovalCard } from "@/components/TaskApprovalCard";
+import { AiTaskUpdateCard } from "@/components/AiTaskUpdateCard";
+
 import { GhlTimeline } from "@/components/GhlTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -127,6 +129,9 @@ interface Props {
   canEdit: boolean;
   /** Only admins may set who owns or follows a task. */
   canAssign?: boolean;
+  /** Only admins may draft task updates with AI. */
+  canAiEdit?: boolean;
+
 
   /** Client viewing their own still-requested task may withdraw it. */
   canWithdrawRequest?: boolean;
@@ -146,6 +151,8 @@ export function TaskDialog({
   userId,
   canEdit,
   canAssign = false,
+  canAiEdit = false,
+
 
   canWithdrawRequest = false,
   initialCommentId,
@@ -1100,6 +1107,16 @@ export function TaskDialog({
                 }
               />
             </Field>
+
+            {canEdit && canAiEdit && (
+              <AiTaskUpdateCard
+                task={task}
+                applying={save.isPending}
+                onApply={(patch) => save.mutate(patch)}
+              />
+            )}
+
+
 
             {(task.approval_status ?? "not_required") !== "not_required" && (
               <Field label="Approval">

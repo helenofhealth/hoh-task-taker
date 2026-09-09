@@ -9,9 +9,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { initials, useMe } from "@/hooks/useAuth";
 
-const nav = [
-  { to: "/onboarding", label: "Get started" },
-  { to: "/portal", label: "My portal" },
+const nav: { to: string; label: string; staffOnly?: boolean; clientOnly?: boolean }[] = [
+  { to: "/onboarding", label: "Get started", clientOnly: true },
+  { to: "/portal", label: "My portal", clientOnly: true },
+
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },
   { to: "/usage-report", label: "Usage report", staffOnly: true },
@@ -45,6 +46,9 @@ export function AppShell({ children, actions }: { children: ReactNode; actions?:
           <nav className="flex items-center gap-1 rounded-full bg-muted p-1">
             {nav
               .filter((item) => !item.staffOnly || me.isStaff)
+              // Client setup pages stay hidden from admins and team members.
+              .filter((item) => !item.clientOnly || !me.isStaff)
+
               .map((item) => (
                 <Link
                   key={item.to}

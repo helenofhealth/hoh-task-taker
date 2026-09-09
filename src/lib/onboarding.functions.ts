@@ -134,8 +134,11 @@ export const startOnboarding = createServerFn({ method: "POST" })
       }
     }
 
+    // The welcome email is a client-portal email: never send it to staff.
+    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
     const email = (profile?.email as string | null) ?? null;
-    if (row && !row.welcome_email_sent_at && email) {
+    if (row && !row.welcome_email_sent_at && email && !isStaff) {
+
       try {
         const { sendClientWelcomeEmail } = await import("./invite-client.server");
         await sendClientWelcomeEmail(

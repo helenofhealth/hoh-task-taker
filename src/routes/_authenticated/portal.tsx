@@ -304,6 +304,7 @@ function PortalPage() {
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
         canAssign={me.isAdmin}
+            canAiEdit={me.isAdmin}
 
       />
     </AppShell>

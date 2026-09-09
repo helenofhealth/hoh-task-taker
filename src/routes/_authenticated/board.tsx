@@ -459,6 +459,7 @@ function BoardPage() {
         userId={me.userId ?? ""}
         canEdit={me.isStaff}
         canAssign={me.isAdmin}
+            canAiEdit={me.isAdmin}
 
         canWithdrawRequest={
           me.isClient &&

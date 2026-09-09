@@ -241,7 +241,6 @@ function BoardPage() {
             userId={me.userId ?? ""}
             canManageClients={me.isAdmin}
             canAssign={me.isAdmin}
-            canAiEdit={me.isAdmin}
 
           />
         ) : myClient ? (

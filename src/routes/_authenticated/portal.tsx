@@ -305,6 +305,7 @@ function PortalPage() {
         canEdit={me.isStaff}
         canAssign={me.isAdmin}
             canAiEdit={me.isAdmin}
+            canEditTime={me.isAdmin}
 
       />
     </AppShell>

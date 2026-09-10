@@ -35,6 +35,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskApprovalCard } from "@/components/TaskApprovalCard";
 import { AiTaskUpdateCard } from "@/components/AiTaskUpdateCard";
+import { withdrawTaskRequest } from "@/lib/withdraw-request.functions";
+
 
 import { GhlTimeline } from "@/components/GhlTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -161,17 +163,14 @@ export function TaskDialog({
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
 
+  const withdrawRequest = useServerFn(withdrawTaskRequest);
   const withdraw = useMutation({
     mutationFn: async () => {
       if (!task) return;
-      const { error } = await db
-        .from("tasks")
-        .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
-        .eq("id", task.id)
-        .eq("status", "requested")
-        .eq("source", "client_request");
-      if (error) throw error;
+      // Clients cannot remove the task themselves, so this runs server-side.
+      await withdrawRequest({ data: { taskId: task.id } });
     },
+
     onSuccess: () => {
       toast.success("Request withdrawn");
       void qc.invalidateQueries({ queryKey: ["tasks"] });

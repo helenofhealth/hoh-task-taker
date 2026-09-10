@@ -500,6 +500,24 @@ export async function stopTimer(
   if (error) throw error;
 }
 
+/** Admin correction of an already-logged entry. The stored duration always
+ *  stays on a 15-minute grid, so we move the end time to match. */
+export async function adjustTimeEntry(
+  entry: { id: string; started_at: string },
+  minutes: number,
+  billable: boolean,
+  note?: string | null,
+) {
+  const rounded = Math.max(15, Math.round(minutes / 15) * 15);
+  const ended = new Date(new Date(entry.started_at).getTime() + rounded * 60000).toISOString();
+  const patch: Record<string, unknown> = { ended_at: ended, billable };
+  if (note !== undefined) patch['note'] = note;
+  const { error } = await db.from("time_entries").update(patch).eq("id", entry.id);
+  if (error) throw error;
+  return rounded;
+}
+
+
 /** Trigger a browser download for a simple tabular PDF report. */
 export async function downloadPdfReport(
   fileName: string,

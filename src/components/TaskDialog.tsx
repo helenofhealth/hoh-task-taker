@@ -62,6 +62,7 @@ import {
 import { checkClientHourAlert } from "@/lib/hour-alerts.functions";
 import {
   STATUSES,
+  adjustTimeEntry,
   computeBalance,
   elapsedMinutes,
   fetchCredits,
@@ -1829,37 +1830,114 @@ export function TaskDialog({
             {taskEntries.filter((e) => e.minutes).map((e) => (
               <div
                 key={e.id}
-                className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm"
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 text-sm"
               >
-                <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
-                <span>{displayName(profiles, e.user_id)}</span>
-                {e.billable === false && (
-                  <Badge variant="outline" className="text-xs">Free</Badge>
-                )}
-                {e.limit_override && (
-                  <Badge className="bg-warning-soft text-warning-foreground">
-                    Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}
-                  </Badge>
-                )}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {new Date(e.started_at).toLocaleString()}
-                </span>
+                {editEntryId === e.id ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={15}
+                        step={15}
+                        value={editMinutes}
+                        onChange={(ev) => setEditMinutes(ev.target.value)}
+                        className="h-9 w-24"
+                        aria-label="Logged minutes"
+                      />
+                      <span className="text-xs text-muted-foreground">minutes (15-min steps)</span>
+                    </div>
+                    <Select
+                      value={editBillable ? "billable" : "free"}
+                      onValueChange={(v) => setEditBillable(v === "billable")}
+                    >
+                      <SelectTrigger className="h-9 w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="billable">Billable</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={savingEntry}
+                        onClick={async () => {
+                          const mins = Number(editMinutes);
+                          if (!Number.isFinite(mins) || mins <= 0) {
+                            toast.error("Enter how many minutes were worked");
+                            return;
+                          }
+                          setSavingEntry(true);
+                          try {
+                            const saved = await adjustTimeEntry(e, mins, editBillable);
+                            setEditEntryId(null);
+                            refreshTime();
+                            toast.success(`Updated to ${formatDuration(saved)}`);
+                          } catch (err) {
+                            toast.error((err as Error).message);
+                          } finally {
+                            setSavingEntry(false);
+                          }
+                        }}
+                      >
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditEntryId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant="secondary">{formatDuration(e.minutes ?? 0)}</Badge>
+                    <span>{displayName(profiles, e.user_id)}</span>
+                    {e.billable === false && (
+                      <Badge variant="outline" className="text-xs">Free</Badge>
+                    )}
+                    {e.limit_override && (
+                      <Badge className="bg-warning-soft text-warning-foreground">
+                        Override {e.override_minutes ? `+${Math.round(Number(e.override_minutes))}m` : ""}
+                      </Badge>
+                    )}
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {new Date(e.started_at).toLocaleString()}
+                    </span>
 
-                {e.user_id === userId && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={async () => {
-                      await db.from("time_entries").delete().eq("id", e.id);
-                      refreshTime();
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                    {canEditTime && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Edit logged time"
+                        onClick={() => {
+                          setEditEntryId(e.id);
+                          setEditMinutes(String(e.minutes ?? 15));
+                          setEditBillable(e.billable !== false);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    )}
+
+                    {(canEditTime || e.user_id === userId) && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Delete logged time"
+                        onClick={async () => {
+                          await db.from("time_entries").delete().eq("id", e.id);
+                          refreshTime();
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             ))}
             {taskEntries.filter((e) => e.minutes).length === 0 && (
+
               <p className="text-sm text-muted-foreground">No time logged yet.</p>
             )}
 

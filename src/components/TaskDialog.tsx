@@ -133,6 +133,8 @@ interface Props {
   canAssign?: boolean;
   /** Only admins may draft task updates with AI. */
   canAiEdit?: boolean;
+  /** Only admins may correct time that has already been logged. */
+  canEditTime?: boolean;
 
 
   /** Client viewing their own still-requested task may withdraw it. */
@@ -154,6 +156,7 @@ export function TaskDialog({
   canEdit,
   canAssign = false,
   canAiEdit = false,
+  canEditTime = false,
 
 
   canWithdrawRequest = false,

@@ -166,6 +166,10 @@ export function TaskDialog({
 }: Props) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Task | null>(task);
+  const [editEntryId, setEditEntryId] = useState<string | null>(null);
+  const [editMinutes, setEditMinutes] = useState("15");
+  const [editBillable, setEditBillable] = useState(true);
+  const [savingEntry, setSavingEntry] = useState(false);
 
   const withdrawRequest = useServerFn(withdrawTaskRequest);
   const withdraw = useMutation({

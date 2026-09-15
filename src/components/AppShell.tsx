@@ -11,7 +11,8 @@ import { initials, useMe } from "@/hooks/useAuth";
 
 const nav: { to: string; label: string; staffOnly?: boolean; clientOnly?: boolean }[] = [
   { to: "/onboarding", label: "Get started", clientOnly: true },
-  { to: "/portal", label: "My portal", clientOnly: true },
+  // Visible to everyone: staff get a "preview any client" version of this page.
+  { to: "/portal", label: "Client portal" },
 
   { to: "/board", label: "Board" },
   { to: "/time-report", label: "Time report" },

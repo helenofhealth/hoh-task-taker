@@ -1139,7 +1139,8 @@ export function TaskDialog({
               <GhlTimeline task={task} entries={taskEntries} />
             </Field>
 
-            {(task.source === "client_request" ||
+            {(canEdit ||
+              task.source === "client_request" ||
               task.sub_account ||
               (task.subtasks?.length ?? 0) > 0) && (
               <Field label="Request brief">

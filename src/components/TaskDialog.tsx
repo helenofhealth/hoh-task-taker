@@ -19,6 +19,8 @@ import {
   MessageSquare,
   Paperclip,
   Pencil,
+  Plus,
+
   Play,
   Square,
   Trash2,
@@ -196,7 +198,9 @@ export function TaskDialog({
   const [dragging, setDragging] = useState(false);
   const [overrunOpen, setOverrunOpen] = useState(false);
   const [trackBillable, setTrackBillable] = useState(true);
+  const [newSubtask, setNewSubtask] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+
   const [editBody, setEditBody] = useState("");
   const [editMentionQuery, setEditMentionQuery] = useState<string | null>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
@@ -1135,7 +1139,8 @@ export function TaskDialog({
               <GhlTimeline task={task} entries={taskEntries} />
             </Field>
 
-            {(task.source === "client_request" ||
+            {(canEdit ||
+              task.source === "client_request" ||
               task.sub_account ||
               (task.subtasks?.length ?? 0) > 0) && (
               <Field label="Request brief">
@@ -1165,7 +1170,7 @@ export function TaskDialog({
                       </p>
                     )}
                   </div>
-                  {(task.subtasks?.length ?? 0) > 0 && (
+                  {((task.subtasks?.length ?? 0) > 0 || canEdit) && (
                     <div>
                       <p className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <span>Subtasks</span>
@@ -1173,11 +1178,11 @@ export function TaskDialog({
                           {(task.subtasks_done ?? []).filter((d) =>
                             (task.subtasks ?? []).includes(d),
                           ).length}{" "}
-                          / {task.subtasks!.length} done
+                          / {(task.subtasks ?? []).length} done
                         </span>
                       </p>
                       <ul className="space-y-1">
-                        {task.subtasks!.map((item, i) => {
+                        {(task.subtasks ?? []).map((item, i) => {
                           const done = (task.subtasks_done ?? []).includes(item);
                           return (
                             <li
@@ -1202,16 +1207,72 @@ export function TaskDialog({
                               />
                               <Label
                                 htmlFor={`st-${task.id}-${i}`}
-                                className={`cursor-pointer text-sm font-normal leading-relaxed ${
+                                className={`flex-1 cursor-pointer text-sm font-normal leading-relaxed ${
                                   done ? "text-muted-foreground line-through" : ""
                                 }`}
                               >
                                 {item}
                               </Label>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  aria-label={`Remove subtask ${item}`}
+                                  className="mt-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                                  onClick={() => {
+                                    const nextList = (task.subtasks ?? []).filter(
+                                      (_s, idx) => idx !== i,
+                                    );
+                                    save.mutate({
+                                      subtasks: nextList,
+                                      subtasks_done: (task.subtasks_done ?? []).filter((d) =>
+                                        nextList.includes(d),
+                                      ),
+                                    } as never);
+                                  }}
+                                >
+                                  <Trash2 className="size-4" />
+                                </button>
+                              )}
                             </li>
                           );
                         })}
+                        {(task.subtasks?.length ?? 0) === 0 && (
+                          <li className="text-xs text-muted-foreground">No subtasks yet.</li>
+                        )}
                       </ul>
+                      {canEdit && (
+                        <form
+                          className="mt-2 flex gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const value = newSubtask.trim();
+                            if (!value) return;
+                            if ((task.subtasks ?? []).includes(value)) {
+                              toast.error("That subtask is already on the list");
+                              return;
+                            }
+                            save.mutate({
+                              subtasks: [...(task.subtasks ?? []), value],
+                            } as never);
+                            setNewSubtask("");
+                          }}
+                        >
+                          <Input
+                            value={newSubtask}
+                            maxLength={200}
+                            placeholder="Add a subtask"
+                            onChange={(e) => setNewSubtask(e.target.value)}
+                          />
+                          <Button
+                            type="submit"
+                            size="sm"
+                            variant="secondary"
+                            disabled={!newSubtask.trim() || save.isPending}
+                          >
+                            <Plus className="mr-1.5 size-4" /> Add
+                          </Button>
+                        </form>
+                      )}
                     </div>
                   )}
                   {(

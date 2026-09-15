@@ -1170,6 +1170,7 @@ export function TaskDialog({
                       </p>
                     )}
                   </div>
+                  {/* Subtasks can be managed (add/edit/delete) by staff only. */}
                   {((task.subtasks?.length ?? 0) > 0 || canEdit) && (
                     <div>
                       <p className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">

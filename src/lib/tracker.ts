@@ -358,8 +358,12 @@ export async function fetchTimeAuditRange(
 }
 
 function csvCell(value: unknown) {
-  const s = value == null ? "" : String(value);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = value == null ? "" : String(value);
+  // Neutralize spreadsheet formula injection: text starting with = + - @ tab or CR
+  // is prefixed with an apostrophe so spreadsheet apps treat it as plain text.
+  // Real numbers (e.g. negative deltas) are left untouched.
+  if (typeof value !== "number" && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 /** Build a CSV document from a header row and data rows. */

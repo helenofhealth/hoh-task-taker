@@ -15,6 +15,13 @@
       "when": 1790757412261,
       "tag": "0001_restrict_task_categories_to_staff",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790932748925,
+      "tag": "0002_time_entries_paused_at",
+      "breakpoints": true
     }
   ]
 }

@@ -106,6 +106,8 @@ export interface TimeEntry {
   user_id: string;
   started_at: string;
   ended_at: string | null;
+  /** Set while the timer is paused; the clock freezes at this moment. */
+  paused_at?: string | null;
   minutes: number | null;
   note: string | null;
   limit_override?: boolean | null;
@@ -488,6 +490,30 @@ export async function startTimer(taskId: string, userId: string, billable = true
   if (error) throw error;
 }
 
+/** Pauses a running timer: the clock freezes until it is resumed. */
+export async function pauseTimer(entryId: string) {
+  const { error } = await db
+    .from("time_entries")
+    .update({ paused_at: new Date().toISOString() })
+    .eq("id", entryId)
+    .is("ended_at", null)
+    .is("paused_at", null);
+  if (error) throw error;
+}
+
+/** Resumes a paused timer by shifting the start time forward by the paused
+ *  duration, so the logged total only counts time actually worked. */
+export async function resumeTimer(entry: { id: string; started_at: string; paused_at?: string | null }) {
+  if (!entry.paused_at) return;
+  const pausedMs = Date.now() - new Date(entry.paused_at).getTime();
+  const started = new Date(new Date(entry.started_at).getTime() + pausedMs).toISOString();
+  const { error } = await db
+    .from("time_entries")
+    .update({ started_at: started, paused_at: null })
+    .eq("id", entry.id);
+  if (error) throw error;
+}
+
 /** Stops a running timer. Pass an override when the logged time knowingly
  *  exceeds the client's remaining hours — it is recorded on the entry and in
  *  the audit trail. */
@@ -616,8 +642,9 @@ export function formatDuration(minutes: number) {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-export function elapsedMinutes(startedAt: string) {
-  return Math.max(0, (Date.now() - new Date(startedAt).getTime()) / 60000);
+export function elapsedMinutes(startedAt: string, pausedAt?: string | null) {
+  const end = pausedAt ? new Date(pausedAt).getTime() : Date.now();
+  return Math.max(0, (end - new Date(startedAt).getTime()) / 60000);
 }
 
 /** hh:mm:ss clock for a running timer. */

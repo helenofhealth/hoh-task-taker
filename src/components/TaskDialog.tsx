@@ -21,6 +21,7 @@ import {
   Pencil,
   Plus,
 
+  Pause,
   Play,
   Square,
   Trash2,
@@ -78,6 +79,8 @@ import {
   expiryLabel,
   daysUntil,
   roundedPreview,
+  pauseTimer,
+  resumeTimer,
   startTimer,
   stopTimer,
   updateComment,
@@ -393,10 +396,23 @@ export function TaskDialog({
       refreshTime();
       if (running)
         toast.success(
-          `Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at)))} (15-minute increments)${
+          `Timer stopped — logged ${formatDuration(roundedPreview(elapsedMinutes(running.started_at, running.paused_at)))} (15-minute increments)${
             opts?.override ? " · limit override recorded in the audit log" : ""
           }`,
         );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const pauseResume = useMutation({
+    mutationFn: async () => {
+      if (!running) return;
+      if (running.paused_at) await resumeTimer(running);
+      else await pauseTimer(running.id);
+    },
+    onSuccess: () => {
+      refreshTime();
+      toast.success(running?.paused_at ? "Timer resumed" : "Timer paused");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -727,7 +743,7 @@ export function TaskDialog({
   }
 
   if (!task || !draft) return null;
-  const runningRaw = running ? elapsedMinutes(running.started_at) : 0;
+  const runningRaw = running ? elapsedMinutes(running.started_at, running.paused_at) : 0;
   void tick; // re-render every second so the live timer stays accurate
   const willLog = roundedPreview(runningRaw);
   const nextStepIn = Math.max(0, Math.ceil(willLog - runningRaw));
@@ -832,7 +848,7 @@ export function TaskDialog({
               <span className="text-muted-foreground"> tracked</span>
               {running && (
                 <span className="ml-2 font-medium text-primary">
-                  · running {formatClock(runningRaw)}
+                  · {running.paused_at ? "paused at" : "running"} {formatClock(runningRaw)}
                 </span>
               )}
             </div>
@@ -857,13 +873,29 @@ export function TaskDialog({
                 {running.billable === false ? "Free hours" : "Billable hours"}
               </Badge>
             )}
+            {canEdit && running && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                onClick={() => pauseResume.mutate()}
+                disabled={pauseResume.isPending || timer.isPending}
+              >
+                {running.paused_at ? (
+                  <Play className="mr-1.5 size-3.5" />
+                ) : (
+                  <Pause className="mr-1.5 size-3.5" />
+                )}
+                {running.paused_at ? "Resume" : "Pause"}
+              </Button>
+            )}
             {canEdit && (
               <Button
                 size="sm"
                 variant={running ? "destructive" : "default"}
-                className="ml-auto"
+                className={running ? undefined : "ml-auto"}
                 onClick={() => (wouldExceed ? setOverrunOpen(true) : timer.mutate({}))}
-                disabled={timer.isPending}
+                disabled={timer.isPending || pauseResume.isPending}
               >
                 {running ? (
                   <Square className="mr-1.5 size-3.5" />

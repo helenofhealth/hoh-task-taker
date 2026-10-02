@@ -1043,6 +1043,7 @@ export type Database = {
           minutes: number | null
           note: string | null
           override_minutes: number | null
+          paused_at: string | null
           started_at: string
           task_id: string
           user_id: string
@@ -1056,6 +1057,7 @@ export type Database = {
           minutes?: number | null
           note?: string | null
           override_minutes?: number | null
+          paused_at?: string | null
           started_at?: string
           task_id: string
           user_id: string
@@ -1069,6 +1071,7 @@ export type Database = {
           minutes?: number | null
           note?: string | null
           override_minutes?: number | null
+          paused_at?: string | null
           started_at?: string
           task_id?: string
           user_id?: string

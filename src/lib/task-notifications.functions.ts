@@ -177,7 +177,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const { supabaseAdmin, task, recipientIds, actorName } = loaded;
 
     const snippet =
-      storedBody.length > 240 ? `${storedBody.slice(0, 240)}…` : storedBody;
+      data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
     const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
 

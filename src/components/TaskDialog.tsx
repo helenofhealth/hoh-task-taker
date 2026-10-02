@@ -348,20 +348,15 @@ export function TaskDialog({
         }).catch(() => {});
       }
       const changed: string[] = [];
-      if (patch.title !== undefined && patch.title !== task.title) changed.push("the title");
-      if (patch.due_date !== undefined && patch.due_date !== task.due_date)
-        changed.push(patch.due_date ? `the due date to ${patch.due_date}` : "removed the due date");
+      if (patch.title !== undefined && patch.title !== task.title) changed.push("title");
+      if (patch.due_date !== undefined && patch.due_date !== task.due_date) changed.push("due_date");
       if (patch.start_date !== undefined && patch.start_date !== task.start_date)
-        changed.push(
-          patch.start_date ? `the start date to ${patch.start_date}` : "removed the start date",
-        );
-      if (patch.project !== undefined && patch.project !== task.project)
-        changed.push(patch.project ? `the project to ${patch.project}` : "removed the project");
-      if (patch.priority !== undefined && patch.priority !== task.priority)
-        changed.push(`the priority to ${patch.priority}`);
+        changed.push("start_date");
+      if (patch.project !== undefined && patch.project !== task.project) changed.push("project");
+      if (patch.priority !== undefined && patch.priority !== task.priority) changed.push("priority");
       if (changed.length > 0) {
         notifyEvent({
-          data: { taskId: task.id, kind: "details", detail: changed.join(" and "), origin },
+          data: { taskId: task.id, kind: "details", fields: changed, origin },
         }).catch(() => {});
       }
     },

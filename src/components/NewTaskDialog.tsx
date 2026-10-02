@@ -215,7 +215,6 @@ export function NewTaskDialog({
           data: {
             taskId: created.id,
             kind: "created",
-            ...(dueDate ? { detail: `due ${dueDate}` } : {}),
             origin: window.location.origin,
           },
         }).catch(() => {});

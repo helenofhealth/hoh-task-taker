@@ -34,7 +34,7 @@ async function loadTaskAndRecipients(
 
   const { data: task } = await supabaseAdmin
     .from("tasks")
-    .select("id, title, status, owner_id, client_id, clients(name)")
+    .select("id, title, status, owner_id, client_id, due_date, start_date, project, priority, clients(name)")
     .eq("id", taskId)
     .single();
   if (!task) return null;
@@ -177,7 +177,7 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     const { supabaseAdmin, task, recipientIds, actorName } = loaded;
 
     const snippet =
-      data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
+      storedBody.length > 240 ? `${storedBody.slice(0, 240)}…` : storedBody;
     const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
 
@@ -241,10 +241,14 @@ type TaskEventKind = "assigned" | "follower_added" | "created" | "details";
 interface NotifyTaskEventInput {
   taskId: string;
   kind: TaskEventKind;
-  detail?: string;
+  /** Names of changed fields (details events). Text is built server-side. */
+  fields?: string[];
   targetUserId?: string;
   origin: string;
 }
+
+const DETAIL_FIELDS = ["title", "due_date", "start_date", "project", "priority"] as const;
+type DetailField = (typeof DETAIL_FIELDS)[number];
 
 const EVENT_KINDS: TaskEventKind[] = ["assigned", "follower_added", "created", "details"];
 
@@ -256,7 +260,16 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
   .inputValidator((input: NotifyTaskEventInput) => {
     if (!input.taskId) throw new Error("Task is required");
     if (!EVENT_KINDS.includes(input.kind)) throw new Error("Unknown event kind");
-    return { ...input, origin: safeAppOrigin(input.origin) };
+    const fields = Array.isArray(input.fields)
+      ? [...new Set(input.fields.filter((f): f is DetailField => (DETAIL_FIELDS as readonly string[]).includes(f)))]
+      : [];
+    return {
+      taskId: input.taskId,
+      kind: input.kind,
+      fields,
+      targetUserId: input.targetUserId,
+      origin: safeAppOrigin(input.origin),
+    };
   })
   .handler(async ({ data, context }) => {
     const { createNotifications } = await import("./notifications.server");
@@ -294,15 +307,28 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
         break;
       case "created":
         title = `New task: "${task.title}"`;
-        body = data.detail
-          ? `${actorName} created this task — ${data.detail}`
+        body = (task as any).due_date
+          ? `${actorName} created this task — due ${(task as any).due_date}`
           : `${actorName} created this task.`;
         break;
       default:
         title = `"${task.title}" was updated`;
-        body = data.detail
-          ? `${actorName} updated ${data.detail}.`
-          : `${actorName} updated this task.`;
+        {
+          // Detail text is derived from the stored task row, never from the caller.
+          const t = task as any;
+          const parts = data.fields.map((f) => {
+            switch (f) {
+              case "title": return "the title";
+              case "due_date": return t.due_date ? `the due date to ${t.due_date}` : "removed the due date";
+              case "start_date": return t.start_date ? `the start date to ${t.start_date}` : "removed the start date";
+              case "project": return t.project ? `the project to ${t.project}` : "removed the project";
+              default: return `the priority to ${t.priority}`;
+            }
+          });
+          body = parts.length
+            ? `${actorName} updated ${parts.join(" and ")}.`
+            : `${actorName} updated this task.`;
+        }
     }
 
     const base = data.origin;
@@ -376,10 +402,14 @@ export const notifyCommentEdited = createServerFn({ method: "POST" })
     // Only the comment author (or an admin) may rewrite its notifications.
     const { data: comment } = await supabaseAdmin
       .from("task_comments")
-      .select("id, user_id")
+      .select("id, user_id, task_id, body")
       .eq("id", data.commentId)
       .maybeSingle();
     if (!comment) return { ok: true as const }; // comment gone — nothing to sync
+    if (comment.task_id !== data.taskId) throw new Error("Forbidden");
+    // Email/notification text comes from the stored comment, not the request.
+    const storedBody = String(comment.body ?? "").trim();
+    if (!storedBody) return { ok: true as const };
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
@@ -405,7 +435,7 @@ export const notifyCommentEdited = createServerFn({ method: "POST" })
     }
 
     const snippet =
-      data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
+      storedBody.length > 240 ? `${storedBody.slice(0, 240)}…` : storedBody;
     const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}&comment=${encodeURIComponent(data.commentId)}`;
     const title = `${actorName} mentioned you on "${task.title}" (edited)`;

@@ -43,6 +43,19 @@ export const inviteClient = createServerFn({ method: "POST" })
       await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "client" });
     };
 
+    // Abuse guard: never email the same address twice within 24 hours, so a
+    // compromised admin session cannot use invitations to spam someone.
+    const { data: recentInvite } = await supabaseAdmin
+      .from("client_invites")
+      .select("id")
+      .eq("email", data.email)
+      .gte("sent_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle();
+    if (recentInvite) {
+      throw new Error("An invitation was already sent to this address in the last 24 hours");
+    }
+
     // Every onboarding sends one activation email; the tracking row lets staff see opens.
     const sendActivation = async (actionLink: string) => {
       const { data: invite } = await supabaseAdmin

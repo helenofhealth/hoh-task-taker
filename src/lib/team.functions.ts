@@ -113,6 +113,10 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         .upsert({ user_id: userId, hourly_rate: data.hourlyRate });
     };
 
+    // Abuse guard: an activation email is only ever sent for a brand-new
+    // address. If the email already has an account, generateLink fails with
+    // "already registered" and the branch below links the account WITHOUT
+    // sending any email — so no address can be emailed more than once.
     const { data: inviteLink, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: data.email,

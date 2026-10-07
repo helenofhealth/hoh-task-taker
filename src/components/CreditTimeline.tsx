@@ -13,7 +13,7 @@ interface Props {
   credits: HourCredit[];
   entries: (TimeEntry & { tasks: { client_id: string | null } | null })[];
   /** Admin-only: toggle whether a billable credit has been paid. */
-  onMarkPaid?: (creditId: string, paid: boolean) => void;
+  onMarkPaid?: ((creditId: string, paid: boolean) => void) | undefined;
 }
 
 const statusStyles: Record<string, string> = {

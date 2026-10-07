@@ -214,7 +214,7 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
     if (!key) throw new Error("Connect Google Drive first.");
     let q = context.supabase
       .from("task_attachments")
-      .select("id, task_id, file_path, file_name, mime_type, tasks(title)")
+      .select("id, task_id, file_path, file_name, mime_type, tasks(title, clients(name))")
       .eq("source", "upload")
       .is("drive_file_id", null)
       .limit(25);
@@ -229,10 +229,13 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
     let failed = 0;
     for (const r of rows) {
       try {
-        const title = ((r as { tasks?: { title?: string } | null }).tasks?.title ?? "Task").slice(0, 120);
+        const taskInfo = (r as { tasks?: { title?: string; clients?: { name?: string } | null } | null }).tasks;
+        const title = (taskInfo?.title ?? "Task").slice(0, 120);
+        const clientName = (taskInfo?.clients?.name ?? "No client").slice(0, 120);
         let folder = folders.get(r.task_id);
         if (!folder) {
-          folder = await ensureFolder(key, title, root);
+          const clientFolder = await ensureFolder(key, clientName, root);
+          folder = await ensureFolder(key, title, clientFolder);
           folders.set(r.task_id, folder);
         }
         const { data: blob, error: dlErr } = await context.supabase.storage.from("task-files").download(r.file_path);
@@ -296,8 +299,9 @@ async function listChildren(key: string, parent: string, foldersOnly: boolean) {
 }
 
 /**
- * Pull: every file inside "Helen of Health Task Taker/<task title>" in the user's Drive
- * gets linked to the matching task (tasks the user can see), skipping files already linked.
+ * Pull: every file inside "Helen of Health Task Taker/<client name>/<task title>" in the
+ * user's Drive gets linked to the matching task (tasks the user can see), skipping files
+ * already linked. Top-level task folders without a client folder are matched too.
  */
 export const pullFilesFromDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -305,15 +309,37 @@ export const pullFilesFromDrive = createServerFn({ method: "POST" })
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);
-    const { data: tasks, error } = await context.supabase.from("tasks").select("id, title").is("deleted_at", null);
+    const { data: tasks, error } = await context.supabase
+      .from("tasks")
+      .select("id, title, clients(name)")
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
-    const byTitle = new Map<string, string>();
-    for (const t of tasks ?? []) byTitle.set(t.title.slice(0, 120).trim().toLowerCase(), t.id);
-    const folders = await listChildren(key, root, true);
+    type TaskRow = { id: string; title: string; clients?: { name?: string } | null };
+    // Match on "client name/task title"; tasks without a client match on title alone.
+    const byPath = new Map<string, string>();
+    for (const t of (tasks ?? []) as TaskRow[]) {
+      const title = t.title.slice(0, 120).trim().toLowerCase();
+      const client = (t.clients?.name ?? "").slice(0, 120).trim().toLowerCase();
+      byPath.set(client ? `${client}/${title}` : title, t.id);
+    }
+    const clientFolders = await listChildren(key, root, true);
     let imported = 0;
     let unmatched = 0;
-    for (const folder of folders) {
-      const taskId = byTitle.get(folder.name.trim().toLowerCase());
+    // Each top-level folder is a client folder; task folders sit one level below.
+    const taskFolders: { folder: DriveListed; clientName: string }[] = [];
+    for (const clientFolder of clientFolders) {
+      const subs = await listChildren(key, clientFolder.id, true);
+      if (subs.length) {
+        for (const sub of subs) taskFolders.push({ folder: sub, clientName: clientFolder.name });
+      } else {
+        // Legacy layout: task folder directly under the root.
+        taskFolders.push({ folder: clientFolder, clientName: "" });
+      }
+    }
+    for (const { folder, clientName } of taskFolders) {
+      const clientKey = clientName.trim().toLowerCase();
+      const titleKey = folder.name.trim().toLowerCase();
+      const taskId = byPath.get(clientKey ? `${clientKey}/${titleKey}` : titleKey) ?? byPath.get(titleKey);
       if (!taskId) {
         unmatched++;
         continue;
@@ -358,12 +384,19 @@ export const createDriveFolder = createServerFn({ method: "POST" })
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);
     let name = data.name ?? "";
+    let parent = root;
     if (data.taskId) {
-      const { data: task, error } = await context.supabase.from("tasks").select("title").eq("id", data.taskId).maybeSingle();
+      const { data: task, error } = await context.supabase
+        .from("tasks")
+        .select("title, clients(name)")
+        .eq("id", data.taskId)
+        .maybeSingle();
       if (error || !task) throw new Error("Task not found");
       name = task.title.slice(0, 120);
+      const clientName = ((task as { clients?: { name?: string } | null }).clients?.name ?? "No client").slice(0, 120);
+      parent = await ensureFolder(key, clientName, root);
     }
     if (!name) throw new Error("Give the folder a name.");
-    const id = await ensureFolder(key, name, root);
+    const id = await ensureFolder(key, name, parent);
     return { id, name, url: `https://drive.google.com/drive/folders/${id}` };
   }));

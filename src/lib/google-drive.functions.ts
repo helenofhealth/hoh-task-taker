@@ -495,7 +495,7 @@ export async function runDailyDriveSync() {
         onlyClientId = prof.client_id;
       } else {
         const root = await ensureFolder(key, ROOT_FOLDER);
-        const { data: clients } = await supabaseAdmin.from("clients").select("name").is("deleted_at", null);
+        const { data: clients } = await supabaseAdmin.from("clients").select("name").is("archived_at", null);
         for (const cl of clients ?? []) await ensureFolder(key, cl.name.slice(0, 120), root);
       }
       const r = await pullForUser(key, supabaseAdmin, c.user_id, onlyClientId);

@@ -160,3 +160,32 @@ export async function filterByPrefs(
 export function isInQuietHours(pref: any): boolean {
   return inQuietHours(pref);
 }
+
+// Emails the task's client users (not staff, not the actor, not already emailed)
+// so they know to check their portal. Uses the batched flush to avoid email floods.
+export async function queueClientPortalEmail(
+  supabaseAdmin: any,
+  task: { id: string; title: string; client_id?: string | null },
+  excludeIds: string[],
+  heading: string,
+  line: string,
+  origin: string,
+) {
+  if (!task.client_id) return 0;
+  const { data: profiles } = await supabaseAdmin.from("profiles").select("id").eq("client_id", task.client_id);
+  const ids = (profiles ?? []).map((p: any) => p.id as string);
+  if (!ids.length) return 0;
+  const { data: staff } = await supabaseAdmin.from("user_roles").select("user_id").in("user_id", ids).in("role", ["admin", "member"]);
+  const skip = new Set([...excludeIds, ...(staff ?? []).map((r: any) => r.user_id)]);
+  const targets = ids.filter((id: string) => !skip.has(id));
+  if (!targets.length) return 0;
+  await queueEmailBatch(supabaseAdmin, targets, {
+    taskId: task.id,
+    taskTitle: task.title,
+    category: "status",
+    heading,
+    line: `${line} Check your portal for the details.`,
+    link: `${origin}/portal`,
+  });
+  return targets.length;
+}

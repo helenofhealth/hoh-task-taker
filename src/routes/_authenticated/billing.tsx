@@ -115,8 +115,8 @@ function BillingPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <Stat label="Billable time" value={formatHours(totals.billable)} />
-          <Stat label="Free time" value={formatHours(totals.free)} />
+          <Stat label="Billable time" value={formatHours(totals.billable / 60)} />
+          <Stat label="Free time" value={formatHours(totals.free / 60)} />
           <Stat label="Total billed" value={money(totals.amount)} />
         </div>
 
@@ -148,8 +148,8 @@ function BillingPage() {
                         <span className="text-xs font-normal text-muted-foreground">· {r.taskRows.length} task{r.taskRows.length === 1 ? "" : "s"}</span>
                       </span>
                     </td>
-                    <td className="p-3 text-right">{formatHours(r.billable)}</td>
-                    <td className="p-3 text-right">{formatHours(r.free)}</td>
+                    <td className="p-3 text-right">{formatHours(r.billable / 60)}</td>
+                    <td className="p-3 text-right">{formatHours(r.free / 60)}</td>
                     <td className="p-3 text-right">{r.rate ? `${money(r.rate)}/h` : "—"}</td>
                     <td className="p-3 text-right font-semibold">{r.rate ? money(r.amount) : "—"}</td>
                   </tr>
@@ -157,8 +157,8 @@ function BillingPage() {
                     r.taskRows.map((t) => (
                       <tr key={t.taskId} className="border-b border-border bg-muted/30 text-muted-foreground">
                         <td className="p-2 pl-10">{t.title}</td>
-                        <td className="p-2 text-right">{formatHours(t.billable)}</td>
-                        <td className="p-2 text-right">{formatHours(t.free)}</td>
+                        <td className="p-2 text-right">{formatHours(t.billable / 60)}</td>
+                        <td className="p-2 text-right">{formatHours(t.free / 60)}</td>
                         <td className="p-2" />
                         <td className="p-2 text-right">{r.rate ? money(t.amount) : "—"}</td>
                       </tr>

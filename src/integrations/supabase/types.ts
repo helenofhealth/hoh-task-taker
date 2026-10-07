@@ -1253,6 +1253,10 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       my_client_id: { Args: never; Returns: string }
       record_invite_open: { Args: { _token: string }; Returns: undefined }
+      verify_cron_token: {
+        Args: { _name: string; _token: string }
+        Returns: boolean
+      }
       verify_digest_cron_token: { Args: { _token: string }; Returns: boolean }
     }
     Enums: {

@@ -391,6 +391,7 @@ export async function pullForUser(key: string, db: any, userId: string, onlyClie
         })),
       );
       if (insErr) throw new Error(insErr.message);
+      for (const f of fresh) await shareForPreview(key, f.id);
       imported += fresh.length;
     }
     return { imported, unmatchedFolders: unmatched };

@@ -209,7 +209,7 @@ async function ensureFolder(key: string, name: string, parent?: string) {
 export const syncFilesToDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ taskId: z.string().uuid().optional() }).parse(d))
-  .handler(async (args) => withRenew(async () => {
+  .handler(async ({ data, context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     let q = context.supabase
@@ -301,7 +301,7 @@ async function listChildren(key: string, parent: string, foldersOnly: boolean) {
  */
 export const pullFilesFromDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async (args) => withRenew(async () => {
+  .handler(async ({ context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);
@@ -353,7 +353,7 @@ export const createDriveFolder = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({ name: z.string().trim().max(120).optional(), taskId: z.string().uuid().optional() }).parse(d),
   )
-  .handler(async (args) => withRenew(async () => {
+  .handler(async ({ data, context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);

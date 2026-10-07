@@ -1,3 +1,4 @@
+import { useServerFn } from "@tanstack/react-start";
 import { createClientDriveFolder } from "@/lib/google-drive.functions";
 import { Fragment, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
@@ -137,6 +138,7 @@ function StaffClientsPage() {
   const [creditBillable, setCreditBillable] = useState("billable");
   const [timelineFor, setTimelineFor] = useState<string | null>(null);
 
+  const createClientFolder = useServerFn(createClientDriveFolder);
   const addClient = useMutation({
     mutationFn: async () => {
       const clean = name.trim();

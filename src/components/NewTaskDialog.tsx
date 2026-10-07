@@ -107,6 +107,7 @@ export function NewTaskDialog({
   const [ncHours, setNcHours] = useState("");
   const [ncKind, setNcKind] = useState("package");
 
+  const createClientFolder = useServerFn(createClientDriveFolder);
   const createClient = useMutation({
     mutationFn: async () => {
       const clean = ncName.trim();

@@ -459,7 +459,11 @@ export const refreshDriveFiles = createServerFn({ method: "POST" })
       let gone = res.status === 404;
       if (res.ok) gone = Boolean(((await res.json()) as { trashed?: boolean }).trashed);
       else if (!gone) { console.error("Drive check failed", r.id, res.status, await res.text()); continue; }
-      if (!gone) continue;
+      if (!gone) {
+        // Make sure older files are shared for in-app previews too.
+        await shareForPreview(key, r.drive_file_id!);
+        continue;
+      }
       if (r.source === "upload") {
         await supabaseAdmin.from("task_attachments")
           .update({ drive_file_id: null, drive_synced_at: null, external_url: null })

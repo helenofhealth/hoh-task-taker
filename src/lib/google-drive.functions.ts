@@ -158,6 +158,7 @@ export const attachDriveFile = createServerFn({ method: "POST" })
       drive_file_id: f.id,
     });
     if (error) throw new Error(error.message);
+    await shareForPreview(key, f.id);
     return { ok: true, name: f.name };
   });
 
@@ -190,6 +191,19 @@ async function driveSend(key: string, path: string, init: RequestInit) {
     throw new Error(`Google Drive request failed [${res.status}]`);
   }
   return res.json() as Promise<{ id: string; webViewLink?: string; files?: { id: string }[] }>;
+}
+
+/** Lets the Drive preview embed show the file to anyone who has the link. Best-effort. */
+async function shareForPreview(key: string, fileId: string) {
+  try {
+    await driveSend(key, `/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "reader", type: "anyone" }),
+    });
+  } catch (e) {
+    console.error("Drive shareForPreview failed for", fileId, e);
+  }
 }
 
 async function ensureFolder(key: string, name: string, parent?: string) {
@@ -255,12 +269,13 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
         });
         await supabaseAdmin
           .from("task_attachments")
-          .update({
+      .update({
             drive_file_id: up.id,
             drive_synced_at: new Date().toISOString(),
             external_url: up.webViewLink ?? `https://drive.google.com/file/d/${up.id}/view`,
           })
           .eq("id", r.id);
+        await shareForPreview(key, up.id);
         synced++;
       } catch (e) {
         if (e instanceof DriveRenewError) throw e;

@@ -20,6 +20,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedCreditHistoryRouteImport } from './routes/_authenticated/credit-history'
+import { Route as AuthenticatedDriveRouteImport } from './routes/_authenticated/drive'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedProvenTasksRouteImport } from './routes/_authenticated/proven-tasks'
@@ -91,6 +92,11 @@ const AuthenticatedCreditHistoryRoute =
     path: '/credit-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDriveRoute = AuthenticatedDriveRouteImport.update({
+  id: '/drive',
+  path: '/drive',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/drive': typeof AuthenticatedDriveRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/proven-tasks': typeof AuthenticatedProvenTasksRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/board': typeof AuthenticatedBoardRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/drive': typeof AuthenticatedDriveRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/proven-tasks': typeof AuthenticatedProvenTasksRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/credit-history': typeof AuthenticatedCreditHistoryRoute
+  '/_authenticated/drive': typeof AuthenticatedDriveRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
   '/_authenticated/proven-tasks': typeof AuthenticatedProvenTasksRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/drive'
     | '/onboarding'
     | '/portal'
     | '/proven-tasks'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/clients'
     | '/credit-history'
+    | '/drive'
     | '/onboarding'
     | '/portal'
     | '/proven-tasks'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/_authenticated/board'
     | '/_authenticated/clients'
     | '/_authenticated/credit-history'
+    | '/_authenticated/drive'
     | '/_authenticated/onboarding'
     | '/_authenticated/portal'
     | '/_authenticated/proven-tasks'
@@ -412,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCreditHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/drive': {
+      id: '/_authenticated/drive'
+      path: '/drive'
+      fullPath: '/drive'
+      preLoaderRoute: typeof AuthenticatedDriveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -510,6 +529,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedCreditHistoryRoute: typeof AuthenticatedCreditHistoryRoute
+  AuthenticatedDriveRoute: typeof AuthenticatedDriveRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
   AuthenticatedProvenTasksRoute: typeof AuthenticatedProvenTasksRoute
@@ -523,6 +543,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedCreditHistoryRoute: AuthenticatedCreditHistoryRoute,
+  AuthenticatedDriveRoute: AuthenticatedDriveRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
   AuthenticatedProvenTasksRoute: AuthenticatedProvenTasksRoute,

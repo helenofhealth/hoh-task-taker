@@ -406,7 +406,7 @@ function StaffClientsPage() {
 
           <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-semibold">Add hours</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_100px_140px_130px_140px_auto] sm:items-end">
+            <div className="mt-4 grid items-end gap-3 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
               <div className="space-y-1.5">
                 <Label>Client</Label>
                 <Select value={creditClient} onValueChange={setCreditClient}>
@@ -461,14 +461,14 @@ function StaffClientsPage() {
                   </Select>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground sm:col-span-6">
+              <Button onClick={() => addCredit.mutate()} disabled={addCredit.isPending}>
+                <Plus className="mr-1.5 size-4" /> Add
+              </Button>
+              <p className="col-span-full text-xs text-muted-foreground">
                 Hour packages stay valid for 3 months from today. Monthly retainer hours expire at
                 the end of the month and never roll over. Free hours are added to the balance the
                 same way but are marked as complimentary.
               </p>
-              <Button onClick={() => addCredit.mutate()} disabled={addCredit.isPending}>
-                <Plus className="mr-1.5 size-4" /> Add
-              </Button>
             </div>
           </div>
         </div>

@@ -771,6 +771,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
           retainer_hours: hours,
           hourly_rate: hourlyRate,
           default_project: editProject.trim() || null,
+          paid_hours_override: paidOverrideVal,
+          unpaid_hours_override: unpaidOverrideVal,
         })
         .eq("id", client.id);
       if (error) throw error;
@@ -884,6 +886,35 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
               </p>
             </div>
           </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="e-paid-override" className="text-xs">Paid hours — manual</Label>
+              <Input
+                id="e-paid-override"
+                type="number"
+                min="0"
+                step="0.25"
+                value={paidManual}
+                placeholder={`Auto: ${formatHours(autoPaidHours)}`}
+                onChange={(e) => setPaidManual(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="e-unpaid-override" className="text-xs">Unpaid hours — manual</Label>
+              <Input
+                id="e-unpaid-override"
+                type="number"
+                min="0"
+                step="0.25"
+                value={unpaidManual}
+                placeholder={`Auto: ${formatHours(autoUnpaidHours)}`}
+                onChange={(e) => setUnpaidManual(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Leave a field empty to keep the automatic number from the hour packages below. Type a number to set it yourself — it replaces the automatic one everywhere, including the client portal.
+          </p>
           {unpaidCredits.length > 0 ? (
             <ul className="space-y-1.5">
               {unpaidCredits.map((cr) => (

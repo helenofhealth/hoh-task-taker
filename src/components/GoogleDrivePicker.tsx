@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CloudDownload, CloudUpload, FolderPlus, HardDrive, Loader2, Search, Unplug } from "lucide-react";
+import { CloudDownload, CloudUpload, FolderPlus, HardDrive, Loader2, RefreshCw, Search, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ import {
   startDriveConnect,
   syncFilesToDrive,
   pullFilesFromDrive,
+  refreshDriveFiles,
   createDriveFolder,
 } from "@/lib/google-drive.functions";
 
@@ -344,6 +345,40 @@ export function PullFromDriveButton() {
     <Button variant="outline" onClick={() => pull.mutate()} disabled={pull.isPending}>
       {pull.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudDownload className="mr-2 size-4" />}
       Pull from Drive
+    </Button>
+  );
+}
+
+/** Re-checks Drive now: resets files deleted in Drive (so they can be saved again) and pulls in new ones. */
+export function RefreshDriveButton() {
+  const qc = useQueryClient();
+  const ensure = useEnsureDrive();
+  const refreshFn = useServerFn(refreshDriveFiles);
+  const pullFn = useServerFn(pullFilesFromDrive);
+  const run = useMutation({
+    mutationFn: async () => {
+      await ensure();
+      const r = unwrap(await refreshFn());
+      const p = unwrap(await pullFn());
+      return { ...r, imported: p.imported };
+    },
+    onSuccess: (r) => {
+      const parts = [
+        r.imported ? `${r.imported} new from Drive` : null,
+        r.reset ? `${r.reset} deleted in Drive — use Save to Drive to upload again` : null,
+        r.removed ? `${r.removed} removed link${r.removed === 1 ? "" : "s"} cleared` : null,
+      ].filter(Boolean);
+      toast.success("Google Drive refreshed", { description: parts.length ? parts.join(" · ") : "Everything is up to date." });
+      qc.invalidateQueries({ queryKey: ["attachments"] });
+      qc.invalidateQueries({ queryKey: ["drive-library"] });
+    },
+    onError: (e: Error) => onDriveError(e),
+  });
+  const onDriveError = useDriveErrorHandler(() => run.mutate());
+  return (
+    <Button variant="outline" onClick={() => run.mutate()} disabled={run.isPending}>
+      <RefreshCw className={`mr-2 size-4 ${run.isPending ? "animate-spin" : ""}`} />
+      Refresh
     </Button>
   );
 }

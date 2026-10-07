@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import { DocumentRow } from "@/components/DocumentRow";
-import { NewDriveFolderButton, PullFromDriveButton, SyncToDriveButton } from "@/components/GoogleDrivePicker";
+import { NewDriveFolderButton, PullFromDriveButton, RefreshDriveButton, SyncToDriveButton } from "@/components/GoogleDrivePicker";
 import { supabase } from "@/integrations/supabase/client";
 import type { Attachment } from "@/lib/tracker";
 
@@ -44,6 +44,8 @@ function DrivePage() {
       if (error) throw error;
       return (data ?? []) as unknown as Row[];
     },
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   const groups = useMemo(() => {
@@ -72,6 +74,7 @@ function DrivePage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <RefreshDriveButton />
             <NewDriveFolderButton />
             <PullFromDriveButton />
             <SyncToDriveButton label="Save all uploads to Drive" />

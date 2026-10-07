@@ -38,9 +38,10 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
     return () => clearInterval(t);
   }, [running.length]);
 
+  const notifyTime = useServerFn(notifyTimeLogged);
+
   if (running.length === 0) return null;
 
-  const notifyTime = useServerFn(notifyTimeLogged);
   const refresh = () => void qc.invalidateQueries({ queryKey: ["time_entries"] });
 
   const act = async (entry: TimeEntry, action: "pause" | "resume" | "stop") => {

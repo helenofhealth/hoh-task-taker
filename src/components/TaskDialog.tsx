@@ -373,7 +373,7 @@ export function TaskDialog({
     mutationFn: async (opts?: { override?: boolean; overageMinutes?: number }) => {
       if (running) {
         await stopTimer(
-          running.id,
+          running,
           opts?.override && (opts.overageMinutes ?? 0) > 0
             ? { overageMinutes: opts.overageMinutes! }
             : null,

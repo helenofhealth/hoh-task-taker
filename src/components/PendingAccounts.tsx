@@ -66,6 +66,17 @@ export function PendingAccounts() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const remove = useMutation({
+    mutationFn: async (account: PendingAccount) => {
+      await removeFn({ data: { userId: account.userId } });
+    },
+    onSuccess: () => {
+      toast.success("Request removed");
+      qc.invalidateQueries({ queryKey: ["pending-accounts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const accounts = pending.data ?? [];
 
   return (
@@ -160,6 +171,29 @@ export function PendingAccounts() {
                     >
                       {assign.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                       Grant access
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Remove request"
+                      aria-label={`Remove request from ${a.name}`}
+                      disabled={remove.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Remove the access request from ${a.name}? Their account will be deleted.`,
+                          )
+                        ) {
+                          remove.mutate(a);
+                        }
+                      }}
+                    >
+                      {remove.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4 text-destructive" />
+                      )}
                     </Button>
                   </div>
                 </li>

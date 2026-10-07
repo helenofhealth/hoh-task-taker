@@ -9,6 +9,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { TaskCard } from "@/components/TaskCard";
+import { ActiveTimerBar } from "@/components/ActiveTimerBar";
 import { notifyTaskStatusChange } from "@/lib/task-notifications.functions";
 import { TaskDialog } from "@/components/TaskDialog";
 import { NewTaskDialog } from "@/components/NewTaskDialog";
@@ -248,6 +249,11 @@ function BoardPage() {
         ) : null
       }
     >
+      <ActiveTimerBar
+        entries={entries.data ?? []}
+        tasks={tasks.data ?? []}
+        onOpenTask={setOpenTask}
+      />
       {lowBalance.length > 0 && (
         <div className="mb-5 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning-soft p-4">
           <AlertTriangle className="mt-0.5 size-5 text-warning" />

@@ -137,7 +137,7 @@ export function PendingAccounts() {
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        <Label>Hourly rate (€)</Label>
+                        <Label>Hourly rate (£)</Label>
                         <Input
                           type="number"
                           min="0"

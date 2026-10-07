@@ -211,7 +211,7 @@ function BoardPage() {
   const runningByTask = new Map<string, number>();
   for (const e of entries.data ?? []) {
     minutesByTask.set(e.task_id, (minutesByTask.get(e.task_id) ?? 0) + (e.minutes ?? 0));
-    if (!e.ended_at) runningByTask.set(e.task_id, elapsedMinutes(e.started_at));
+    if (!e.ended_at) runningByTask.set(e.task_id, elapsedMinutes(e.started_at, e.paused_at));
   }
   const commentsByTask = new Map<string, number>();
   for (const c of commentRows.data ?? [])

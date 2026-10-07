@@ -51,7 +51,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
         toast.success("Timer resumed");
       } else {
         const raw = elapsedMinutes(entry.started_at, entry.paused_at);
-        await stopTimer(entry.id);
+        await stopTimer(entry);
         toast.success(`Logged ${formatHours(roundedPreview(raw) / 60)} (rounded to 15 min)`);
       }
       refresh();

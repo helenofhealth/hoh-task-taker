@@ -516,17 +516,22 @@ export async function resumeTimer(entry: { id: string; started_at: string; pause
 
 /** Stops a running timer. Pass an override when the logged time knowingly
  *  exceeds the client's remaining hours — it is recorded on the entry and in
- *  the audit trail. */
+ *  the audit trail. When the timer is paused, the entry ends at the pause
+ *  moment so the paused stretch is never billed. */
 export async function stopTimer(
-  entryId: string,
+  entry: { id: string; paused_at?: string | null },
   override?: { overageMinutes: number } | null,
 ) {
-  const patch: Record<string, unknown> = { ended_at: new Date().toISOString() };
+  const paused = entry.paused_at ?? null;
+  const patch: Record<string, unknown> = {
+    ended_at: paused ?? new Date().toISOString(),
+    paused_at: null,
+  };
   if (override && override.overageMinutes > 0) {
     patch['limit_override'] = true;
     patch['override_minutes'] = Math.round(override.overageMinutes * 100) / 100;
   }
-  const { error } = await db.from("time_entries").update(patch).eq("id", entryId);
+  const { error } = await db.from("time_entries").update(patch).eq("id", entry.id);
   if (error) throw error;
 }
 

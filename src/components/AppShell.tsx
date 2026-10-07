@@ -15,6 +15,7 @@ const nav: { to: string; label: string; staffOnly?: boolean; clientOnly?: boolea
   { to: "/portal", label: "Client portal" },
 
   { to: "/board", label: "Board" },
+  { to: "/drive", label: "Google Drive" },
   { to: "/time-report", label: "Time report" },
   { to: "/usage-report", label: "Usage report", staffOnly: true },
   { to: "/clients", label: "Clients", staffOnly: true },

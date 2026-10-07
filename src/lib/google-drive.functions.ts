@@ -161,6 +161,18 @@ export const attachDriveFile = createServerFn({ method: "POST" })
     return { ok: true, name: f.name };
   });
 
+class DriveRenewError extends Error {}
+
+/** Turns an expired Drive grant into a normal result instead of a thrown server error. */
+async function withRenew<T>(fn: () => Promise<T>): Promise<T | { reconnectRequired: true }> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (e instanceof DriveRenewError) return { reconnectRequired: true as const };
+    throw e;
+  }
+}
+
 async function driveSend(key: string, path: string, init: RequestInit) {
   const { callAsAppUser, appUserReconnectRequired } = await import("@/integrations/lovable/appUserConnector");
   const res = await callAsAppUser({
@@ -171,7 +183,7 @@ async function driveSend(key: string, path: string, init: RequestInit) {
     init,
     requiredScopes: SCOPES,
   });
-  if (await appUserReconnectRequired(res)) throw new Error("Your Google Drive access needs to be renewed. Reconnect and try again.");
+  if (await appUserReconnectRequired(res)) throw new DriveRenewError("Your Google Drive access needs to be renewed.");
   if (!res.ok) {
     const body = await res.text();
     console.error(`Drive request failed [${res.status}]: ${body}`);
@@ -197,7 +209,7 @@ async function ensureFolder(key: string, name: string, parent?: string) {
 export const syncFilesToDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ taskId: z.string().uuid().optional() }).parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     let q = context.supabase
@@ -248,6 +260,7 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
           .eq("id", r.id);
         synced++;
       } catch (e) {
+        if (e instanceof DriveRenewError) throw e;
         console.error("Drive sync failed for", r.id, e);
         failed++;
       }
@@ -258,7 +271,7 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
       .eq("source", "upload")
       .is("drive_file_id", null);
     return { synced, failed, remaining: count ?? 0 };
-  });
+  }));
 
 type DriveListed = { id: string; name: string; mimeType: string; size?: string; webViewLink?: string };
 
@@ -288,7 +301,7 @@ async function listChildren(key: string, parent: string, foldersOnly: boolean) {
  */
 export const pullFilesFromDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);
@@ -332,7 +345,7 @@ export const pullFilesFromDrive = createServerFn({ method: "POST" })
       imported += fresh.length;
     }
     return { imported, unmatchedFolders: unmatched };
-  });
+  }));
 
 /** Create a folder in the user's Drive — inside the app folder, or as a task's folder. */
 export const createDriveFolder = createServerFn({ method: "POST" })
@@ -340,7 +353,7 @@ export const createDriveFolder = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({ name: z.string().trim().max(120).optional(), taskId: z.string().uuid().optional() }).parse(d),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
     const root = await ensureFolder(key, ROOT_FOLDER);
@@ -353,4 +366,4 @@ export const createDriveFolder = createServerFn({ method: "POST" })
     if (!name) throw new Error("Give the folder a name.");
     const id = await ensureFolder(key, name, root);
     return { id, name, url: `https://drive.google.com/drive/folders/${id}` };
-  });
+  }));

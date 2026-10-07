@@ -223,7 +223,7 @@ export function SyncToDriveButton({ taskId, label = "Save to Drive" }: { taskId?
           throw e;
         }
       }
-      return syncFn({ data: taskId ? { taskId } : {} });
+      return unwrap(await syncFn({ data: taskId ? { taskId } : {} }));
     },
     onSuccess: (r) => {
       if (r.synced === 0 && r.failed === 0) toast.success("Everything is already saved in Google Drive");
@@ -266,6 +266,13 @@ function useDriveConnectPopup() {
       throw e;
     }
   };
+}
+
+function unwrap<T>(r: T | { reconnectRequired: true }): T {
+  if (r && typeof r === "object" && "reconnectRequired" in r) {
+    throw new Error("Your Google Drive access needs to be renewed. Reconnect and try again.");
+  }
+  return r as T;
 }
 
 const isRenewError = (e: Error) => /needs to be renewed/i.test(e.message);
@@ -316,7 +323,7 @@ export function PullFromDriveButton() {
   const pull = useMutation({
     mutationFn: async () => {
       await ensure();
-      return pullFn();
+      return unwrap(await pullFn());
     },
     onSuccess: (r) => {
       toast.success(
@@ -350,7 +357,7 @@ export function NewDriveFolderButton({ taskId }: { taskId?: string }) {
   const create = useMutation({
     mutationFn: async () => {
       await ensure();
-      return createFn({ data: taskId ? { taskId } : { name } });
+      return unwrap(await createFn({ data: taskId ? { taskId } : { name } }));
     },
     onSuccess: (r) => {
       setOpen(false);

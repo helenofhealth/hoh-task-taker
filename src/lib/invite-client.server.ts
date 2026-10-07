@@ -245,7 +245,7 @@ export async function sendDailyDigestEmail(
       const badge =
         n.kind === "status" || n.kind === "details"
           ? '<span style="display:inline-block;background:#E5EAF0;color:#64748B;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">STATUS</span>'
-          : '<span style="display:inline-block;background:#EFE7DB;color:#6F8C91;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
+          : '<span style="display:inline-block;background:#EEF2F7;color:#2F6FED;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:999px;margin-right:8px;">COMMENT</span>';
       return `<div style="border-bottom:1px solid #E5EAF0;padding:12px 0;">
         <p style="margin:0;font-size:14px;">${badge}<strong>${esc(n.title)}</strong></p>
         ${n.body ? `<p style="margin:6px 0 0;color:#64748B;font-size:13px;">${esc(n.body)}</p>` : ""}

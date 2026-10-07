@@ -22,7 +22,7 @@ interface Props {
 }
 
 /** Live bar on the board showing every running timer, so tracked time is
- *  visible without opening the task. Ticks every 15 seconds. */
+ *  visible without opening the task. Ticks every second. */
 export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
   const qc = useQueryClient();
   const [, setTick] = useState(0);
@@ -32,7 +32,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
 
   useEffect(() => {
     if (running.length === 0) return;
-    const t = setInterval(() => setTick((n) => n + 1), 15000);
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
   }, [running.length]);
 
@@ -67,6 +67,12 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
       {running.map((e) => {
         const task = tasks.find((t) => t.id === e.task_id);
         const mins = elapsedMinutes(e.started_at, e.paused_at);
+        const totalSeconds = Math.max(0, Math.floor(mins * 60));
+        const clock = [
+          Math.floor(totalSeconds / 3600),
+          Math.floor((totalSeconds % 3600) / 60),
+          totalSeconds % 60,
+        ].map((value) => String(value).padStart(2, "0")).join(":");
         const paused = Boolean(e.paused_at);
         return (
           <div
@@ -80,7 +86,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
                 {paused && <span className="ml-2 text-xs font-normal text-muted-foreground">(paused)</span>}
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatHours(mins / 60)} elapsed · will log {formatHours(roundedPreview(mins) / 60)}
+                 <span className="font-mono tabular-nums" role="timer" aria-label="Elapsed time">{clock}</span> elapsed · will log {formatHours(roundedPreview(mins) / 60)}
               </p>
             </div>
             {task && onOpenTask && (

@@ -687,9 +687,13 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const clientCredits = (credits.data ?? []).filter(
     (cr) => cr.client_id === client?.id && cr.billable !== false,
   );
-  const paidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
+  const autoPaidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
   const unpaidCredits = clientCredits.filter((cr) => !cr.paid);
-  const unpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const autoUnpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const paidOverride = client?.paid_hours_override;
+  const unpaidOverride = client?.unpaid_hours_override;
+  const paidHours = paidOverride === null || paidOverride === undefined ? autoPaidHours : Number(paidOverride);
+  const unpaidHours = unpaidOverride === null || unpaidOverride === undefined ? autoUnpaidHours : Number(unpaidOverride);
   const rate = client?.hourly_rate === null || client?.hourly_rate === undefined ? null : Number(client.hourly_rate);
   const unpaidAmount = rate === null ? null : unpaidHours * rate;
   const gbp = (n: number) =>

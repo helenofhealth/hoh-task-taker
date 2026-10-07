@@ -23,6 +23,8 @@ export interface Client {
   archived_by?: string | null;
   hourly_rate?: number | null;
   default_project?: string | null;
+  paid_hours_override?: number | null;
+  unpaid_hours_override?: number | null;
 }
 
 

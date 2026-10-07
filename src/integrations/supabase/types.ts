@@ -419,6 +419,8 @@ export type Database = {
           id: string
           kind: string
           note: string | null
+          paid: boolean
+          paid_at: string | null
         }
         Insert: {
           billable?: boolean
@@ -430,6 +432,8 @@ export type Database = {
           id?: string
           kind?: string
           note?: string | null
+          paid?: boolean
+          paid_at?: string | null
         }
         Update: {
           billable?: boolean
@@ -441,6 +445,8 @@ export type Database = {
           id?: string
           kind?: string
           note?: string | null
+          paid?: boolean
+          paid_at?: string | null
         }
         Relationships: [
           {

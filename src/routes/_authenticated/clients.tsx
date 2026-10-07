@@ -136,6 +136,8 @@ function StaffClientsPage() {
   const [creditHours, setCreditHours] = useState("10");
   const [creditKind, setCreditKind] = useState("package");
   const [creditBillable, setCreditBillable] = useState("billable");
+  const [startPaid, setStartPaid] = useState("paid");
+  const [creditPaid, setCreditPaid] = useState("paid");
   const [timelineFor, setTimelineFor] = useState<string | null>(null);
 
   const createClientFolder = useServerFn(createClientDriveFolder);
@@ -183,6 +185,8 @@ function StaffClientsPage() {
           hours,
           kind: startKind,
           billable: startBillable === "billable",
+          paid: startBillable !== "billable" || startPaid === "paid",
+          paid_at: startBillable === "billable" && startPaid === "paid" ? new Date().toISOString() : null,
           effective_month: startKind === "retainer" ? currentMonthStart() : null,
           note: projectName ? `Onboarding — ${projectName}` : "Onboarding",
         });
@@ -207,6 +211,7 @@ function StaffClientsPage() {
       setStartHours("");
       setStartKind("package");
       setStartBillable("billable");
+      setStartPaid("paid");
       setRate("");
       setProject("");
       await Promise.all([
@@ -248,6 +253,8 @@ function StaffClientsPage() {
         hours,
         kind: creditKind,
         billable: creditBillable === "billable",
+        paid: creditBillable !== "billable" || creditPaid === "paid",
+        paid_at: creditBillable === "billable" && creditPaid === "paid" ? new Date().toISOString() : null,
         effective_month: creditKind === "retainer" ? currentMonthStart() : null,
       });
       if (error) throw error;
@@ -352,6 +359,18 @@ function StaffClientsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {startBillable === "billable" && (
+                <div className="space-y-1.5">
+                  <Label>Payment</Label>
+                  <Select value={startPaid} onValueChange={setStartPaid}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="unpaid">Not paid yet</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="c-rate">Hourly rate — optional</Label>
                 <Input
@@ -387,7 +406,7 @@ function StaffClientsPage() {
 
           <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-semibold">Add hours</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_100px_140px_130px_auto] sm:items-end">
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_100px_140px_130px_140px_auto] sm:items-end">
               <div className="space-y-1.5">
                 <Label>Client</Label>
                 <Select value={creditClient} onValueChange={setCreditClient}>
@@ -430,7 +449,19 @@ function StaffClientsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground sm:col-span-5">
+              {creditBillable === "billable" && (
+                <div className="space-y-1.5">
+                  <Label>Payment</Label>
+                  <Select value={creditPaid} onValueChange={setCreditPaid}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="unpaid">Not paid yet</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground sm:col-span-6">
                 Hour packages stay valid for 3 months from today. Monthly retainer hours expire at
                 the end of the month and never roll over. Free hours are added to the balance the
                 same way but are marked as complimentary.
@@ -606,6 +637,19 @@ function StaffClientsPage() {
                         clientId={c.id}
                         credits={credits.data ?? []}
                         entries={entries.data ?? []}
+                        onMarkPaid={
+                          me.isAdmin
+                            ? async (id, paid) => {
+                                const { error } = await db
+                                  .from("hour_credits")
+                                  .update({ paid, paid_at: paid ? new Date().toISOString() : null })
+                                  .eq("id", id);
+                                if (error) return void toast.error(error.message);
+                                toast.success(paid ? "Marked as paid" : "Marked as not paid");
+                                qc.invalidateQueries({ queryKey: ["credits"] });
+                              }
+                            : undefined
+                        }
                       />
                     </td>
                   </tr>

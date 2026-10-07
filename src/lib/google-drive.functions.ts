@@ -359,7 +359,7 @@ export async function pullForUser(key: string, db: any, userId: string, onlyClie
         .select("drive_file_id")
         .eq("task_id", taskId)
         .in("drive_file_id", files.map((f) => f.id));
-      const known = new Set((existing ?? []).map((e) => e.drive_file_id));
+      const known = new Set((existing ?? []).map((e: { drive_file_id: string | null }) => e.drive_file_id));
       const fresh = files.filter((f) => !known.has(f.id));
       if (!fresh.length) continue;
       const { error: insErr } = await db.from("task_attachments").insert(

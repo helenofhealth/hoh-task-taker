@@ -679,6 +679,36 @@ function StaffClientsPage() {
 
 function EditClientDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const credits = useQuery({
+    queryKey: ["credits"],
+    queryFn: fetchCredits,
+    enabled: !!client,
+  });
+  const clientCredits = (credits.data ?? []).filter(
+    (cr) => cr.client_id === client?.id && cr.billable !== false,
+  );
+  const paidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
+  const unpaidCredits = clientCredits.filter((cr) => !cr.paid);
+  const unpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const rate = client?.hourly_rate === null || client?.hourly_rate === undefined ? null : Number(client.hourly_rate);
+  const unpaidAmount = rate === null ? null : unpaidHours * rate;
+  const gbp = (n: number) =>
+    new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
+
+  const markPaid = useMutation({
+    mutationFn: async ({ id, paid }: { id: string; paid: boolean }) => {
+      const { error } = await db
+        .from("hour_credits")
+        .update({ paid, paid_at: paid ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.paid ? "Marked as paid" : "Marked as not paid");
+      qc.invalidateQueries({ queryKey: ["credits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [name, setName] = useState("");
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");
@@ -818,6 +848,55 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
               onChange={(e) => setEditProject(e.target.value)}
             />
           </div>
+        </div>
+        <div className="mt-2 space-y-3 rounded-lg border border-border bg-surface-muted/40 p-3">
+          <p className="text-sm font-semibold">Payments</p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-surface px-2 py-1.5">
+              <p className="text-xs text-muted-foreground">Paid hours</p>
+              <p className="font-semibold">{formatHours(paidHours)}</p>
+            </div>
+            <div className="rounded-md bg-surface px-2 py-1.5">
+              <p className="text-xs text-muted-foreground">Unpaid hours</p>
+              <p className={`font-semibold ${unpaidHours > 0 ? "text-warning" : ""}`}>{formatHours(unpaidHours)}</p>
+            </div>
+            <div className="rounded-md bg-surface px-2 py-1.5">
+              <p className="text-xs text-muted-foreground">Balance to pay</p>
+              <p className={`font-semibold ${unpaidHours > 0 ? "text-warning" : ""}`}>
+                {unpaidAmount === null ? "—" : gbp(unpaidAmount)}
+              </p>
+            </div>
+          </div>
+          {unpaidCredits.length > 0 ? (
+            <ul className="space-y-1.5">
+              {unpaidCredits.map((cr) => (
+                <li
+                  key={cr.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm"
+                >
+                  <span>
+                    {formatHours(Number(cr.hours))}
+                    {rate !== null && (
+                      <span className="text-muted-foreground"> · {gbp(Number(cr.hours) * rate)}</span>
+                    )}
+                    <span className="block text-xs text-muted-foreground">
+                      Added {new Date(cr.created_at).toLocaleDateString("en-GB")}
+                    </span>
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={markPaid.isPending}
+                    onClick={() => markPaid.mutate({ id: cr.id, paid: true })}
+                  >
+                    Mark paid
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-muted-foreground">All billable hours are paid.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>

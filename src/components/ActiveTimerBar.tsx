@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { notifyTimeLogged } from "@/lib/task-notifications.functions";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pause, Play, Square, Timer } from "lucide-react";
@@ -38,6 +40,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
 
   if (running.length === 0) return null;
 
+  const notifyTime = useServerFn(notifyTimeLogged);
   const refresh = () => void qc.invalidateQueries({ queryKey: ["time_entries"] });
 
   const act = async (entry: TimeEntry, action: "pause" | "resume" | "stop") => {
@@ -52,6 +55,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
       } else {
         const raw = elapsedMinutes(entry.started_at, entry.paused_at);
         await stopTimer(entry);
+        notifyTime({ data: { entryId: entry.id, origin: window.location.origin } }).catch(() => undefined);
         toast.success(`Logged ${formatHours(roundedPreview(raw) / 60)} (rounded to 15 min)`);
       }
       refresh();

@@ -9,6 +9,7 @@ import {
   notifyTaskComment,
   notifyTaskEvent,
   notifyFileUploaded,
+  notifyTimeLogged,
   notifyTaskStatusChange,
 } from "@/lib/task-notifications.functions";
 import {
@@ -331,6 +332,7 @@ export function TaskDialog({
   const notifyStatus = useServerFn(notifyTaskStatusChange);
   const notifyEvent = useServerFn(notifyTaskEvent);
   const notifyUpload = useServerFn(notifyFileUploaded);
+  const notifyTime = useServerFn(notifyTimeLogged);
 
   const save = useMutation({
     mutationFn: async (patch: Partial<Task>) => {
@@ -384,6 +386,7 @@ export function TaskDialog({
             ? { overageMinutes: opts.overageMinutes! }
             : null,
         );
+        notifyTime({ data: { entryId: running.id, origin: window.location.origin } }).catch(() => undefined);
         if (task?.client_id) {
           // Fire-and-forget: warns the client by email once 80% is used.
           checkClientHourAlert({

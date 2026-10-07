@@ -574,3 +574,38 @@ export const notifyFileUploaded = createServerFn({ method: "POST" })
       `New file on "${task.title}"`, `${actorName} added a document to this task.`, data.origin);
     return { ok: true as const, sent };
   });
+
+/** Emails the client after time is logged on one of their tasks. */
+export const notifyTimeLogged = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { entryId: string; origin: string }) => {
+    if (!input.entryId) throw new Error("Entry is required");
+    return { entryId: input.entryId, origin: safeAppOrigin(input.origin) };
+  })
+  .handler(async ({ data, context }) => {
+    const { data: entry } = await context.supabase
+      .from("time_entries")
+      .select("id, task_id, minutes, billable, ended_at")
+      .eq("id", data.entryId)
+      .maybeSingle();
+    if (!entry || !entry.ended_at || !entry.minutes) return { ok: true as const, sent: 0 };
+    const loaded = await loadTaskAndRecipients(context.supabase, context.userId, entry.task_id, false);
+    if (!loaded) throw new Error("Forbidden");
+    const { supabaseAdmin, task, actorName } = loaded;
+    const { data: client } = task.client_id
+      ? await supabaseAdmin.from("clients").select("hourly_rate").eq("id", task.client_id).maybeSingle()
+      : { data: null };
+    const hours = Number(entry.minutes) / 60;
+    const rate = Number(client?.hourly_rate ?? 0);
+    const fmtH = `${Math.floor(hours)}h ${String(Math.round((hours % 1) * 60)).padStart(2, "0")}m`;
+    const billed =
+      entry.billable === false
+        ? "These hours are free of charge."
+        : rate > 0
+          ? `Billed: ${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(hours * rate)}.`
+          : "Billable time.";
+    const { queueClientPortalEmail } = await import("./notifications.server");
+    const sent = await queueClientPortalEmail(supabaseAdmin, task as any, [],
+      `Time logged on "${task.title}"`, `${actorName} logged ${fmtH}. ${billed}`, data.origin);
+    return { ok: true as const, sent };
+  });

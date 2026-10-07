@@ -484,6 +484,7 @@ export type Database = {
           email_digest: boolean
           email_mentions: boolean
           email_status: boolean
+          email_time_logged: boolean
           inapp_assignments: boolean
           inapp_comments: boolean
           inapp_mentions: boolean
@@ -502,6 +503,7 @@ export type Database = {
           email_digest?: boolean
           email_mentions?: boolean
           email_status?: boolean
+          email_time_logged?: boolean
           inapp_assignments?: boolean
           inapp_comments?: boolean
           inapp_mentions?: boolean
@@ -520,6 +522,7 @@ export type Database = {
           email_digest?: boolean
           email_mentions?: boolean
           email_status?: boolean
+          email_time_logged?: boolean
           inapp_assignments?: boolean
           inapp_comments?: boolean
           inapp_mentions?: boolean

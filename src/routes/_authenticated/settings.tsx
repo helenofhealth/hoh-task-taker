@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -51,6 +52,7 @@ type Prefs = {
   inapp_status: boolean;
   inapp_assignments: boolean;
   email_digest: boolean;
+  email_time_logged: boolean;
   quiet_enabled: boolean;
   quiet_start: string | null;
   quiet_end: string | null;
@@ -67,6 +69,7 @@ const DEFAULTS: Prefs = {
   inapp_status: true,
   inapp_assignments: true,
   email_digest: false,
+  email_time_logged: false,
   quiet_enabled: false,
   quiet_start: "20:00",
   quiet_end: "08:00",
@@ -183,6 +186,23 @@ function SettingsPage() {
             </div>
           ))}
         </div>
+
+        {!me.isStaff && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <Checkbox
+              checked={prefs.email_time_logged}
+              onCheckedChange={(v) => toggle("email_time_logged", v === true)}
+              disabled={prefsQuery.isLoading}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block text-sm font-medium">Email me when time is logged on my tasks</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Get an email with the hours logged and the £ amount each time the team logs time.
+              </span>
+            </span>
+          </label>
+        )}
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
           <div className="flex items-start justify-between gap-4">

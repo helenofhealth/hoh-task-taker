@@ -606,6 +606,6 @@ export const notifyTimeLogged = createServerFn({ method: "POST" })
           : "Billable time.";
     const { queueClientPortalEmail } = await import("./notifications.server");
     const sent = await queueClientPortalEmail(supabaseAdmin, task as any, [],
-      `Time logged on "${task.title}"`, `${actorName} logged ${fmtH}. ${billed}`, data.origin);
+      `Time logged on "${task.title}"`, `${actorName} logged ${fmtH}. ${billed}`, data.origin, { requireTimeLoggedOptIn: true });
     return { ok: true as const, sent };
   });

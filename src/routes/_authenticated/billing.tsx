@@ -86,7 +86,7 @@ function BillingPage() {
     amount: 0,
   });
 
-  if (me.data && !me.data.isStaff) {
+  if (me.roles.length > 0 && !me.isStaff) {
     return (
       <AppShell>
         <p className="text-muted-foreground">Only team members can view this page.</p>

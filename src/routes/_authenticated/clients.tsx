@@ -679,6 +679,36 @@ function StaffClientsPage() {
 
 function EditClientDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const credits = useQuery({
+    queryKey: ["credits"],
+    queryFn: fetchCredits,
+    enabled: !!client,
+  });
+  const clientCredits = (credits.data ?? []).filter(
+    (cr) => cr.client_id === client?.id && cr.billable !== false,
+  );
+  const paidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
+  const unpaidCredits = clientCredits.filter((cr) => !cr.paid);
+  const unpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const rate = client?.hourly_rate === null || client?.hourly_rate === undefined ? null : Number(client.hourly_rate);
+  const unpaidAmount = rate === null ? null : unpaidHours * rate;
+  const gbp = (n: number) =>
+    new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
+
+  const markPaid = useMutation({
+    mutationFn: async ({ id, paid }: { id: string; paid: boolean }) => {
+      const { error } = await db
+        .from("hour_credits")
+        .update({ paid, paid_at: paid ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.paid ? "Marked as paid" : "Marked as not paid");
+      qc.invalidateQueries({ queryKey: ["credits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [name, setName] = useState("");
   const [business, setBusiness] = useState("");
   const [email, setEmail] = useState("");

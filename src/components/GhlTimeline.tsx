@@ -80,7 +80,7 @@ export function GhlTimeline({ task, entries }: { task: Task; entries: TimeEntry[
   }, [task.id, qc]);
 
   const loggedMinutes = taskEntries.reduce((s, e) => s + (e.minutes ?? 0), 0);
-  const liveMinutes = running ? roundedPreview(elapsedMinutes(running.started_at)) : 0;
+  const liveMinutes = running ? roundedPreview(elapsedMinutes(running.started_at, running.paused_at)) : 0;
   const loggedHours = hoursFromMinutes(loggedMinutes);
   const liveHours = hoursFromMinutes(loggedMinutes + liveMinutes);
   const estimate = task.estimated_hours ?? null;

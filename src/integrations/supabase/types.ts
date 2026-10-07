@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_connections: {
+        Row: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_key_ciphertext?: string
+          connector_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_audit: {
         Row: {
           action: string
@@ -689,28 +716,37 @@ export type Database = {
       task_attachments: {
         Row: {
           created_at: string
+          external_url: string | null
           file_name: string
           file_path: string
           id: string
+          mime_type: string | null
           size_bytes: number | null
+          source: string
           task_id: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          external_url?: string | null
           file_name: string
           file_path: string
           id?: string
+          mime_type?: string | null
           size_bytes?: number | null
+          source?: string
           task_id: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          external_url?: string | null
           file_name?: string
           file_path?: string
           id?: string
+          mime_type?: string | null
           size_bytes?: number | null
+          source?: string
           task_id?: string
           user_id?: string | null
         }

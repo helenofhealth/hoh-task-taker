@@ -29,6 +29,13 @@
       "when": 1790935751995,
       "tag": "0003_guard_client_task_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791367185430,
+      "tag": "0004_migration",
+      "breakpoints": true
     }
   ]
 }

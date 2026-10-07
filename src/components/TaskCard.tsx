@@ -89,13 +89,13 @@ export function TaskCard({
         {task.priority === "high" && (
           <Badge
             variant="outline"
-            className="rounded-md border-priority-high bg-transparent text-[10px] uppercase tracking-wide text-priority-high"
+            className="rounded-md border-transparent bg-priority-high-soft text-[10px] uppercase tracking-wide text-priority-high"
           >
             {priorityLabel[task.priority]}
           </Badge>
         )}
         {task.priority === "urgent" && (
-          <Badge className="rounded-md bg-priority-urgent text-[10px] uppercase tracking-wide text-priority-urgent-foreground">
+          <Badge className="rounded-md border-transparent bg-priority-urgent-soft text-[10px] uppercase tracking-wide text-priority-urgent">
             {priorityLabel[task.priority]}
           </Badge>
         )}

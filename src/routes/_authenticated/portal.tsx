@@ -286,8 +286,12 @@ function PortalPage() {
                     className="rounded-2xl border border-border bg-surface-muted p-4"
                   >
                     <div className="mb-3 flex items-center gap-2">
-                      <span className={`size-2.5 rounded-full ${col.token}`} />
-                      <h3 className="text-sm font-semibold">{col.label}</h3>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${col.soft}`}
+                      >
+                        <span className="size-1.5 rounded-full bg-current opacity-70" />
+                        {col.label}
+                      </span>
                       <span className="ml-auto rounded-full bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground">
                         {items.length}
                       </span>

@@ -4,12 +4,14 @@ export type TaskStatus = "requested" | "in_progress" | "on_hold" | "review" | "c
 export type TaskPriority = "low" | "normal" | "high" | "urgent";
 export type AppRole = "admin" | "member" | "client";
 
-export const STATUSES: { key: TaskStatus; label: string; token: string }[] = [
-  { key: "requested", label: "Requested", token: "bg-status-requested" },
-  { key: "in_progress", label: "In Progress", token: "bg-status-progress" },
-  { key: "on_hold", label: "On Hold", token: "bg-status-hold" },
-  { key: "review", label: "Review", token: "bg-status-review" },
-  { key: "completed", label: "Completed", token: "bg-status-completed" },
+/** `token` is the solid dot colour; `soft` is the quiet tint used for the
+ *  status pill — a soft fill with a deeper label, never a solid block. */
+export const STATUSES: { key: TaskStatus; label: string; token: string; soft: string }[] = [
+  { key: "requested", label: "Requested", token: "bg-status-requested", soft: "bg-status-requested-soft text-status-requested" },
+  { key: "in_progress", label: "In Progress", token: "bg-status-progress", soft: "bg-status-progress-soft text-status-progress" },
+  { key: "on_hold", label: "On Hold", token: "bg-status-hold", soft: "bg-status-hold-soft text-status-hold" },
+  { key: "review", label: "Review", token: "bg-status-review", soft: "bg-status-review-soft text-status-review" },
+  { key: "completed", label: "Completed", token: "bg-status-completed", soft: "bg-status-completed-soft text-status-completed" },
 ];
 
 export interface Client {

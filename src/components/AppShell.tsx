@@ -18,6 +18,7 @@ const nav: { to: string; label: string; staffOnly?: boolean; clientOnly?: boolea
   { to: "/drive", label: "Google Drive" },
   { to: "/time-report", label: "Time report" },
   { to: "/usage-report", label: "Usage report", staffOnly: true },
+  { to: "/billing", label: "Billing", staffOnly: true },
   { to: "/clients", label: "Clients", staffOnly: true },
   { to: "/team", label: "Team members", staffOnly: true },
   { to: "/proven-tasks", label: "Proven tasks", staffOnly: true },

@@ -198,7 +198,7 @@ function StaffTeamPage() {
                 </td>
                 {me.isAdmin && (
                   <td className="px-5 py-3 text-right tabular-nums">
-                    €{(m.hourlyRate ?? 0).toFixed(2)}
+                    £{(m.hourlyRate ?? 0).toFixed(2)}
                   </td>
                 )}
                 {me.isAdmin && (
@@ -308,7 +308,7 @@ function StaffTeamPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="tm-rate">Hourly rate (€)</Label>
+              <Label htmlFor="tm-rate">Hourly rate (£)</Label>
               <Input
                 id="tm-rate"
                 type="number"

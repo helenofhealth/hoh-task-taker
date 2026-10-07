@@ -8,6 +8,7 @@ const CONNECTOR = "google_drive";
 const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
   "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/drive.file",
 ];
 
 async function loadKey(userId: string) {
@@ -145,7 +146,107 @@ export const attachDriveFile = createServerFn({ method: "POST" })
       external_url: link,
       source: "google_drive",
       mime_type: f.mimeType?.slice(0, 200) ?? null,
+      drive_file_id: f.id,
     });
     if (error) throw new Error(error.message);
     return { ok: true, name: f.name };
+  });
+
+async function driveSend(key: string, path: string, init: RequestInit) {
+  const { callAsAppUser, appUserReconnectRequired } = await import("@/integrations/lovable/appUserConnector");
+  const res = await callAsAppUser({
+    gatewayBaseUrl: GATEWAY_BASE_URL,
+    connectionAPIKey: key,
+    connectorId: CONNECTOR,
+    path,
+    init,
+    requiredScopes: SCOPES,
+  });
+  if (await appUserReconnectRequired(res)) throw new Error("Your Google Drive access needs to be renewed. Reconnect and try again.");
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`Drive request failed [${res.status}]: ${body}`);
+    throw new Error(`Google Drive request failed [${res.status}]`);
+  }
+  return res.json() as Promise<{ id: string; webViewLink?: string; files?: { id: string }[] }>;
+}
+
+async function ensureFolder(key: string, name: string, parent?: string) {
+  const safe = name.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const q = `mimeType = 'application/vnd.google-apps.folder' and trashed = false and name = '${safe}'${parent ? ` and '${parent}' in parents` : ""}`;
+  const found = await driveSend(key, `/drive/v3/files?${new URLSearchParams({ q, fields: "files(id)", pageSize: "1" })}`, { method: "GET" });
+  if (found.files?.[0]) return found.files[0].id;
+  const created = await driveSend(key, "/drive/v3/files?fields=id", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, mimeType: "application/vnd.google-apps.folder", ...(parent ? { parents: [parent] } : {}) }),
+  });
+  return created.id;
+}
+
+/** Copy app-uploaded task documents into the signed-in user's Google Drive. */
+export const syncFilesToDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ taskId: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const key = await loadKey(context.userId);
+    if (!key) throw new Error("Connect Google Drive first.");
+    let q = context.supabase
+      .from("task_attachments")
+      .select("id, task_id, file_path, file_name, mime_type, tasks(title)")
+      .eq("source", "upload")
+      .is("drive_file_id", null)
+      .limit(25);
+    if (data.taskId) q = q.eq("task_id", data.taskId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    if (!rows?.length) return { synced: 0, failed: 0, remaining: 0 };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const root = await ensureFolder(key, "Helen of Health Task Taker");
+    const folders = new Map<string, string>();
+    let synced = 0;
+    let failed = 0;
+    for (const r of rows) {
+      try {
+        const title = ((r as { tasks?: { title?: string } | null }).tasks?.title ?? "Task").slice(0, 120);
+        let folder = folders.get(r.task_id);
+        if (!folder) {
+          folder = await ensureFolder(key, title, root);
+          folders.set(r.task_id, folder);
+        }
+        const { data: blob, error: dlErr } = await context.supabase.storage.from("task-files").download(r.file_path);
+        if (dlErr || !blob) throw new Error(dlErr?.message ?? "download failed");
+        const boundary = `hoh${crypto.randomUUID()}`;
+        const meta = JSON.stringify({ name: r.file_name, parents: [folder] });
+        const mime = r.mime_type || blob.type || "application/octet-stream";
+        const body = new Blob([
+          `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`,
+          await blob.arrayBuffer(),
+          `\r\n--${boundary}--`,
+        ]);
+        const up = await driveSend(key, "/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
+          method: "POST",
+          headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+          body,
+        });
+        await supabaseAdmin
+          .from("task_attachments")
+          .update({
+            drive_file_id: up.id,
+            drive_synced_at: new Date().toISOString(),
+            external_url: up.webViewLink ?? `https://drive.google.com/file/d/${up.id}/view`,
+          })
+          .eq("id", r.id);
+        synced++;
+      } catch (e) {
+        console.error("Drive sync failed for", r.id, e);
+        failed++;
+      }
+    }
+    const { count } = await context.supabase
+      .from("task_attachments")
+      .select("id", { count: "exact", head: true })
+      .eq("source", "upload")
+      .is("drive_file_id", null);
+    return { synced, failed, remaining: count ?? 0 };
   });

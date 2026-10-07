@@ -179,6 +179,9 @@ export interface Attachment {
   file_name: string;
   size_bytes: number | null;
   created_at: string;
+  external_url?: string | null;
+  source?: string | null;
+  mime_type?: string | null;
 }
 
 const db = supabase as unknown as {

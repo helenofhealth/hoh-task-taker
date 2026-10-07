@@ -32,6 +32,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as ApiPublicDigestRouteImport } from './routes/api/public/digest'
 import { Route as ApiPublicEmailFlushRouteImport } from './routes/api/public/email-flush'
 import { Route as ApiPublicInviteOpenRouteImport } from './routes/api/public/invite-open'
+import { Route as OauthGoogleDriveReturnRouteImport } from './routes/oauth.google-drive.return'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -153,6 +154,11 @@ const ApiPublicInviteOpenRoute = ApiPublicInviteOpenRouteImport.update({
   path: '/api/public/invite-open',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthGoogleDriveReturnRoute = OauthGoogleDriveReturnRouteImport.update({
+  id: '/oauth/google-drive/return',
+  path: '/oauth/google-drive/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
+  '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
+  '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/api/public/digest': typeof ApiPublicDigestRoute
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
+  '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/api/public/digest'
     | '/api/public/email-flush'
     | '/api/public/invite-open'
+    | '/oauth/google-drive/return'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/public/digest'
     | '/api/public/email-flush'
     | '/api/public/invite-open'
+    | '/oauth/google-drive/return'
   id:
     | '__root__'
     | '/'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/api/public/digest'
     | '/api/public/email-flush'
     | '/api/public/invite-open'
+    | '/oauth/google-drive/return'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   ApiPublicDigestRoute: typeof ApiPublicDigestRoute
   ApiPublicEmailFlushRoute: typeof ApiPublicEmailFlushRoute
   ApiPublicInviteOpenRoute: typeof ApiPublicInviteOpenRoute
+  OauthGoogleDriveReturnRoute: typeof OauthGoogleDriveReturnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicInviteOpenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/oauth/google-drive/return': {
+      id: '/oauth/google-drive/return'
+      path: '/oauth/google-drive/return'
+      fullPath: '/oauth/google-drive/return'
+      preLoaderRoute: typeof OauthGoogleDriveReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -530,6 +550,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDigestRoute: ApiPublicDigestRoute,
   ApiPublicEmailFlushRoute: ApiPublicEmailFlushRoute,
   ApiPublicInviteOpenRoute: ApiPublicInviteOpenRoute,
+  OauthGoogleDriveReturnRoute: OauthGoogleDriveReturnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

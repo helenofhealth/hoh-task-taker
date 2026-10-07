@@ -31,7 +31,7 @@ function monthStart() {
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
-const money = (n: number) => new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(n);
+const money = (n: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
 
 type Agg = { billable: number; free: number };
 

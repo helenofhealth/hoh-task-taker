@@ -5,14 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system: Warm beige.
- * Linen workspace, cream cards, cocoa ink, terracotta as the single action accent.
- * All colors are oklch tokens. Never hardcode colors in components.
+ * Design system: Crisp Neutral + Navy.
+ * Cool off-white workspace, white cards, slate ink, one confident blue for actions.
+ * Statuses are quiet tints: a soft fill with a deeper label, never a solid block.
+ * All colors are tokens. Never hardcode colors in components.
  */
 
 @theme inline {
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -46,12 +47,19 @@
   --color-plum: var(--plum);
   --color-plum-foreground: var(--plum-foreground);
   --color-status-requested: var(--status-requested);
+  --color-status-requested-soft: var(--status-requested-soft);
   --color-status-progress: var(--status-progress);
+  --color-status-progress-soft: var(--status-progress-soft);
   --color-status-review: var(--status-review);
+  --color-status-review-soft: var(--status-review-soft);
   --color-status-hold: var(--status-hold);
+  --color-status-hold-soft: var(--status-hold-soft);
   --color-status-completed: var(--status-completed);
+  --color-status-completed-soft: var(--status-completed-soft);
   --color-priority-high: var(--priority-high);
+  --color-priority-high-soft: var(--priority-high-soft);
   --color-priority-urgent: var(--priority-urgent);
+  --color-priority-urgent-soft: var(--priority-urgent-soft);
   --color-priority-urgent-foreground: var(--priority-urgent-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
@@ -59,47 +67,58 @@
   --color-surface-muted: var(--surface-muted);
   --color-success: var(--success);
 
-  --shadow-soft: 0 2px 8px rgba(62, 51, 43, 0.07);
-  --shadow-lift: 0 2px 4px rgba(62, 51, 43, 0.06), 0 16px 34px -16px rgba(62, 51, 43, 0.22);
+  --shadow-soft: 0 1px 2px rgba(30, 41, 59, 0.04), 0 2px 8px rgba(30, 41, 59, 0.05);
+  --shadow-lift: 0 2px 4px rgba(30, 41, 59, 0.06), 0 16px 32px -16px rgba(30, 41, 59, 0.18);
 }
 
 :root {
-  --radius: 0.875rem;
-  --background: #F7F3EC;
-  --foreground: #3E332B;
-  --card: #FFFDF9;
-  --card-foreground: #3E332B;
-  --popover: #FFFDF9;
-  --popover-foreground: #3E332B;
-  --primary: #A96042;
-  --primary-foreground: #FFFDF9;
-  --primary-soft: #F6ECDD;
-  --secondary: #EDE3D3;
-  --secondary-foreground: #3E332B;
-  --muted: #EDE3D3;
-  --muted-foreground: #76685C;
-  --accent: #F6ECDD;
-  --accent-foreground: #5A4738;
-  --destructive: #A94B4B;
-  --destructive-foreground: #FFFDF9;
-  --border: #D8CBBB;
-  --input: #D8CBBB;
-  --ring: #A96042;
-  --plum: #3E332B;
-  --plum-foreground: #FFFDF9;
-  --status-requested: #C9963E;
-  --status-progress: #6F8C91;
-  --status-hold: #9B7A72;
-  --status-review: #82967B;
-  --status-completed: #58735C;
-  --priority-high: #C56B3C;
-  --priority-urgent: #A94B4B;
-  --priority-urgent-foreground: #FFFDF9;
-  --warning: #C9963E;
-  --warning-foreground: #5A4738;
-  --warning-soft: #F7EBD5;
-  --surface-muted: #EFE7DB;
-  --success: #58735C;
+  --radius: 0.75rem;
+  --background: #f7f9fb;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #2f6fed;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eaf1fe;
+  --secondary: #eef2f7;
+  --secondary-foreground: #1e293b;
+  --muted: #eef2f7;
+  --muted-foreground: #64748b;
+  --accent: #eaf1fe;
+  --accent-foreground: #1e293b;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #e5eaf0;
+  --input: #d8e0ea;
+  --ring: #2f6fed;
+  --plum: #1e293b;
+  --plum-foreground: #ffffff;
+
+  /* Statuses: a calm tint with a deeper label, used as a pill. */
+  --status-requested: #b45309;
+  --status-requested-soft: #fdf3e3;
+  --status-progress: #2f6fed;
+  --status-progress-soft: #eaf1fe;
+  --status-hold: #7a8699;
+  --status-hold-soft: #f0f3f7;
+  --status-review: #6d28d9;
+  --status-review-soft: #f1ecfd;
+  --status-completed: #15803d;
+  --status-completed-soft: #e9f5ec;
+
+  --priority-high: #c2410c;
+  --priority-high-soft: #fdeee5;
+  --priority-urgent: #b42318;
+  --priority-urgent-soft: #fdecea;
+  --priority-urgent-foreground: #ffffff;
+
+  --warning: #b45309;
+  --warning-foreground: #7c4300;
+  --warning-soft: #fdf3e3;
+  --surface-muted: #eef2f7;
+  --success: #15803d;
 }
 
 @layer base {

@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Label } from "@/components/ui/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CloudUpload, HardDrive, Loader2, Search, Unplug } from "lucide-react";
+import { CloudDownload, CloudUpload, FolderPlus, HardDrive, Loader2, Search, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -14,6 +15,8 @@ import {
   searchDriveFiles,
   startDriveConnect,
   syncFilesToDrive,
+  pullFilesFromDrive,
+  createDriveFolder,
 } from "@/lib/google-drive.functions";
 
 function waitForOAuth(popup: Window) {
@@ -241,5 +244,121 @@ export function SyncToDriveButton({ taskId, label = "Save to Drive" }: { taskId?
       {sync.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudUpload className="mr-2 size-4" />}
       {label}
     </Button>
+  );
+}
+
+/** Returns a function that makes sure the signed-in user has connected Drive (opens Google if not). */
+function useEnsureDrive() {
+  const statusFn = useServerFn(driveStatus);
+  const startFn = useServerFn(startDriveConnect);
+  const completeFn = useServerFn(completeDriveConnect);
+  return async () => {
+    const { connected } = await statusFn();
+    if (connected) return;
+    const popup = window.open("", "lovable-oauth", "width=600,height=720");
+    if (!popup) throw new Error("Popup blocked. Allow popups and try again.");
+    try {
+      const { authorizationUrl } = await startFn();
+      const done = waitForOAuth(popup);
+      popup.location.href = authorizationUrl;
+      const code = await done;
+      if (code) await completeFn({ data: { code } });
+    } catch (e) {
+      popup.close();
+      throw e;
+    }
+  };
+}
+
+/** Imports files placed in "Helen of Health Task Taker/<task name>" folders in Drive. */
+export function PullFromDriveButton() {
+  const qc = useQueryClient();
+  const ensure = useEnsureDrive();
+  const pullFn = useServerFn(pullFilesFromDrive);
+  const pull = useMutation({
+    mutationFn: async () => {
+      await ensure();
+      return pullFn();
+    },
+    onSuccess: (r) => {
+      toast.success(
+        r.imported
+          ? `Brought in ${r.imported} new file${r.imported === 1 ? "" : "s"} from Google Drive`
+          : "No new files found in your task folders",
+        r.unmatchedFolders
+          ? { description: `${r.unmatchedFolders} folder(s) didn't match a task name and were skipped.` }
+          : undefined,
+      );
+      qc.invalidateQueries({ queryKey: ["attachments"] });
+      qc.invalidateQueries({ queryKey: ["drive-library"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Button variant="outline" onClick={() => pull.mutate()} disabled={pull.isPending}>
+      {pull.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudDownload className="mr-2 size-4" />}
+      Pull from Drive
+    </Button>
+  );
+}
+
+/** Creates a folder in Drive. With taskId, creates that task's folder (named after the task). */
+export function NewDriveFolderButton({ taskId }: { taskId?: string }) {
+  const ensure = useEnsureDrive();
+  const createFn = useServerFn(createDriveFolder);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const create = useMutation({
+    mutationFn: async () => {
+      await ensure();
+      return createFn({ data: taskId ? { taskId } : { name } });
+    },
+    onSuccess: (r) => {
+      setOpen(false);
+      setName("");
+      toast.success(`Folder "${r.name}" is ready in Google Drive`, {
+        action: { label: "Open", onClick: () => window.open(r.url, "_blank", "noopener") },
+      });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  if (taskId) {
+    return (
+      <Button variant="outline" onClick={() => create.mutate()} disabled={create.isPending}>
+        {create.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FolderPlus className="mr-2 size-4" />}
+        Task folder in Drive
+      </Button>
+    );
+  }
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <FolderPlus className="mr-2 size-4" /> New folder
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New Google Drive folder</DialogTitle>
+            <DialogDescription>Created inside your "Helen of Health Task Taker" folder.</DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (name.trim()) create.mutate();
+            }}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="drive-folder-name">Folder name</Label>
+              <Input id="drive-folder-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
+            </div>
+            <Button type="submit" className="w-full" disabled={!name.trim() || create.isPending}>
+              {create.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Create folder
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

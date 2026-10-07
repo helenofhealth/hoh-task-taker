@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AttachmentPreview } from "@/components/AttachmentPreview";
 import { DocumentRow } from "@/components/DocumentRow";
-import { SyncToDriveButton } from "@/components/GoogleDrivePicker";
+import { NewDriveFolderButton, PullFromDriveButton, SyncToDriveButton } from "@/components/GoogleDrivePicker";
 import { supabase } from "@/integrations/supabase/client";
 import type { Attachment } from "@/lib/tracker";
 
@@ -68,10 +68,14 @@ function DrivePage() {
               <HardDrive className="size-5" /> Google Drive
             </h1>
             <p className="text-sm text-muted-foreground">
-              All Drive files linked to tasks, grouped by task. Uploaded files appear here once saved to Drive.
+              All Drive files linked to tasks, grouped by task. Sync works both ways: save uploads to Drive, or pull in files you put in a task's Drive folder.
             </p>
           </div>
-          <SyncToDriveButton label="Save all uploads to Drive" />
+          <div className="flex flex-wrap gap-2">
+            <NewDriveFolderButton />
+            <PullFromDriveButton />
+            <SyncToDriveButton label="Save all uploads to Drive" />
+          </div>
         </div>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

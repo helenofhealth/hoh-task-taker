@@ -29,7 +29,7 @@ import {
   HardDrive,
   ExternalLink,
 } from "lucide-react";
-import { GoogleDrivePicker, SyncToDriveButton } from "@/components/GoogleDrivePicker";
+import { GoogleDrivePicker, NewDriveFolderButton, SyncToDriveButton } from "@/components/GoogleDrivePicker";
 import { DocumentRow } from "@/components/DocumentRow";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -1910,6 +1910,7 @@ export function TaskDialog({
                   </Button>
                   {task && <GoogleDrivePicker taskId={task.id} />}
                   {task && <SyncToDriveButton taskId={task.id} />}
+                  {task && <NewDriveFolderButton taskId={task.id} />}
                 </div>
                 <p className="text-xs text-muted-foreground">Up to 20 MB per file</p>
               </div>

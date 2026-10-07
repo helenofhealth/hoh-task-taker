@@ -720,6 +720,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const [retainer, setRetainer] = useState("");
   const [editRate, setEditRate] = useState("");
   const [editProject, setEditProject] = useState("");
+  const [paidManual, setPaidManual] = useState("");
+  const [unpaidManual, setUnpaidManual] = useState("");
 
   useEffect(() => {
     if (!client) return;
@@ -730,6 +732,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
     setRetainer(String(Number(client.retainer_hours ?? 0)));
     setEditRate(client.hourly_rate === null || client.hourly_rate === undefined ? "" : String(Number(client.hourly_rate)));
     setEditProject(client.default_project ?? "");
+    setPaidManual(client.paid_hours_override === null || client.paid_hours_override === undefined ? "" : String(Number(client.paid_hours_override)));
+    setUnpaidManual(client.unpaid_hours_override === null || client.unpaid_hours_override === undefined ? "" : String(Number(client.unpaid_hours_override)));
   }, [client]);
 
   const save = useMutation({
@@ -748,6 +752,15 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
       if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
         throw new Error("Hourly rate must be 0 or more");
       }
+      const parseOverride = (raw: string, label: string) => {
+        const t = raw.trim();
+        if (t === "") return null;
+        const n = Number(t);
+        if (!Number.isFinite(n) || n < 0) throw new Error(`${label} must be 0 or more`);
+        return n;
+      };
+      const paidOverrideVal = parseOverride(paidManual, "Paid hours");
+      const unpaidOverrideVal = parseOverride(unpaidManual, "Unpaid hours");
       const { error } = await db
         .from("clients")
         .update({

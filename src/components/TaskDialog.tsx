@@ -26,7 +26,10 @@ import {
   Square,
   Trash2,
   UserPlus,
+  HardDrive,
+  ExternalLink,
 } from "lucide-react";
+import { GoogleDrivePicker } from "@/components/GoogleDrivePicker";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";

@@ -9,7 +9,7 @@ import {
   formatHours,
   pauseTimer,
   resumeTimer,
-  roundMinutes,
+  roundedPreview,
   stopTimer,
   type Task,
   type TimeEntry,
@@ -52,7 +52,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
       } else {
         const raw = elapsedMinutes(entry.started_at, entry.paused_at);
         await stopTimer(entry.id);
-        toast.success(`Logged ${formatHours(roundMinutes(raw) / 60)} (rounded to 15 min)`);
+        toast.success(`Logged ${formatHours(roundedPreview(raw) / 60)} (rounded to 15 min)`);
       }
       refresh();
     } catch (e) {
@@ -80,7 +80,7 @@ export function ActiveTimerBar({ entries, tasks, onOpenTask }: Props) {
                 {paused && <span className="ml-2 text-xs font-normal text-muted-foreground">(paused)</span>}
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatHours(mins / 60)} elapsed · will log {formatHours(roundMinutes(mins) / 60)}
+                {formatHours(mins / 60)} elapsed · will log {formatHours(roundedPreview(mins) / 60)}
               </p>
             </div>
             {task && onOpenTask && (

@@ -275,7 +275,10 @@ function useDriveErrorHandler(retry: () => void) {
   const qc = useQueryClient();
   const connect = useDriveConnectPopup();
   return (e: Error) => {
-    if (!isRenewError(e)) return toast.error(e.message);
+    if (!isRenewError(e)) {
+      toast.error(e.message);
+      return;
+    }
     toast.error("Your Google Drive access needs to be renewed.", {
       duration: 15000,
       action: {

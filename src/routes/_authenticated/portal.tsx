@@ -116,6 +116,20 @@ function PortalPage() {
     ? computeBalance(client.id, clientList, credits.data ?? [], entries.data ?? [])
     : null;
 
+  const billableByTask = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of entries.data ?? []) {
+      if (!e.minutes || e.billable === false) continue;
+      map.set(e.task_id, (map.get(e.task_id) ?? 0) + e.minutes);
+    }
+    return map;
+  }, [entries.data]);
+  const rate = Number(client?.hourly_rate ?? 0);
+  const money = (n: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
+  const billedFor = (taskId: string) => ((billableByTask.get(taskId) ?? 0) / 60) * rate;
+  const billingRows = myTasks.filter((t) => (minutesByTask.get(t.id) ?? 0) > 0);
+  const totalBilled = billingRows.reduce((s, t) => s + billedFor(t.id), 0);
+
   const totalMinutes = myTasks.reduce((s, t) => s + (minutesByTask.get(t.id) ?? 0), 0);
 
   return (
@@ -198,6 +212,36 @@ function PortalPage() {
               hint={`${formatHours(totalMinutes / 60)} logged in total`}
             />
           </div>
+
+          <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <h2 className="text-lg font-semibold">Time &amp; billing per task</h2>
+            <p className="text-xs text-muted-foreground">
+              {rate > 0 ? `Billed at ${money(rate)} per hour. Free hours are not charged.` : "No hourly rate set yet — amounts show as —."}
+            </p>
+            {billingRows.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">No time logged yet.</p>
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-1">Task</th><th>Time logged</th><th>Billable</th><th className="text-right">Billed</th></tr>
+                </thead>
+                <tbody>
+                  {billingRows.map((t) => (
+                    <tr key={t.id} className="border-t border-border">
+                      <td className="py-2"><button type="button" className="text-left hover:underline" onClick={() => setOpenTask(t)}>{t.title}</button></td>
+                      <td>{formatHours((minutesByTask.get(t.id) ?? 0) / 60)}</td>
+                      <td>{formatHours((billableByTask.get(t.id) ?? 0) / 60)}</td>
+                      <td className="text-right font-medium">{rate > 0 ? money(billedFor(t.id)) : "—"}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-border font-semibold">
+                    <td className="py-2" colSpan={3}>Total</td>
+                    <td className="text-right">{rate > 0 ? money(totalBilled) : "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </section>
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold">Your tasks</h2>

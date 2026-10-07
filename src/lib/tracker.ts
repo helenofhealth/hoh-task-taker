@@ -146,6 +146,9 @@ export interface HourCredit {
   kind: string;
   /** false = complimentary hours granted at no charge. */
   billable?: boolean;
+  /** false = hours added on credit; the client still owes payment. */
+  paid?: boolean;
+  paid_at?: string | null;
   effective_month: string | null;
   note: string | null;
   created_at: string;

@@ -129,6 +129,12 @@ function PortalPage() {
   const billedFor = (taskId: string) => ((billableByTask.get(taskId) ?? 0) / 60) * rate;
   const billingRows = myTasks.filter((t) => (minutesByTask.get(t.id) ?? 0) > 0);
   const totalBilled = billingRows.reduce((s, t) => s + billedFor(t.id), 0);
+  const billableLoggedHours = myTasks.reduce((s, t) => s + (billableByTask.get(t.id) ?? 0), 0) / 60;
+  const paidHours = (credits.data ?? [])
+    .filter((c) => c.client_id === clientId && c.billable !== false && c.paid !== false)
+    .reduce((s, c) => s + Number(c.hours), 0);
+  const paidLoggedHours = Math.min(billableLoggedHours, paidHours);
+  const unpaidLoggedHours = Math.max(0, billableLoggedHours - paidHours);
 
   const totalMinutes = myTasks.reduce((s, t) => s + (minutesByTask.get(t.id) ?? 0), 0);
 
@@ -241,6 +247,22 @@ function PortalPage() {
                 </tbody>
               </table>
             )}
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-surface-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Billable hours logged</p>
+                <p className="text-lg font-semibold">{formatHours(billableLoggedHours)}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Of these, already paid</p>
+                <p className="text-lg font-semibold">{formatHours(paidLoggedHours)}</p>
+                <p className="text-xs text-muted-foreground">{formatHours(paidHours)} paid for in total</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Balance to pay</p>
+                <p className="text-lg font-semibold">{rate > 0 ? money(unpaidLoggedHours * rate) : "—"}</p>
+                <p className="text-xs text-muted-foreground">{formatHours(unpaidLoggedHours)} not yet paid</p>
+              </div>
+            </div>
           </section>
 
           <section className="mt-8">

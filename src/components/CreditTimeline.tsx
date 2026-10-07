@@ -12,6 +12,8 @@ interface Props {
   clientId: string;
   credits: HourCredit[];
   entries: (TimeEntry & { tasks: { client_id: string | null } | null })[];
+  /** Admin-only: toggle whether a billable credit has been paid. */
+  onMarkPaid?: (creditId: string, paid: boolean) => void;
 }
 
 const statusStyles: Record<string, string> = {
@@ -21,7 +23,8 @@ const statusStyles: Record<string, string> = {
 };
 
 /** Chronological view of a client's hour credits and when each one expires. */
-export function CreditTimeline({ clientId, credits, entries }: Props) {
+export function CreditTimeline({ clientId, credits, entries, onMarkPaid }: Props) {
+  const unpaidIds = new Set(credits.filter((c) => c.billable !== false && c.paid === false).map((c) => c.id));
   const rows = creditTimeline(clientId, credits, entries);
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">No hours have been added for this client yet.</p>;
@@ -61,6 +64,20 @@ export function CreditTimeline({ clientId, credits, entries }: Props) {
                 <Badge variant="outline" className="h-4 px-1 text-[10px]">
                   Free
                 </Badge>
+              )}
+              {!r.free && unpaidIds.has(r.id) && (
+                <Badge variant="outline" className="h-4 border-warning px-1 text-[10px] text-warning">
+                  Not paid
+                </Badge>
+              )}
+              {!r.free && onMarkPaid && (
+                <button
+                  type="button"
+                  className="text-[10px] text-primary underline-offset-2 hover:underline"
+                  onClick={() => onMarkPaid(r.id, unpaidIds.has(r.id))}
+                >
+                  {unpaidIds.has(r.id) ? "Mark paid" : "Mark not paid"}
+                </button>
               )}
               <span className="text-muted-foreground">
                 added {r.addedOn} · {formatHours(r.hours)} granted

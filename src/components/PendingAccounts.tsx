@@ -18,6 +18,7 @@ import {
 import {
   assignAccountRole,
   listPendingAccounts,
+  removePendingAccount,
   type PendingAccount,
 } from "@/lib/pending-accounts.functions";
 import { fetchClients } from "@/lib/tracker";
@@ -34,6 +35,7 @@ export function PendingAccounts() {
   const qc = useQueryClient();
   const listFn = useServerFn(listPendingAccounts);
   const assignFn = useServerFn(assignAccountRole);
+  const removeFn = useServerFn(removePendingAccount);
   const [state, setState] = useState<Record<string, RowState>>({});
 
   const pending = useQuery({ queryKey: ["pending-accounts"], queryFn: () => listFn() });

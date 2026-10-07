@@ -8,6 +8,7 @@ import {
   notifyCommentEdited,
   notifyTaskComment,
   notifyTaskEvent,
+  notifyFileUploaded,
   notifyTaskStatusChange,
 } from "@/lib/task-notifications.functions";
 import {
@@ -329,6 +330,7 @@ export function TaskDialog({
 
   const notifyStatus = useServerFn(notifyTaskStatusChange);
   const notifyEvent = useServerFn(notifyTaskEvent);
+  const notifyUpload = useServerFn(notifyFileUploaded);
 
   const save = useMutation({
     mutationFn: async (patch: Partial<Task>) => {
@@ -725,6 +727,7 @@ export function TaskDialog({
       if (rowError) throw rowError;
       qc.invalidateQueries({ queryKey: ["attachments", task.id] });
       toast.success("Document uploaded");
+      notifyUpload({ data: { taskId: task.id, origin: window.location.origin } }).catch(() => {});
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {

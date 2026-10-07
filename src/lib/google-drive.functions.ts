@@ -308,11 +308,19 @@ export const pullFilesFromDrive = createServerFn({ method: "POST" })
   .handler(async ({ context }) => withRenew(async () => {
     const key = await loadKey(context.userId);
     if (!key) throw new Error("Connect Google Drive first.");
+    return pullForUser(key, context.supabase, context.userId, null);
+  }));
+
+/**
+ * Imports files found in "<root>/<client>/<task>" folders of one user's Drive.
+ * `db` must only see tasks the user may see (their RLS client, or admin + onlyClientId for clients).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function pullForUser(key: string, db: any, userId: string, onlyClientId: string | null) {
     const root = await ensureFolder(key, ROOT_FOLDER);
-    const { data: tasks, error } = await context.supabase
-      .from("tasks")
-      .select("id, title, clients(name)")
-      .is("deleted_at", null);
+    let tq = db.from("tasks").select("id, title, clients(name)").is("deleted_at", null);
+    if (onlyClientId) tq = tq.eq("client_id", onlyClientId);
+    const { data: tasks, error } = await tq;
     if (error) throw new Error(error.message);
     type TaskRow = { id: string; title: string; clients?: { name?: string } | null };
     // Match on "client name/task title"; tasks without a client match on title alone.
@@ -346,18 +354,18 @@ export const pullFilesFromDrive = createServerFn({ method: "POST" })
       }
       const files = await listChildren(key, folder.id, false);
       if (!files.length) continue;
-      const { data: existing } = await context.supabase
+      const { data: existing } = await db
         .from("task_attachments")
         .select("drive_file_id")
         .eq("task_id", taskId)
         .in("drive_file_id", files.map((f) => f.id));
-      const known = new Set((existing ?? []).map((e) => e.drive_file_id));
+      const known = new Set((existing ?? []).map((e: { drive_file_id: string | null }) => e.drive_file_id));
       const fresh = files.filter((f) => !known.has(f.id));
       if (!fresh.length) continue;
-      const { error: insErr } = await context.supabase.from("task_attachments").insert(
+      const { error: insErr } = await db.from("task_attachments").insert(
         fresh.map((f) => ({
           task_id: taskId,
-          user_id: context.userId,
+          user_id: userId,
           file_path: `gdrive:${f.id}`,
           file_name: f.name.slice(0, 300),
           size_bytes: f.size ? Number(f.size) : null,
@@ -371,7 +379,8 @@ export const pullFilesFromDrive = createServerFn({ method: "POST" })
       imported += fresh.length;
     }
     return { imported, unmatchedFolders: unmatched };
-  }));
+}
+
 
 /** Create a folder in the user's Drive — inside the app folder, or as a task's folder. */
 export const createDriveFolder = createServerFn({ method: "POST" })
@@ -447,3 +456,55 @@ export const refreshDriveFiles = createServerFn({ method: "POST" })
     }
     return { checked: rows?.length ?? 0, reset, removed };
   }));
+
+/** Creates "<root>/<client name>" in the caller's Drive. Silently skips when Drive isn't connected. */
+export const createClientDriveFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const key = await loadKey(context.userId);
+    if (!key) return { created: false as const };
+    const { data: client } = await context.supabase.from("clients").select("name").eq("id", data.clientId).maybeSingle();
+    if (!client) return { created: false as const };
+    try {
+      const root = await ensureFolder(key, ROOT_FOLDER);
+      await ensureFolder(key, client.name.slice(0, 120), root);
+      return { created: true as const };
+    } catch (e) {
+      console.error("Client Drive folder failed", e);
+      return { created: false as const };
+    }
+  });
+
+/** Daily job body: for every connected user, make client folders (staff) and pull new files. */
+export async function runDailyDriveSync() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { getConnectionKeyForUser } = await import("./app-user-connections.server");
+  const { data: conns } = await supabaseAdmin.from("app_user_connections").select("user_id").eq("connector_id", CONNECTOR);
+  const results: { imported: number; failed: number; users: number } = { imported: 0, failed: 0, users: 0 };
+  for (const c of conns ?? []) {
+    try {
+      const key = await getConnectionKeyForUser(c.user_id, CONNECTOR);
+      if (!key) continue;
+      const { data: roles } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", c.user_id).in("role", ["admin", "member"]);
+      const isStaff = (roles ?? []).length > 0;
+      let onlyClientId: string | null = null;
+      if (!isStaff) {
+        const { data: prof } = await supabaseAdmin.from("profiles").select("client_id").eq("id", c.user_id).maybeSingle();
+        if (!prof?.client_id) continue;
+        onlyClientId = prof.client_id;
+      } else {
+        const root = await ensureFolder(key, ROOT_FOLDER);
+        const { data: clients } = await supabaseAdmin.from("clients").select("name").is("archived_at", null);
+        for (const cl of clients ?? []) await ensureFolder(key, cl.name.slice(0, 120), root);
+      }
+      const r = await pullForUser(key, supabaseAdmin, c.user_id, onlyClientId);
+      results.imported += r.imported;
+      results.users++;
+    } catch (e) {
+      console.error("Daily Drive sync failed for a user", e);
+      results.failed++;
+    }
+  }
+  return results;
+}

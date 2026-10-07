@@ -179,6 +179,19 @@ export const notifyTaskComment = createServerFn({ method: "POST" })
     if (!loaded) throw new Error("Forbidden");
     const { supabaseAdmin, task, recipientIds, actorName } = loaded;
 
+    // Never trust caller-supplied text: email the stored comment, and only
+    // when the caller actually authored it on this task.
+    const { data: stored } = await supabaseAdmin
+      .from("task_comments")
+      .select("body, user_id, task_id")
+      .eq("id", data.commentId)
+      .maybeSingle();
+    if (!stored || stored.task_id !== data.taskId || stored.user_id !== context.userId) {
+      throw new Error("Forbidden");
+    }
+    data.commentBody = String(stored.body ?? "").trim();
+    if (!data.commentBody) throw new Error("Comment is required");
+
     const snippet =
       data.commentBody.length > 240 ? `${data.commentBody.slice(0, 240)}…` : data.commentBody;
     const base = data.origin;

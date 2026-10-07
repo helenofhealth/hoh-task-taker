@@ -34,6 +34,22 @@ export const inviteClient = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Invitations may only go to the client's own address on record. If the
+    // client has no email yet, this invite records it (one address per client).
+    const { data: clientRow } = await supabaseAdmin
+      .from("clients")
+      .select("id, email")
+      .eq("id", data.clientId)
+      .maybeSingle();
+    if (!clientRow) throw new Error("Client not found");
+    const onFile = clientRow.email?.trim().toLowerCase();
+    if (onFile && onFile !== data.email) {
+      throw new Error("Invitations can only be sent to the client's email on file");
+    }
+    if (!onFile) {
+      await supabaseAdmin.from("clients").update({ email: data.email }).eq("id", data.clientId);
+    }
+
     const linkUserToClient = async (userId: string) => {
       await supabaseAdmin
         .from("profiles")

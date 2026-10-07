@@ -127,8 +127,9 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
     const { supabaseAdmin, task, recipientIds, actorName } = loaded;
     if (task.status !== data.newStatus) return { ok: true as const, sent: 0 }; // stale call
 
-    const oldLabel = STATUS_LABELS[data.oldStatus] ?? data.oldStatus;
-    const newLabel = STATUS_LABELS[data.newStatus] ?? data.newStatus;
+    // The previous status is caller-supplied and unverifiable, so it is never
+    // put into notification or email text; only the stored status is used.
+    const newLabel = STATUS_LABELS[task.status] ?? STATUS_LABELS[data.newStatus];
     const base = data.origin;
     const link = `${base}/board?task=${encodeURIComponent(data.taskId)}`;
 
@@ -139,7 +140,7 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
       taskId: task.id,
       kind: "status",
       title: `"${task.title}" moved to ${newLabel}`,
-      body: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
+      body: `${actorName} changed the status to ${newLabel}.`,
     });
 
     // Queue emails for the batched flush so rapid status flips merge into one
@@ -150,12 +151,12 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
       taskTitle: task.title,
       category: "status",
       heading: `"${task.title}" moved to ${newLabel}`,
-      line: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
+      line: `${actorName} changed the status to ${newLabel}.`,
       link,
     });
     const { queueClientPortalEmail } = await import("./notifications.server");
     await queueClientPortalEmail(supabaseAdmin, task as any, [context.userId, ...emailIds],
-      `"${task.title}" moved to ${newLabel}`, `${actorName} changed the status from ${oldLabel} to ${newLabel}.`, base);
+      `"${task.title}" moved to ${newLabel}`, `${actorName} changed the status to ${newLabel}.`, base);
     return { ok: true as const, sent: emailIds.length };
   });
 

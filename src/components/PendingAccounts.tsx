@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,6 +18,7 @@ import {
 import {
   assignAccountRole,
   listPendingAccounts,
+  removePendingAccount,
   type PendingAccount,
 } from "@/lib/pending-accounts.functions";
 import { fetchClients } from "@/lib/tracker";
@@ -34,6 +35,7 @@ export function PendingAccounts() {
   const qc = useQueryClient();
   const listFn = useServerFn(listPendingAccounts);
   const assignFn = useServerFn(assignAccountRole);
+  const removeFn = useServerFn(removePendingAccount);
   const [state, setState] = useState<Record<string, RowState>>({});
 
   const pending = useQuery({ queryKey: ["pending-accounts"], queryFn: () => listFn() });
@@ -60,6 +62,17 @@ export function PendingAccounts() {
       qc.invalidateQueries({ queryKey: ["team-members"] });
       qc.invalidateQueries({ queryKey: ["profiles"] });
       qc.invalidateQueries({ queryKey: ["roles"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (account: PendingAccount) => {
+      await removeFn({ data: { userId: account.userId } });
+    },
+    onSuccess: () => {
+      toast.success("Request removed");
+      qc.invalidateQueries({ queryKey: ["pending-accounts"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -158,6 +171,29 @@ export function PendingAccounts() {
                     >
                       {assign.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                       Grant access
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Remove request"
+                      aria-label={`Remove request from ${a.name}`}
+                      disabled={remove.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Remove the access request from ${a.name}? Their account will be deleted.`,
+                          )
+                        ) {
+                          remove.mutate(a);
+                        }
+                      }}
+                    >
+                      {remove.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4 text-destructive" />
+                      )}
                     </Button>
                   </div>
                 </li>

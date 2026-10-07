@@ -51,6 +51,32 @@ export const listPendingAccounts = createServerFn({ method: "GET" })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   });
 
+/** Permanently remove an account that never got a role (pending access request). */
+export const removePendingAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) => {
+    if (!input?.userId) throw new Error("Account is required");
+    return { userId: input.userId };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("You cannot remove your own account");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Safety: only accounts with no role at all can be removed here.
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", data.userId);
+    if ((roles ?? []).length > 0) {
+      throw new Error("This account already has access — remove it from Team members instead");
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
 interface AssignRoleInput {
   userId: string;
   role: "admin" | "member" | "client";

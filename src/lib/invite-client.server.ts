@@ -410,16 +410,18 @@ export async function sendTaskRejectionEmail(
   email: string,
   clientName: string,
   taskTitle: string,
-  reason: string,
+  _reason: string,
   link: string,
 ) {
+  // The free-text reason is intentionally NOT emailed: it stays in the app,
+  // so the email body only ever contains fixed copy plus the task title.
   const html = shell(
     "We need a bit more on your request",
     `<p>Hi ${esc(clientName)},</p>
      <p>We reviewed your request and can't start it as it stands.</p>
      <div style="background: #EAF1FE; border: 1px solid #E5EAF0; border-radius: 10px; padding: 16px 20px; margin: 20px 0;">
        <p style="margin: 0; font-weight: bold; color: #1E293B;">${esc(taskTitle)}</p>
-       <p style="margin: 10px 0 0; color: #64748B; font-size: 13px;">${esc(reason)}</p>
+       <p style="margin: 10px 0 0; color: #64748B; font-size: 13px;">Our notes on what to change are waiting for you in your portal.</p>
      </div>
      <p style="margin: 28px 0;">
        <a href="${link}" style="background: #2F6FED; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Open the request</a>

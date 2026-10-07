@@ -47,6 +47,7 @@ import {
   fetchProfiles,
   fetchTasks,
   fetchTimeEntries,
+  formatClock,
   formatHours,
   restoreTasks,
   softDeleteTasks,
@@ -224,13 +225,10 @@ function BoardPage() {
     const base = "Helen of Health Task Taker";
     const tick = () => {
       const mins = elapsedMinutes(runningEntry.started_at, runningEntry.paused_at);
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      const label = h > 0 ? `${h}:${String(m).padStart(2, "0")}` : `0:${String(m).padStart(2, "0")}`;
-      document.title = `⏱ ${label}${runningEntry.paused_at ? " (paused)" : ""} · ${runningTaskTitle} — ${base}`;
+      document.title = `⏱ ${formatClock(mins)}${runningEntry.paused_at ? " (paused)" : ""} · ${runningTaskTitle} — ${base}`;
     };
     tick();
-    const id = window.setInterval(tick, 15000);
+    const id = window.setInterval(tick, 1000);
     return () => {
       window.clearInterval(id);
       document.title = base;

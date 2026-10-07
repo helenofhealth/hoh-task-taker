@@ -400,3 +400,50 @@ export const createDriveFolder = createServerFn({ method: "POST" })
     const id = await ensureFolder(key, name, parent);
     return { id, name, url: `https://drive.google.com/drive/folders/${id}` };
   }));
+
+/**
+ * Checks the caller's Drive-linked files against Google Drive. Files deleted or trashed in Drive
+ * are reset so they can be saved/uploaded again: app uploads lose their Drive link (Save to Drive
+ * re-uploads them, recreating any deleted folders); pure Drive links are removed so they can be re-attached.
+ */
+export const refreshDriveFiles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => withRenew(async () => {
+    const key = await loadKey(context.userId);
+    if (!key) throw new Error("Connect Google Drive first.");
+    const { data: rows, error } = await context.supabase
+      .from("task_attachments")
+      .select("id, source, drive_file_id")
+      .eq("user_id", context.userId)
+      .not("drive_file_id", "is", null)
+      .limit(300);
+    if (error) throw new Error(error.message);
+    const { callAsAppUser, appUserReconnectRequired } = await import("@/integrations/lovable/appUserConnector");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let reset = 0;
+    let removed = 0;
+    for (const r of rows ?? []) {
+      const res = await callAsAppUser({
+        gatewayBaseUrl: GATEWAY_BASE_URL,
+        connectionAPIKey: key,
+        connectorId: CONNECTOR,
+        path: `/drive/v3/files/${encodeURIComponent(r.drive_file_id!)}?fields=id,trashed`,
+        requiredScopes: SCOPES,
+      });
+      if (await appUserReconnectRequired(res)) throw new DriveRenewError("Your Google Drive access needs to be renewed.");
+      let gone = res.status === 404;
+      if (res.ok) gone = Boolean(((await res.json()) as { trashed?: boolean }).trashed);
+      else if (!gone) { console.error("Drive check failed", r.id, res.status, await res.text()); continue; }
+      if (!gone) continue;
+      if (r.source === "upload") {
+        await supabaseAdmin.from("task_attachments")
+          .update({ drive_file_id: null, drive_synced_at: null, external_url: null })
+          .eq("id", r.id);
+        reset++;
+      } else {
+        await supabaseAdmin.from("task_attachments").delete().eq("id", r.id);
+        removed++;
+      }
+    }
+    return { checked: rows?.length ?? 0, reset, removed };
+  }));

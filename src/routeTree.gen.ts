@@ -35,6 +35,7 @@ import { Route as ApiPublicDigestRouteImport } from './routes/api/public/digest'
 import { Route as ApiPublicEmailFlushRouteImport } from './routes/api/public/email-flush'
 import { Route as ApiPublicInviteOpenRouteImport } from './routes/api/public/invite-open'
 import { Route as OauthGoogleDriveReturnRouteImport } from './routes/oauth.google-drive.return'
+import { Route as ApiPublicCronDriveSyncRouteImport } from './routes/api/public/cron/drive-sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -171,6 +172,11 @@ const OauthGoogleDriveReturnRoute = OauthGoogleDriveReturnRouteImport.update({
   path: '/oauth/google-drive/return',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronDriveSyncRoute = ApiPublicCronDriveSyncRouteImport.update({
+  id: '/api/public/cron/drive-sync',
+  path: '/api/public/cron/drive-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
   '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
+  '/api/public/cron/drive-sync': typeof ApiPublicCronDriveSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
   '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
+  '/api/public/cron/drive-sync': typeof ApiPublicCronDriveSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/api/public/email-flush': typeof ApiPublicEmailFlushRoute
   '/api/public/invite-open': typeof ApiPublicInviteOpenRoute
   '/oauth/google-drive/return': typeof OauthGoogleDriveReturnRoute
+  '/api/public/cron/drive-sync': typeof ApiPublicCronDriveSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/api/public/email-flush'
     | '/api/public/invite-open'
     | '/oauth/google-drive/return'
+    | '/api/public/cron/drive-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/api/public/email-flush'
     | '/api/public/invite-open'
     | '/oauth/google-drive/return'
+    | '/api/public/cron/drive-sync'
   id:
     | '__root__'
     | '/'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/api/public/email-flush'
     | '/api/public/invite-open'
     | '/oauth/google-drive/return'
+    | '/api/public/cron/drive-sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   ApiPublicEmailFlushRoute: typeof ApiPublicEmailFlushRoute
   ApiPublicInviteOpenRoute: typeof ApiPublicInviteOpenRoute
   OauthGoogleDriveReturnRoute: typeof OauthGoogleDriveReturnRoute
+  ApiPublicCronDriveSyncRoute: typeof ApiPublicCronDriveSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -541,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthGoogleDriveReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/drive-sync': {
+      id: '/api/public/cron/drive-sync'
+      path: '/api/public/cron/drive-sync'
+      fullPath: '/api/public/cron/drive-sync'
+      preLoaderRoute: typeof ApiPublicCronDriveSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -593,6 +613,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEmailFlushRoute: ApiPublicEmailFlushRoute,
   ApiPublicInviteOpenRoute: ApiPublicInviteOpenRoute,
   OauthGoogleDriveReturnRoute: OauthGoogleDriveReturnRoute,
+  ApiPublicCronDriveSyncRoute: ApiPublicCronDriveSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

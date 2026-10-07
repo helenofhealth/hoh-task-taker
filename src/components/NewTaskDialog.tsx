@@ -1,3 +1,4 @@
+import { createClientDriveFolder } from "@/lib/google-drive.functions";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -129,6 +130,7 @@ export function NewTaskDialog({
         .single();
       if (error) throw error;
       const created = data as { id: string };
+      createClientFolder({ data: { clientId: created.id } }).catch(() => {});
       if (hours > 0) {
         const { error: creditError } = await db.from("hour_credits").insert({
           client_id: created.id,

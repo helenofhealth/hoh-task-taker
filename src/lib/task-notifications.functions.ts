@@ -153,6 +153,9 @@ export const notifyTaskStatusChange = createServerFn({ method: "POST" })
       line: `${actorName} changed the status from ${oldLabel} to ${newLabel}.`,
       link,
     });
+    const { queueClientPortalEmail } = await import("./notifications.server");
+    await queueClientPortalEmail(supabaseAdmin, task as any, [context.userId, ...emailIds],
+      `"${task.title}" moved to ${newLabel}`, `${actorName} changed the status from ${oldLabel} to ${newLabel}.`, base);
     return { ok: true as const, sent: emailIds.length };
   });
 
@@ -353,6 +356,8 @@ export const notifyTaskEvent = createServerFn({ method: "POST" })
         line: body,
         link,
       });
+      const { queueClientPortalEmail } = await import("./notifications.server");
+      await queueClientPortalEmail(supabaseAdmin, task as any, [context.userId, ...emailIds], `"${task.title}" was updated`, body, base);
       return { ok: true as const, sent: emailIds.length };
     }
 
@@ -552,3 +557,20 @@ export const notifyCommentDeleted = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+// Lets the task's client know a new file was added, so they check their portal.
+export const notifyFileUploaded = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { taskId: string; origin: string }) => {
+    if (!input.taskId) throw new Error("Task is required");
+    return { taskId: input.taskId, origin: safeAppOrigin(input.origin) };
+  })
+  .handler(async ({ data, context }) => {
+    const loaded = await loadTaskAndRecipients(context.supabase, context.userId, data.taskId, false);
+    if (!loaded) throw new Error("Forbidden");
+    const { supabaseAdmin, task, actorName } = loaded;
+    const { queueClientPortalEmail } = await import("./notifications.server");
+    const sent = await queueClientPortalEmail(supabaseAdmin, task as any, [context.userId],
+      `New file on "${task.title}"`, `${actorName} added a document to this task.`, data.origin);
+    return { ok: true as const, sent };
+  });

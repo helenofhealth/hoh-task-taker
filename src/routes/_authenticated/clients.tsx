@@ -1,3 +1,4 @@
+import { createClientDriveFolder } from "@/lib/google-drive.functions";
 import { Fragment, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -172,6 +173,7 @@ function StaffClientsPage() {
         .single();
       if (error) throw error;
       const clientId = (data as { id: string }).id;
+      createClientFolder({ data: { clientId: clientId } }).catch(() => {});
 
       if (hours > 0) {
         const { error: creditError } = await db.from("hour_credits").insert({

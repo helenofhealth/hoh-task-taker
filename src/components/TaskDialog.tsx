@@ -1877,14 +1877,30 @@ export function TaskDialog({
                   key={a.id}
                   className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 text-sm"
                 >
-                  <Paperclip className="size-4 text-muted-foreground" />
+                  {a.source === "google_drive" ? (
+                    <HardDrive className="size-4 text-muted-foreground" />
+                  ) : (
+                    <Paperclip className="size-4 text-muted-foreground" />
+                  )}
                   <span className="truncate">{a.file_name}</span>
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {a.size_bytes ? `${Math.round(a.size_bytes / 1024)} KB` : ""}
+                    {a.source === "google_drive"
+                      ? "Google Drive"
+                      : a.size_bytes
+                        ? `${Math.round(a.size_bytes / 1024)} KB`
+                        : ""}
                   </span>
-                  <Button size="icon" variant="ghost" onClick={() => download(a.file_path)}>
-                    <Download className="size-4" />
-                  </Button>
+                  {a.source === "google_drive" && a.external_url ? (
+                    <Button size="icon" variant="ghost" asChild>
+                      <a href={a.external_url} target="_blank" rel="noopener noreferrer" aria-label="Open in Google Drive">
+                        <ExternalLink className="size-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button size="icon" variant="ghost" onClick={() => download(a.file_path)}>
+                      <Download className="size-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
               <div className="flex flex-col items-center gap-2 py-4 text-center">
@@ -1902,18 +1918,21 @@ export function TaskDialog({
                     for (const f of Array.from(e.target.files ?? [])) void upload(f);
                   }}
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : (
-                    <Paperclip className="mr-2 size-4" />
-                  )}
-                  Upload document
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Paperclip className="mr-2 size-4" />
+                    )}
+                    Upload document
+                  </Button>
+                  {task && <GoogleDrivePicker taskId={task.id} />}
+                </div>
                 <p className="text-xs text-muted-foreground">Up to 20 MB per file</p>
               </div>
             </div>

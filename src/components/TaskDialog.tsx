@@ -719,6 +719,7 @@ export function TaskDialog({
         file_path: path,
         file_name: file.name,
         size_bytes: file.size,
+        mime_type: file.type || null,
       });
       if (rowError) throw rowError;
       qc.invalidateQueries({ queryKey: ["attachments", task.id] });

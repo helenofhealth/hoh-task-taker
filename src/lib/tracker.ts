@@ -182,6 +182,8 @@ export interface Attachment {
   external_url?: string | null;
   source?: string | null;
   mime_type?: string | null;
+  drive_file_id?: string | null;
+  drive_synced_at?: string | null;
 }
 
 const db = supabase as unknown as {

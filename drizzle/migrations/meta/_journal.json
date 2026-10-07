@@ -64,6 +64,13 @@
       "when": 1791370193682,
       "tag": "0008_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791370316025,
+      "tag": "0009_client_paid_hours_override",
+      "breakpoints": true
     }
   ]
 }

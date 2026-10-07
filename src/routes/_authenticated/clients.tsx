@@ -687,9 +687,13 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const clientCredits = (credits.data ?? []).filter(
     (cr) => cr.client_id === client?.id && cr.billable !== false,
   );
-  const paidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
+  const autoPaidHours = clientCredits.filter((cr) => cr.paid).reduce((s, cr) => s + Number(cr.hours), 0);
   const unpaidCredits = clientCredits.filter((cr) => !cr.paid);
-  const unpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const autoUnpaidHours = unpaidCredits.reduce((s, cr) => s + Number(cr.hours), 0);
+  const paidOverride = client?.paid_hours_override;
+  const unpaidOverride = client?.unpaid_hours_override;
+  const paidHours = paidOverride === null || paidOverride === undefined ? autoPaidHours : Number(paidOverride);
+  const unpaidHours = unpaidOverride === null || unpaidOverride === undefined ? autoUnpaidHours : Number(unpaidOverride);
   const rate = client?.hourly_rate === null || client?.hourly_rate === undefined ? null : Number(client.hourly_rate);
   const unpaidAmount = rate === null ? null : unpaidHours * rate;
   const gbp = (n: number) =>
@@ -716,6 +720,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
   const [retainer, setRetainer] = useState("");
   const [editRate, setEditRate] = useState("");
   const [editProject, setEditProject] = useState("");
+  const [paidManual, setPaidManual] = useState("");
+  const [unpaidManual, setUnpaidManual] = useState("");
 
   useEffect(() => {
     if (!client) return;
@@ -726,6 +732,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
     setRetainer(String(Number(client.retainer_hours ?? 0)));
     setEditRate(client.hourly_rate === null || client.hourly_rate === undefined ? "" : String(Number(client.hourly_rate)));
     setEditProject(client.default_project ?? "");
+    setPaidManual(client.paid_hours_override === null || client.paid_hours_override === undefined ? "" : String(Number(client.paid_hours_override)));
+    setUnpaidManual(client.unpaid_hours_override === null || client.unpaid_hours_override === undefined ? "" : String(Number(client.unpaid_hours_override)));
   }, [client]);
 
   const save = useMutation({
@@ -744,6 +752,15 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
       if (hourlyRate !== null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) {
         throw new Error("Hourly rate must be 0 or more");
       }
+      const parseOverride = (raw: string, label: string) => {
+        const t = raw.trim();
+        if (t === "") return null;
+        const n = Number(t);
+        if (!Number.isFinite(n) || n < 0) throw new Error(`${label} must be 0 or more`);
+        return n;
+      };
+      const paidOverrideVal = parseOverride(paidManual, "Paid hours");
+      const unpaidOverrideVal = parseOverride(unpaidManual, "Unpaid hours");
       const { error } = await db
         .from("clients")
         .update({
@@ -754,6 +771,8 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
           retainer_hours: hours,
           hourly_rate: hourlyRate,
           default_project: editProject.trim() || null,
+          paid_hours_override: paidOverrideVal,
+          unpaid_hours_override: unpaidOverrideVal,
         })
         .eq("id", client.id);
       if (error) throw error;
@@ -867,6 +886,35 @@ function EditClientDialog({ client, onClose }: { client: Client | null; onClose:
               </p>
             </div>
           </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="e-paid-override" className="text-xs">Paid hours — manual</Label>
+              <Input
+                id="e-paid-override"
+                type="number"
+                min="0"
+                step="0.25"
+                value={paidManual}
+                placeholder={`Auto: ${formatHours(autoPaidHours)}`}
+                onChange={(e) => setPaidManual(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="e-unpaid-override" className="text-xs">Unpaid hours — manual</Label>
+              <Input
+                id="e-unpaid-override"
+                type="number"
+                min="0"
+                step="0.25"
+                value={unpaidManual}
+                placeholder={`Auto: ${formatHours(autoUnpaidHours)}`}
+                onChange={(e) => setUnpaidManual(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Leave a field empty to keep the automatic number from the hour packages below. Type a number to set it yourself — it replaces the automatic one everywhere, including the client portal.
+          </p>
           {unpaidCredits.length > 0 ? (
             <ul className="space-y-1.5">
               {unpaidCredits.map((cr) => (

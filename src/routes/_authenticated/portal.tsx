@@ -130,11 +130,17 @@ function PortalPage() {
   const billingRows = myTasks.filter((t) => (minutesByTask.get(t.id) ?? 0) > 0);
   const totalBilled = billingRows.reduce((s, t) => s + billedFor(t.id), 0);
   const billableLoggedHours = myTasks.reduce((s, t) => s + (billableByTask.get(t.id) ?? 0), 0) / 60;
-  const paidHours = (credits.data ?? [])
+  const autoPaidHours = (credits.data ?? [])
     .filter((c) => c.client_id === clientId && c.billable !== false && c.paid !== false)
     .reduce((s, c) => s + Number(c.hours), 0);
-  const paidLoggedHours = Math.min(billableLoggedHours, paidHours);
-  const unpaidLoggedHours = Math.max(0, billableLoggedHours - paidHours);
+  const paidOverride = client?.paid_hours_override;
+  const unpaidOverride = client?.unpaid_hours_override;
+  const paidHours = paidOverride === null || paidOverride === undefined ? autoPaidHours : Number(paidOverride);
+  const unpaidLoggedHours =
+    unpaidOverride === null || unpaidOverride === undefined
+      ? Math.max(0, billableLoggedHours - paidHours)
+      : Number(unpaidOverride);
+  const paidLoggedHours = Math.max(0, billableLoggedHours - unpaidLoggedHours);
 
   const totalMinutes = myTasks.reduce((s, t) => s + (minutesByTask.get(t.id) ?? 0), 0);
 

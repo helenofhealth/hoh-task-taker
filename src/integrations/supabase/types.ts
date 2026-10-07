@@ -255,8 +255,10 @@ export type Database = {
           hourly_rate: number | null
           id: string
           name: string
+          paid_hours_override: number | null
           phone: string | null
           retainer_hours: number
+          unpaid_hours_override: number | null
         }
         Insert: {
           archived_at?: string | null
@@ -268,8 +270,10 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           name: string
+          paid_hours_override?: number | null
           phone?: string | null
           retainer_hours?: number
+          unpaid_hours_override?: number | null
         }
         Update: {
           archived_at?: string | null
@@ -281,8 +285,10 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           name?: string
+          paid_hours_override?: number | null
           phone?: string | null
           retainer_hours?: number
+          unpaid_hours_override?: number | null
         }
         Relationships: []
       }

@@ -213,6 +213,29 @@ function BoardPage() {
     minutesByTask.set(e.task_id, (minutesByTask.get(e.task_id) ?? 0) + (e.minutes ?? 0));
     if (!e.ended_at) runningByTask.set(e.task_id, elapsedMinutes(e.started_at, e.paused_at));
   }
+
+  // Show the running timer live in the browser tab title.
+  const runningEntry = (entries.data ?? []).find((e) => !e.ended_at) ?? null;
+  const runningTaskTitle = runningEntry
+    ? (tasks.data ?? []).find((t) => t.id === runningEntry.task_id)?.title ?? "Task"
+    : null;
+  useEffect(() => {
+    if (!runningEntry) return;
+    const base = "Helen of Health Task Taker";
+    const tick = () => {
+      const mins = elapsedMinutes(runningEntry.started_at, runningEntry.paused_at);
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      const label = h > 0 ? `${h}:${String(m).padStart(2, "0")}` : `0:${String(m).padStart(2, "0")}`;
+      document.title = `⏱ ${label}${runningEntry.paused_at ? " (paused)" : ""} · ${runningTaskTitle} — ${base}`;
+    };
+    tick();
+    const id = window.setInterval(tick, 15000);
+    return () => {
+      window.clearInterval(id);
+      document.title = base;
+    };
+  }, [runningEntry, runningTaskTitle]);
   const commentsByTask = new Map<string, number>();
   for (const c of commentRows.data ?? [])
     commentsByTask.set(c.task_id, (commentsByTask.get(c.task_id) ?? 0) + 1);

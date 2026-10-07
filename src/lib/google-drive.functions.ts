@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_BASE_URL = "https://connector-gateway.lovable.dev";
 const CONNECTOR = "google_drive";
+const ROOT_FOLDER = "Helen of Health Task Taker";
 const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
   "https://www.googleapis.com/auth/drive.metadata.readonly",
@@ -53,7 +54,15 @@ export const completeDriveConnect = createServerFn({ method: "POST" })
     const { connectionAPIKey, connectorId } = await exchangeAppUserOAuthCode(GATEWAY_BASE_URL, data.code);
     if (connectorId !== CONNECTOR) throw new Error("OAuth completion returned the wrong connector");
     await saveConnectionKeyForUser(context.userId, connectorId, connectionAPIKey);
-    return { ok: true };
+    // Create the app's root folder right away so later saves never fail on a missing folder.
+    let folderReady = true;
+    try {
+      await ensureFolder(connectionAPIKey, ROOT_FOLDER);
+    } catch (e) {
+      console.error("Could not create Drive root folder", e);
+      folderReady = false;
+    }
+    return { ok: true, folderReady };
   });
 
 export const disconnectDrive = createServerFn({ method: "POST" })
@@ -202,7 +211,7 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!rows?.length) return { synced: 0, failed: 0, remaining: 0 };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const root = await ensureFolder(key, "Helen of Health Task Taker");
+    const root = await ensureFolder(key, ROOT_FOLDER);
     const folders = new Map<string, string>();
     let synced = 0;
     let failed = 0;
@@ -249,4 +258,99 @@ export const syncFilesToDrive = createServerFn({ method: "POST" })
       .eq("source", "upload")
       .is("drive_file_id", null);
     return { synced, failed, remaining: count ?? 0 };
+  });
+
+type DriveListed = { id: string; name: string; mimeType: string; size?: string; webViewLink?: string };
+
+async function listChildren(key: string, parent: string, foldersOnly: boolean) {
+  const out: DriveListed[] = [];
+  let pageToken = "";
+  do {
+    const params = new URLSearchParams({
+      q: `'${parent}' in parents and trashed = false and mimeType ${foldersOnly ? "=" : "!="} 'application/vnd.google-apps.folder'`,
+      fields: "nextPageToken, files(id,name,mimeType,size,webViewLink)",
+      pageSize: "200",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const r = (await driveSend(key, `/drive/v3/files?${params}`, { method: "GET" })) as unknown as {
+      files?: DriveListed[];
+      nextPageToken?: string;
+    };
+    out.push(...(r.files ?? []));
+    pageToken = r.nextPageToken ?? "";
+  } while (pageToken && out.length < 2000);
+  return out;
+}
+
+/**
+ * Pull: every file inside "Helen of Health Task Taker/<task title>" in the user's Drive
+ * gets linked to the matching task (tasks the user can see), skipping files already linked.
+ */
+export const pullFilesFromDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const key = await loadKey(context.userId);
+    if (!key) throw new Error("Connect Google Drive first.");
+    const root = await ensureFolder(key, ROOT_FOLDER);
+    const { data: tasks, error } = await context.supabase.from("tasks").select("id, title").is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    const byTitle = new Map<string, string>();
+    for (const t of tasks ?? []) byTitle.set(t.title.slice(0, 120).trim().toLowerCase(), t.id);
+    const folders = await listChildren(key, root, true);
+    let imported = 0;
+    let unmatched = 0;
+    for (const folder of folders) {
+      const taskId = byTitle.get(folder.name.trim().toLowerCase());
+      if (!taskId) {
+        unmatched++;
+        continue;
+      }
+      const files = await listChildren(key, folder.id, false);
+      if (!files.length) continue;
+      const { data: existing } = await context.supabase
+        .from("task_attachments")
+        .select("drive_file_id")
+        .eq("task_id", taskId)
+        .in("drive_file_id", files.map((f) => f.id));
+      const known = new Set((existing ?? []).map((e) => e.drive_file_id));
+      const fresh = files.filter((f) => !known.has(f.id));
+      if (!fresh.length) continue;
+      const { error: insErr } = await context.supabase.from("task_attachments").insert(
+        fresh.map((f) => ({
+          task_id: taskId,
+          user_id: context.userId,
+          file_path: `gdrive:${f.id}`,
+          file_name: f.name.slice(0, 300),
+          size_bytes: f.size ? Number(f.size) : null,
+          external_url: f.webViewLink ?? `https://drive.google.com/file/d/${f.id}/view`,
+          source: "google_drive",
+          mime_type: f.mimeType?.slice(0, 200) ?? null,
+          drive_file_id: f.id,
+        })),
+      );
+      if (insErr) throw new Error(insErr.message);
+      imported += fresh.length;
+    }
+    return { imported, unmatchedFolders: unmatched };
+  });
+
+/** Create a folder in the user's Drive — inside the app folder, or as a task's folder. */
+export const createDriveFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ name: z.string().trim().max(120).optional(), taskId: z.string().uuid().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const key = await loadKey(context.userId);
+    if (!key) throw new Error("Connect Google Drive first.");
+    const root = await ensureFolder(key, ROOT_FOLDER);
+    let name = data.name ?? "";
+    if (data.taskId) {
+      const { data: task, error } = await context.supabase.from("tasks").select("title").eq("id", data.taskId).maybeSingle();
+      if (error || !task) throw new Error("Task not found");
+      name = task.title.slice(0, 120);
+    }
+    if (!name) throw new Error("Give the folder a name.");
+    const id = await ensureFolder(key, name, root);
+    return { id, name, url: `https://drive.google.com/drive/folders/${id}` };
   });

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { HardDrive, Loader2, Search, Unplug } from "lucide-react";
+import { CloudUpload, HardDrive, Loader2, Search, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import {
   driveStatus,
   searchDriveFiles,
   startDriveConnect,
+  syncFilesToDrive,
 } from "@/lib/google-drive.functions";
 
 function waitForOAuth(popup: Window) {
@@ -192,5 +193,53 @@ export function GoogleDrivePicker({ taskId }: { taskId: string }) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/** Copies app-uploaded documents (one task, or all visible tasks) into the user's Google Drive. */
+export function SyncToDriveButton({ taskId, label = "Save to Drive" }: { taskId?: string; label?: string }) {
+  const qc = useQueryClient();
+  const statusFn = useServerFn(driveStatus);
+  const syncFn = useServerFn(syncFilesToDrive);
+  const startFn = useServerFn(startDriveConnect);
+  const completeFn = useServerFn(completeDriveConnect);
+  const sync = useMutation({
+    mutationFn: async () => {
+      const { connected } = await statusFn();
+      if (!connected) {
+        const popup = window.open("", "lovable-oauth", "width=600,height=720");
+        if (!popup) throw new Error("Popup blocked. Allow popups and try again.");
+        try {
+          const { authorizationUrl } = await startFn();
+          const done = waitForOAuth(popup);
+          popup.location.href = authorizationUrl;
+          const code = await done;
+          if (code) await completeFn({ data: { code } });
+        } catch (e) {
+          popup.close();
+          throw e;
+        }
+      }
+      return syncFn({ data: taskId ? { taskId } : {} });
+    },
+    onSuccess: (r) => {
+      if (r.synced === 0 && r.failed === 0) toast.success("Everything is already saved in Google Drive");
+      else
+        toast.success(
+          `Saved ${r.synced} file${r.synced === 1 ? "" : "s"} to Google Drive` +
+            (r.failed ? ` · ${r.failed} failed` : "") +
+            (r.remaining ? ` · ${r.remaining} left, press again` : ""),
+        );
+      qc.invalidateQueries({ queryKey: ["attachments"] });
+      qc.invalidateQueries({ queryKey: ["drive-library"] });
+      qc.invalidateQueries({ queryKey: ["drive-status"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Button variant="outline" onClick={() => sync.mutate()} disabled={sync.isPending}>
+      {sync.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudUpload className="mr-2 size-4" />}
+      {label}
+    </Button>
   );
 }

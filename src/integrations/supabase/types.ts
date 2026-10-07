@@ -716,6 +716,8 @@ export type Database = {
       task_attachments: {
         Row: {
           created_at: string
+          drive_file_id: string | null
+          drive_synced_at: string | null
           external_url: string | null
           file_name: string
           file_path: string
@@ -728,6 +730,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
           external_url?: string | null
           file_name: string
           file_path: string
@@ -740,6 +744,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
           external_url?: string | null
           file_name?: string
           file_path?: string

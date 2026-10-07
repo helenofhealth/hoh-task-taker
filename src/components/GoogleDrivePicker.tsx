@@ -237,8 +237,9 @@ export function SyncToDriveButton({ taskId, label = "Save to Drive" }: { taskId?
       qc.invalidateQueries({ queryKey: ["drive-library"] });
       qc.invalidateQueries({ queryKey: ["drive-status"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => onDriveError(e),
   });
+  const onDriveError = useDriveErrorHandler(() => sync.mutate());
   return (
     <Button variant="outline" onClick={() => sync.mutate()} disabled={sync.isPending}>
       {sync.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudUpload className="mr-2 size-4" />}
@@ -247,14 +248,11 @@ export function SyncToDriveButton({ taskId, label = "Save to Drive" }: { taskId?
   );
 }
 
-/** Returns a function that makes sure the signed-in user has connected Drive (opens Google if not). */
-function useEnsureDrive() {
-  const statusFn = useServerFn(driveStatus);
+/** Opens Google consent in a popup and saves the connection. Must run from a click. */
+function useDriveConnectPopup() {
   const startFn = useServerFn(startDriveConnect);
   const completeFn = useServerFn(completeDriveConnect);
   return async () => {
-    const { connected } = await statusFn();
-    if (connected) return;
     const popup = window.open("", "lovable-oauth", "width=600,height=720");
     if (!popup) throw new Error("Popup blocked. Allow popups and try again.");
     try {
@@ -267,6 +265,43 @@ function useEnsureDrive() {
       popup.close();
       throw e;
     }
+  };
+}
+
+const isRenewError = (e: Error) => /needs to be renewed/i.test(e.message);
+
+/** Error handler: offers a one-click Reconnect when Drive access expired, then retries. */
+function useDriveErrorHandler(retry: () => void) {
+  const qc = useQueryClient();
+  const connect = useDriveConnectPopup();
+  return (e: Error) => {
+    if (!isRenewError(e)) return toast.error(e.message);
+    toast.error("Your Google Drive access needs to be renewed.", {
+      duration: 15000,
+      action: {
+        label: "Reconnect",
+        onClick: () => {
+          connect()
+            .then(() => {
+              toast.success("Reconnected to Google Drive");
+              qc.invalidateQueries({ queryKey: ["drive-status"] });
+              retry();
+            })
+            .catch((err: Error) => toast.error(err.message));
+        },
+      },
+    });
+  };
+}
+
+/** Returns a function that makes sure the signed-in user has connected Drive (opens Google if not). */
+function useEnsureDrive() {
+  const statusFn = useServerFn(driveStatus);
+  const connect = useDriveConnectPopup();
+  return async () => {
+    const { connected } = await statusFn();
+    if (connected) return;
+    await connect();
   };
 }
 
@@ -292,8 +327,9 @@ export function PullFromDriveButton() {
       qc.invalidateQueries({ queryKey: ["attachments"] });
       qc.invalidateQueries({ queryKey: ["drive-library"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => onDriveError(e),
   });
+  const onDriveError = useDriveErrorHandler(() => pull.mutate());
   return (
     <Button variant="outline" onClick={() => pull.mutate()} disabled={pull.isPending}>
       {pull.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CloudDownload className="mr-2 size-4" />}
@@ -320,8 +356,9 @@ export function NewDriveFolderButton({ taskId }: { taskId?: string }) {
         action: { label: "Open", onClick: () => window.open(r.url, "_blank", "noopener") },
       });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => onDriveError(e),
   });
+  const onDriveError = useDriveErrorHandler(() => create.mutate());
   if (taskId) {
     return (
       <Button variant="outline" onClick={() => create.mutate()} disabled={create.isPending}>

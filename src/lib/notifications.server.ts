@@ -170,6 +170,7 @@ export async function queueClientPortalEmail(
   heading: string,
   line: string,
   origin: string,
+  opts: { requireTimeLoggedOptIn?: boolean } = {},
 ) {
   if (!task.client_id) return 0;
   const { data: profiles } = await supabaseAdmin.from("profiles").select("id").eq("client_id", task.client_id);
@@ -177,7 +178,16 @@ export async function queueClientPortalEmail(
   if (!ids.length) return 0;
   const { data: staff } = await supabaseAdmin.from("user_roles").select("user_id").in("user_id", ids).in("role", ["admin", "member"]);
   const skip = new Set([...excludeIds, ...(staff ?? []).map((r: any) => r.user_id)]);
-  const targets = ids.filter((id: string) => !skip.has(id));
+  let targets = ids.filter((id: string) => !skip.has(id));
+  if (targets.length && opts.requireTimeLoggedOptIn) {
+    const { data: optIn } = await supabaseAdmin
+      .from("notification_preferences")
+      .select("user_id")
+      .in("user_id", targets)
+      .eq("email_time_logged", true);
+    const allowed = new Set((optIn ?? []).map((r: any) => r.user_id as string));
+    targets = targets.filter((id: string) => allowed.has(id));
+  }
   if (!targets.length) return 0;
   await queueEmailBatch(supabaseAdmin, targets, {
     taskId: task.id,

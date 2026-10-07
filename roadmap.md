@@ -9,3 +9,7 @@
 - [x] Auto-create "Helen of Health Task Taker" folder on connect
 - [x] Create Google Drive folders from the app
 - [x] Client billing dashboard: time per task and per client
+- [x] Client portal: time + £ billed per task
+- [x] Auto-create client folder in Drive on client creation
+- [x] Email clients on task updates / file uploads
+- [x] Daily Drive pull sync for every connected user
